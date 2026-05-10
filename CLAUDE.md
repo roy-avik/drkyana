@@ -49,6 +49,10 @@ Dependencies: `pip install pillow numpy`.
 - **Brand color:** `#0f4c81` (deep blue), accent `#3b82f6`. Body text `#0f172a`, muted `#475569`. Backgrounds `#ffffff` / `#f8fafc`.
 - **Typography:** Google Fonts Poppins, weights 300/400/600/700.
 
+## Workflow
+
+- **Delete merged PR branches.** After a PR is merged to `main`, delete both the local and remote feature branch. Squash merges leave git unable to detect the branch as "merged" by SHA, so `git branch -D <name>` + `git push origin --delete <name>` is the right pair. Don't accumulate stale `claude/*` branches.
+
 ## Out of scope (don't pull this in without asking)
 
 - **Patient management UX** — appointment booking, intake forms, patient records. She'll use AppSheet / Google Forms separately. If a future ask is "build the intake flow," confirm whether AppSheet is still the plan first.
