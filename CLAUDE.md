@@ -6,14 +6,14 @@ Brand voice: calm, considered, modern. Site tagline is **"Modern dentistry. Cons
 
 ## What this is
 
-One self-contained `index.html` (~192 KB). Everything inline: CSS, JS, the hero photo as a base64 JPEG data URI, both QR codes as native SVG paths. No external assets required to render. No frameworks, no build step in the deployment path.
+One self-contained `index.html` (~340 KB). Everything inline: CSS, JS, the hero photo as a base64 JPEG data URI, both QR codes as base64 PNG data URIs. No external assets required to render. No frameworks, no build step in the deployment path.
 
 ## Architecture
 
 - **Hosting:** GitHub Pages on this repo's `main` branch, root path. URL: `https://roy-avik.github.io/drkyana/`.
 - **Source of truth:** `index.html`. Edit it directly for any copy/style change, commit, push — Pages re-publishes within ~30 seconds.
 - **Photo:** embedded as base64 JPEG inside `index.html`. Original lives in the repo root as `photo.jpg`.
-- **QR codes:** inline `<svg>` paths regenerated deterministically from the source URLs (`https://instagram.com/drkyana` and `https://wa.me/8801614369673`). Not raster — they scale crisply at any size and tint with `#0f172a` from CSS.
+- **QR codes:** the branded exports from each app — Instagram's gradient/`@DRKYANA` card and WhatsApp's labelled QR — saved in the repo as `insta-qr.jpg` and `whatsapp-qr.jpg`, then resized to ~320px and inlined as base64 PNGs by `_build_inline.py`. The WhatsApp export's "Kiana Lotfi / WhatsApp Business Account" caption is auto-cropped out; the IG card is used as-is (handle text + gradient border are the brand). Rendered through `.qr-frame--photo`, which strips the white outer card so the images carry their own design against the navy contact gradient.
 - **Map:** Google Maps embed iframe pointed at Dhaka city (no pin) — reflecting that the practice is mobile across chambers in Dhaka rather than tied to one address. Inline comment in `index.html` explains how to swap it for a specific embed if she ever settles into a primary chamber.
 
 ## How to update
@@ -22,20 +22,22 @@ One self-contained `index.html` (~192 KB). Everything inline: CSS, JS, the hero 
 |---|---|
 | Copy text, colors, layout | Edit `index.html`, commit, push. |
 | Hero photo | Replace `photo.jpg`, run `python _build_inline.py`, commit both. |
-| QR target URLs (IG handle, WhatsApp number) | Edit the `INSTA_URL` / `WA_URL` constants at the top of `_build_inline.py`, run it, commit. |
+| Instagram QR | Export a fresh QR card from the IG app, save it over `insta-qr.jpg`, run `python _build_inline.py`, commit. |
+| WhatsApp QR | Export from WhatsApp → "Share my contact", save it over `whatsapp-qr.jpg`, run `python _build_inline.py`. The script auto-crops the "Kiana Lotfi / WhatsApp Business Account" caption; if WhatsApp changes that layout, eyeball the result in `index.html` and adjust `top_skip` in `autocrop_qr()` if needed. |
 | Practice / service area / availability | Edit the `<section id="location">` block in `index.html` directly. Title is "Where I see patients"; copy reflects a mobile, multi-chamber practice. |
 | Map embed | Replace the `<iframe src="...">` value inside the `.map-wrapper` div per the inline comment. Default is a Dhaka city overview (no pin). |
 
 ## The build script (`_build_inline.py`)
 
-One-shot rebuilder for the embedded assets. Run it whenever the hero photo or QR target URLs change. It:
+One-shot rebuilder for the embedded assets. Run it whenever any of the source images change. It:
 1. Downsamples `photo.jpg` to 640px wide, q80 JPEG, ~58 KB.
-2. Generates SVG QRs from the URL constants at the top.
-3. String-replaces the relevant nodes inside `index.html` and writes back.
+2. Resizes `insta-qr.jpg` to ~320px and inlines as base64 PNG.
+3. Auto-crops `whatsapp-qr.jpg` to remove the caption band, resizes to ~320px, inlines as base64 PNG.
+4. String-replaces the relevant `<img>` data URIs inside `index.html` and writes back.
 
-Idempotent for photo updates. Re-running won't re-replace the QR `<img>` tags because they've already become `<svg>` — if you change a QR URL, regenerate by deleting the existing `<svg>` block and reverting it to the placeholder `<img src="" alt="Instagram QR code for @drkyana" />` form before running, OR just edit the `<path d="...">` in the SVG by hand from the script's output.
+Idempotent — re-running with the same source images reproduces the same output. Matches each `<img>` by its `alt=` text, so replacing one source image won't disturb the others.
 
-Dependencies: `pip install qrcode pillow`.
+Dependencies: `pip install pillow numpy`.
 
 ## Brand & content references
 
@@ -58,5 +60,5 @@ Dependencies: `pip install qrcode pillow`.
 
 - The hero `<img>` has an `onerror` fallback that swaps in a `👩‍⚕️` emoji circle if the photo data URI ever fails to decode. Keep the fallback when editing.
 - The hero `::after` pseudo-element renders the same photo as a heavy-blur backdrop (`filter: blur(70px)`, opacity 0.32). Lives behind a `z-index: -2` layer with `isolation: isolate` on `.hero` to clip it. Don't remove `isolation: isolate` without re-checking stacking context.
-- The `.qr-svg` rule in CSS recolors QR paths to the body text color. If you swap the contact section background away from the navy gradient, recheck contrast against the QR fill.
+- The QR cards use the `.qr-frame--photo` modifier (no white background, no padding) so the IG card's gradient border and the WhatsApp card's white area sit directly on the contact section's navy gradient. If you swap that background, the WhatsApp QR (white field, no border) will lose definition — recheck contrast or re-add a frame for that one card.
 - File is committed with LF line endings (`newline="\n"` in the build script). If a Windows editor flips them to CRLF, GH Pages still serves fine but git diffs get noisy.
