@@ -1,6 +1,8 @@
 # Dr. Kiana — Portfolio Site
 
-Single-page promotional site for Dr. Kiana, a fresh dental graduate practicing in Dhaka North. Lives on her Instagram bio and (eventually) a business card. Patient management is **explicitly out of scope** — that's handled separately via AppSheet / Google Forms.
+Single-page promotional site for Dr. Kiana, a dental surgeon consulting at chambers across Dhaka on a freelance basis (no single fixed clinic — appointment locations are confirmed per patient). Lives on her Instagram bio and (eventually) a business card. Patient management is **explicitly out of scope** — that's handled separately via AppSheet / Google Forms.
+
+Brand voice: calm, considered, modern. Site tagline is **"Modern dentistry. Considered care."** Don't reintroduce "fresh graduate" framing — it was deliberately removed to project a more established, professional brand.
 
 ## What this is
 
@@ -12,7 +14,7 @@ One self-contained `index.html` (~192 KB). Everything inline: CSS, JS, the hero 
 - **Source of truth:** `index.html`. Edit it directly for any copy/style change, commit, push — Pages re-publishes within ~30 seconds.
 - **Photo:** embedded as base64 JPEG inside `index.html`. Original lives in the repo root as `photo.jpg`.
 - **QR codes:** inline `<svg>` paths regenerated deterministically from the source URLs (`https://instagram.com/drkyana` and `https://wa.me/8801614369673`). Not raster — they scale crisply at any size and tint with `#0f172a` from CSS.
-- **Map:** Google Maps embed iframe with placeholder Dhaka coordinates. Inline comment in `index.html` explains the swap-in flow.
+- **Map:** Google Maps embed iframe pointed at Dhaka city (no pin) — reflecting that the practice is mobile across chambers in Dhaka rather than tied to one address. Inline comment in `index.html` explains how to swap it for a specific embed if she ever settles into a primary chamber.
 
 ## How to update
 
@@ -21,9 +23,8 @@ One self-contained `index.html` (~192 KB). Everything inline: CSS, JS, the hero 
 | Copy text, colors, layout | Edit `index.html`, commit, push. |
 | Hero photo | Replace `photo.jpg`, run `python _build_inline.py`, commit both. |
 | QR target URLs (IG handle, WhatsApp number) | Edit the `INSTA_URL` / `WA_URL` constants at the top of `_build_inline.py`, run it, commit. |
-| Clinic address / hours | Edit the `<section id="location">` block in `index.html` directly. |
-| Map embed | Replace the `<iframe src="...">` value inside the `.map-wrapper` div per the inline comment. |
-| Credentials timeline | Edit the three `.timeline-item` blocks under `<section id="education">` — replace the `[bracketed]` placeholders. |
+| Practice / service area / availability | Edit the `<section id="location">` block in `index.html` directly. Title is "Where I see patients"; copy reflects a mobile, multi-chamber practice. |
+| Map embed | Replace the `<iframe src="...">` value inside the `.map-wrapper` div per the inline comment. Default is a Dhaka city overview (no pin). |
 
 ## The build script (`_build_inline.py`)
 
@@ -42,7 +43,7 @@ Dependencies: `pip install qrcode pillow`.
 - **Email:** `kyanalotfi96@gmail.com` (the literal email, separate from her display name; do not strip "lotfi" from this).
 - **Instagram:** [@drkyana](https://instagram.com/drkyana)
 - **WhatsApp:** `+8801614369673` → `https://wa.me/8801614369673`
-- **Practice location:** Dhaka North, Bangladesh
+- **Practice model:** freelance — sees patients at multiple chambers across Dhaka, Bangladesh. Appointment location is set per booking. No single fixed clinic address.
 - **Brand color:** `#0f4c81` (deep blue), accent `#3b82f6`. Body text `#0f172a`, muted `#475569`. Backgrounds `#ffffff` / `#f8fafc`.
 - **Typography:** Google Fonts Poppins, weights 300/400/600/700.
 
