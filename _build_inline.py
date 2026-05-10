@@ -30,9 +30,10 @@ def encode_jpeg(im: Image.Image, max_side: int, quality: int) -> tuple[str, int]
     return base64.b64encode(data).decode("ascii"), len(data)
 
 
-def encode_png(im: Image.Image, max_side: int) -> tuple[str, int]:
+def encode_png(im: Image.Image, max_side: int | None) -> tuple[str, int]:
     im = im.convert("RGB")
-    im.thumbnail((max_side, max_side), Image.LANCZOS)
+    if max_side is not None:
+        im.thumbnail((max_side, max_side), Image.LANCZOS)
     buf = io.BytesIO()
     im.save(buf, "PNG", optimize=True)
     data = buf.getvalue()
@@ -83,10 +84,13 @@ photo_uri = f"data:image/jpeg;base64,{photo_b64}"
 print(f"photo: jpeg={photo_bytes/1024:.0f} KB  b64={len(photo_b64)/1024:.0f} KB")
 
 # ---- 2. Inline the branded QR exports as base64 PNGs ----------------------
-insta_b64, insta_bytes = encode_png(Image.open(ROOT / "insta-qr.jpg"), 320)
+# IG card is embedded at its full source resolution with no transforms — the
+# `@DRKYANA` handle, gradient border, and IG logo render exactly as exported.
+# WhatsApp export is auto-cropped to drop the caption band and downsized.
+insta_b64, insta_bytes = encode_png(Image.open(ROOT / "insta-qr.png"), max_side=None)
 wa_cropped = autocrop_qr(Image.open(ROOT / "whatsapp-qr.jpg"))
 wa_b64, wa_bytes = encode_png(wa_cropped, 320)
-print(f"insta QR:    png={insta_bytes/1024:.0f} KB  b64={len(insta_b64)/1024:.0f} KB")
+print(f"insta QR:    png={insta_bytes/1024:.0f} KB  b64={len(insta_b64)/1024:.0f} KB  (full {Image.open(ROOT / 'insta-qr.png').size})")
 print(f"whatsapp QR: png={wa_bytes/1024:.0f} KB  b64={len(wa_b64)/1024:.0f} KB  (auto-cropped {wa_cropped.size})")
 
 # ---- 3. Rewrite the HTML ---------------------------------------------------
