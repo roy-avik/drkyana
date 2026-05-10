@@ -51,7 +51,7 @@ Dependencies: `pip install pillow numpy`.
 
 ## Workflow
 
-- **Delete merged PR branches.** After a PR is merged to `main`, delete both the local and remote feature branch. Squash merges leave git unable to detect the branch as "merged" by SHA, so `git branch -D <name>` + `git push origin --delete <name>` is the right pair. Don't accumulate stale `claude/*` branches.
+- **Delete merged PR branches.** After a PR merges, the assistant runs `git branch -D <name>` locally. The remote ref **cannot** be deleted from this harness — `git push origin --delete` is blocked with 403 by the proxy, and no MCP tool exposes the GitHub `DELETE /git/refs/...` endpoint. The durable fix is to enable **Settings → General → "Automatically delete head branches"** on the repo — GitHub then removes the head branch the moment a PR is merged. Until that's on, the assistant should remind you to click the "Delete branch" button on the merged PR.
 
 ## Out of scope (don't pull this in without asking)
 
