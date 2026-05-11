@@ -21,6 +21,7 @@ One self-contained `index.html` (~1.0 MB). Everything inline: CSS, JS, the hero 
 | Change | What to do |
 |---|---|
 | Copy text, colors, layout | Edit `index.html`, commit, push. |
+| Translated copy | Each translatable element carries a `data-i18n="key"` attribute, with the strings themselves living in the `translations` object inside the bottom `<script>`. To change wording in EN/FA/BN, edit the value under the matching key in each locale — keep all three locales in sync so nothing falls back to English mid-page. |
 | Hero photo | Replace `photo.jpg`, run `python _build_inline.py`, commit both. |
 | Instagram QR | Export a fresh QR card from the IG app, save it over `insta-qr.png` (convert from PNG if needed), run `python _build_inline.py`, commit. The exact source resolution is embedded — keep the export reasonable (~1000 px square) or the page will balloon. |
 | WhatsApp QR | Export from WhatsApp → "Share my contact", save it over `whatsapp-qr.jpg`, run `python _build_inline.py`. The script auto-crops the "Kiana Lotfi / WhatsApp Business Account" caption; if WhatsApp changes that layout, eyeball the result in `index.html` and adjust `top_skip` in `autocrop_qr()` if needed. |
@@ -47,7 +48,8 @@ Dependencies: `pip install pillow numpy`.
 - **WhatsApp:** `+8801614369673` → `https://wa.me/8801614369673`
 - **Practice model:** freelance — sees patients at multiple chambers across Dhaka, Bangladesh. Appointment location is set per booking. No single fixed clinic address.
 - **Brand color:** `#0f4c81` (deep blue), accent `#3b82f6`. Body text `#0f172a`, muted `#475569`. Backgrounds `#ffffff` / `#f8fafc`.
-- **Typography:** Google Fonts Poppins, weights 300/400/600/700.
+- **Typography:** Google Fonts Poppins, weights 300/400/600/700. Persian uses Vazirmatn and Bengali uses Noto Sans Bengali — swapped in via `html[lang="fa"] body` / `html[lang="bn"] body` font-family overrides.
+- **Languages:** English (default), Farsi/Persian (RTL), and Bengali. Reflects that Dr. Kiana is Iranian practicing in Bangladesh. The header pill switcher (`#langSwitch`) calls `applyLang(lang)`, which walks every `[data-i18n]` node, swaps `<title>` and meta description, flips `document.documentElement.dir` to `rtl` for Farsi, and persists the choice in `localStorage` (`drkyana.lang`). First-visit default reads `navigator.language` (`fa*` → Farsi, `bn*` → Bengali, else English).
 
 ## Workflow
 
