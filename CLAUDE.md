@@ -1,6 +1,6 @@
-# Dr. Kiana — Portfolio Site
+# Dr Kyana — Portfolio Site
 
-Single-page promotional site for Dr. Kiana, a dental surgeon consulting at chambers across Dhaka on a freelance basis (no single fixed clinic — appointment locations are confirmed per patient). Lives on her Instagram bio and (eventually) a business card. Patient management is **explicitly out of scope** — that's handled separately via AppSheet / Google Forms.
+Single-page promotional site for Dr Kyana, a dental surgeon consulting at chambers across Dhaka on a freelance basis (no single fixed clinic — appointment locations are confirmed per patient). Lives on her Instagram bio and (eventually) a business card. Patient management is **explicitly out of scope** — that's handled separately via AppSheet / Google Forms.
 
 Brand voice: calm, considered, modern. Site tagline is **"Modern dentistry. Considered care."** Don't reintroduce "fresh graduate" framing — it was deliberately removed to project a more established, professional brand.
 
@@ -42,14 +42,14 @@ Dependencies: `pip install pillow numpy`.
 
 ## Brand & content references
 
-- **Practitioner:** Dr. Kiana (drop the surname — site uses first name only by design).
+- **Practitioner:** Dr Kyana (English spelling matches the `@drkyana` Instagram handle; Persian/Bengali keep their native spellings — کیانا / কিয়ানা). Drop the surname — site uses first name only by design.
 - **Email:** `kyanalotfi96@gmail.com` (the literal email, separate from her display name; do not strip "lotfi" from this).
 - **Instagram:** [@drkyana](https://instagram.com/drkyana)
 - **WhatsApp:** `+8801614369673` → `https://wa.me/8801614369673`
 - **Practice model:** freelance — sees patients at multiple chambers across Dhaka, Bangladesh. Appointment location is set per booking. No single fixed clinic address.
 - **Brand color:** `#0f4c81` (deep blue), accent `#3b82f6`. Body text `#0f172a`, muted `#475569`. Backgrounds `#ffffff` / `#f8fafc`.
 - **Typography:** Google Fonts Poppins, weights 300/400/600/700. Persian uses Vazirmatn and Bengali uses Noto Sans Bengali — swapped in via `html[lang="fa"] body` / `html[lang="bn"] body` font-family overrides.
-- **Languages:** English (default), Farsi/Persian (RTL), and Bengali. Reflects that Dr. Kiana is Iranian practicing in Bangladesh. The header pill switcher (`#langSwitch`) calls `applyLang(lang)`, which walks every `[data-i18n]` node, swaps `<title>` and meta description, flips `document.documentElement.dir` to `rtl` for Farsi, and persists the choice in `localStorage` (`drkyana.lang`). First-visit default reads `navigator.language` (`fa*` → Farsi, `bn*` → Bengali, else English).
+- **Languages:** English (default), Farsi/Persian, and Bengali. Reflects that Dr Kyana is Iranian practicing in Bangladesh. The header `<select id="langSelect">` dropdown calls `applyLang(lang)`, which walks every `[data-i18n]` node, swaps `<title>` and meta description, sets `dir="auto"` on each translated element (Persian words still read RTL within their text via Unicode bidi, without mirroring the whole UI), and persists the choice in `localStorage` (`drkyana.lang`). First-visit default reads `navigator.language` (`fa*` → Farsi, `bn*` → Bengali, else English).
 
 ## Workflow
 
