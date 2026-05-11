@@ -948,160 +948,67 @@
 
 <script>
   // ============ I18N ============
-  // Three languages: English (default), Persian (RTL), Bengali. Persistence
-  // via localStorage; first-visit default uses navigator.language. Plain text
-  // is replaced via textContent; entries that need inline HTML (e.g. <br>)
-  // opt in with data-i18n-html="1".
-  const translations = {
-    en: {
-      'meta.title': 'Dr Kyana · Dental Surgeon · Dhaka',
-      'meta.description': 'Dr Kyana — Dental Surgeon consulting at chambers across Dhaka. Modern dentistry, considered care: cleanings, root canal therapy, restorations, and routine preventive work.',
-      'brand': 'Dr Kyana',
-      'nav.home': 'Home',
-      'nav.about': 'About',
-      'nav.services': 'Services',
-      'nav.practice': 'Practice',
-      'nav.contact': 'Contact',
-      'hero.pill': '✦ Dental Surgeon · Dhaka',
-      'hero.subtitle': 'Modern dentistry. Considered care.',
-      'hero.description': "Precise, unhurried dental care for patients across Dhaka — from routine cleanings to root canal therapy, delivered with modern technique and a calm chairside manner. Consultations at chambers throughout the city.",
-      'cta.services': 'View Services',
-      'cta.contact': 'Get In Touch',
-      'about.label': 'Approach',
-      'about.title': 'About',
-      'about.p1': "I practice dentistry the way I'd want it for myself — unhurried, precise, and centered on the person in the chair. My clinical work covers scaling and root planing, root canal therapy, restorations, and routine preventive care.",
-      'about.p2': "Good dentistry sits at the intersection of science and trust. I take the time to explain every step, listen to what's actually worrying you, and tailor treatment to fit — because clarity and comfort matter as much as the work itself.",
-      'services.label': 'Care',
-      'services.title': 'Services',
-      'services.intro': 'Evidence-based dentistry, modern technique, and a steady hand — across the procedures patients ask for most.',
-      'services.scaling.title': 'Scaling & Cleaning',
-      'services.scaling.desc': 'Thorough professional cleaning to lift plaque and tartar, settle inflamed gums, and keep periodontal disease at bay.',
-      'services.rct.title': 'Root Canal Therapy',
-      'services.rct.desc': 'Endodontic treatment for infected or damaged teeth — careful, calm, and aimed at saving the natural tooth.',
-      'services.general.title': 'General Dentistry',
-      'services.general.desc': 'Exams, fillings, restorations, and routine preventive care — the everyday work that keeps a healthy mouth healthy.',
-      'location.label': 'Practice',
-      'location.title': 'Where I see patients',
-      'location.intro': "I consult across multiple chambers in Dhaka. The location for your appointment is confirmed when you reach out — based on the area that's most convenient for you.",
-      'location.servicearea': 'Service area',
-      'location.address': 'Chambers across Dhaka.<br>Location confirmed at booking.',
-      'location.availability': 'Availability',
-      'location.days': 'Saturday – Thursday',
-      'location.appt': 'By appointment',
-      'location.friday': 'Friday',
-      'location.closed': 'Closed',
-      'contact.label': 'Connect',
-      'contact.title': 'Get in touch',
-      'contact.intro': 'Appointments, questions, or a second opinion — pick whichever channel suits you.',
-      'contact.email': 'Email',
-      'contact.instagram': 'Instagram',
-      'contact.whatsapp': 'WhatsApp',
-      'contact.scan_ig': 'Scan · @drkyana',
-      'contact.scan_wa': 'Scan to chat',
-      'footer.copy': '© 2026 Dr Kyana · Dental Surgery · Dhaka'
-    },
-    fa: {
-      'meta.title': 'دکتر کیانا · جراح دندانپزشک · داکا',
-      'meta.description': 'دکتر کیانا — جراح دندانپزشک، ویزیت در چندین مطب در سراسر داکا. دندانپزشکی مدرن، مراقبتی اندیشمندانه: جرم‌گیری، درمان ریشه، ترمیم و مراقبت‌های پیشگیرانه.',
-      'brand': 'دکتر کیانا',
-      'nav.home': 'خانه',
-      'nav.about': 'درباره',
-      'nav.services': 'خدمات',
-      'nav.practice': 'محل کار',
-      'nav.contact': 'تماس',
-      'hero.pill': '✦ جراح دندانپزشک · داکا',
-      'hero.subtitle': 'دندانپزشکی مدرن. مراقبتی اندیشمندانه.',
-      'hero.description': 'مراقبت دندانپزشکی دقیق و بدون عجله برای بیماران در سراسر داکا — از جرم‌گیری معمول تا درمان ریشه دندان، با تکنیک‌های مدرن و رفتاری آرام در کنار صندلی. ویزیت در چندین مطب در سراسر شهر.',
-      'cta.services': 'مشاهده خدمات',
-      'cta.contact': 'تماس بگیرید',
-      'about.label': 'رویکرد',
-      'about.title': 'درباره',
-      'about.p1': 'دندانپزشکی را همان‌گونه انجام می‌دهم که برای خودم می‌خواهم — بدون عجله، دقیق و با تمرکز بر فردی که روی صندلی نشسته است. کار بالینی من شامل جرم‌گیری و درمان لثه، درمان ریشه دندان، ترمیم و مراقبت‌های پیشگیرانه است.',
-      'about.p2': 'دندانپزشکی خوب در تلاقی علم و اعتماد قرار دارد. زمان می‌گذارم تا هر مرحله را توضیح دهم، به نگرانی‌های واقعی شما گوش دهم و درمان را متناسب با شرایطتان تنظیم کنم — زیرا شفافیت و آرامش به اندازه‌ی خود درمان اهمیت دارد.',
-      'services.label': 'مراقبت',
-      'services.title': 'خدمات',
-      'services.intro': 'دندانپزشکی مبتنی بر شواهد، تکنیک مدرن و دستی مطمئن — در محبوب‌ترین خدمات مورد درخواست بیماران.',
-      'services.scaling.title': 'جرم‌گیری و تمیز کردن',
-      'services.scaling.desc': 'تمیز کردن حرفه‌ای و کامل برای از بین بردن پلاک و جرم، آرام کردن لثه‌های ملتهب و پیشگیری از بیماری‌های پریودنتال.',
-      'services.rct.title': 'درمان ریشه دندان',
-      'services.rct.desc': 'درمان اندودانتیک برای دندان‌های عفونی یا آسیب‌دیده — با دقت، آرامش و با هدف حفظ دندان طبیعی.',
-      'services.general.title': 'دندانپزشکی عمومی',
-      'services.general.desc': 'معاینات، پر کردن، ترمیم و مراقبت‌های پیشگیرانه روزمره — کارهای روزانه‌ای که دهانی سالم را سالم نگه می‌دارد.',
-      'location.label': 'محل کار',
-      'location.title': 'محل ویزیت بیماران',
-      'location.intro': 'در چندین مطب در سراسر داکا ویزیت می‌کنم. محل وقت ملاقات شما هنگام تماس مشخص می‌شود — بر اساس نزدیک‌ترین منطقه به شما.',
-      'location.servicearea': 'محدوده خدمات',
-      'location.address': 'چندین مطب در سراسر داکا.<br>محل ویزیت در زمان رزرو تایید می‌شود.',
-      'location.availability': 'ساعات کاری',
-      'location.days': 'شنبه – پنج‌شنبه',
-      'location.appt': 'با وقت قبلی',
-      'location.friday': 'جمعه',
-      'location.closed': 'تعطیل',
-      'contact.label': 'ارتباط',
-      'contact.title': 'تماس بگیرید',
-      'contact.intro': 'وقت ملاقات، پرسش، یا نظر دوم — هر روشی که برایتان مناسب است را انتخاب کنید.',
-      'contact.email': 'ایمیل',
-      'contact.instagram': 'اینستاگرام',
-      'contact.whatsapp': 'واتساپ',
-      'contact.scan_ig': 'اسکن · ‎@drkyana',
-      'contact.scan_wa': 'اسکن برای گفت‌وگو',
-      'footer.copy': '© ۲۰۲۶ دکتر کیانا · دندانپزشکی · داکا'
-    },
-    bn: {
-      'meta.title': 'ডাঃ কিয়ানা · ডেন্টাল সার্জন · ঢাকা',
-      'meta.description': 'ডাঃ কিয়ানা — ঢাকার বিভিন্ন চেম্বারে পরামর্শদাতা ডেন্টাল সার্জন। আধুনিক দন্তচিকিৎসা, যত্নশীল পরিচর্যা: ক্লিনিং, রুট ক্যানেল, রেস্টোরেশন এবং নিয়মিত প্রতিরোধমূলক যত্ন।',
-      'brand': 'ডাঃ কিয়ানা',
-      'nav.home': 'হোম',
-      'nav.about': 'পরিচিতি',
-      'nav.services': 'সেবাসমূহ',
-      'nav.practice': 'অনুশীলন',
-      'nav.contact': 'যোগাযোগ',
-      'hero.pill': '✦ ডেন্টাল সার্জন · ঢাকা',
-      'hero.subtitle': 'আধুনিক দন্তচিকিৎসা। যত্নশীল পরিচর্যা।',
-      'hero.description': 'ঢাকার রোগীদের জন্য নিখুঁত ও তাড়াহুড়োবিহীন দন্তচিকিৎসা — সাধারণ স্কেলিং থেকে রুট ক্যানেল চিকিৎসা পর্যন্ত, আধুনিক কৌশল ও শান্ত আচরণের সাথে। শহরজুড়ে বিভিন্ন চেম্বারে পরামর্শ।',
-      'cta.services': 'সেবাসমূহ দেখুন',
-      'cta.contact': 'যোগাযোগ করুন',
-      'about.label': 'দৃষ্টিভঙ্গি',
-      'about.title': 'পরিচিতি',
-      'about.p1': 'আমি দন্তচিকিৎসা সেভাবেই করি, যেভাবে নিজের জন্য চাইব — তাড়াহুড়োবিহীন, নিখুঁত এবং চেয়ারে বসা মানুষটিকে কেন্দ্র করে। আমার ক্লিনিক্যাল কাজে স্কেলিং ও রুট প্ল্যানিং, রুট ক্যানেল চিকিৎসা, রেস্টোরেশন এবং নিয়মিত প্রতিরোধমূলক যত্ন অন্তর্ভুক্ত।',
-      'about.p2': 'ভালো দন্তচিকিৎসা বিজ্ঞান ও বিশ্বাসের সংযোগস্থলে দাঁড়িয়ে। আমি প্রতিটি ধাপ ব্যাখ্যা করতে, আপনার সত্যিকারের উদ্বেগ শুনতে এবং সেই অনুযায়ী চিকিৎসা সাজাতে সময় নিই — কারণ স্বচ্ছতা ও স্বস্তি কাজের মতোই গুরুত্বপূর্ণ।',
-      'services.label': 'পরিচর্যা',
-      'services.title': 'সেবাসমূহ',
-      'services.intro': 'প্রমাণভিত্তিক দন্তচিকিৎসা, আধুনিক কৌশল এবং স্থির হাত — রোগীরা সবচেয়ে বেশি যেসব সেবা চান, সেগুলোতে।',
-      'services.scaling.title': 'স্কেলিং ও ক্লিনিং',
-      'services.scaling.desc': 'প্লাক ও টার্টার দূর করতে, প্রদাহজনিত মাড়িকে আরাম দিতে এবং পেরিওডন্টাল রোগ প্রতিরোধে পেশাদার পূর্ণাঙ্গ পরিষ্কারকরণ।',
-      'services.rct.title': 'রুট ক্যানেল চিকিৎসা',
-      'services.rct.desc': 'সংক্রমিত বা ক্ষতিগ্রস্ত দাঁতের জন্য এন্ডোডন্টিক চিকিৎসা — সতর্ক, শান্ত, এবং প্রাকৃতিক দাঁত রক্ষার লক্ষ্যে।',
-      'services.general.title': 'সাধারণ দন্তচিকিৎসা',
-      'services.general.desc': 'পরীক্ষা, ফিলিং, রেস্টোরেশন এবং নিয়মিত প্রতিরোধমূলক যত্ন — সুস্থ মুখকে সুস্থ রাখার দৈনন্দিন কাজ।',
-      'location.label': 'অনুশীলন',
-      'location.title': 'আমি যেখানে রোগী দেখি',
-      'location.intro': 'আমি ঢাকার বিভিন্ন চেম্বারে পরামর্শ দিই। আপনি যখন যোগাযোগ করবেন তখন আপনার অ্যাপয়েন্টমেন্টের স্থান নিশ্চিত করা হবে — আপনার সবচেয়ে সুবিধাজনক এলাকার ভিত্তিতে।',
-      'location.servicearea': 'সেবা এলাকা',
-      'location.address': 'ঢাকার বিভিন্ন চেম্বার।<br>বুকিংয়ের সময় স্থান নিশ্চিত করা হয়।',
-      'location.availability': 'উপলব্ধতা',
-      'location.days': 'শনিবার – বৃহস্পতিবার',
-      'location.appt': 'অ্যাপয়েন্টমেন্ট অনুযায়ী',
-      'location.friday': 'শুক্রবার',
-      'location.closed': 'বন্ধ',
-      'contact.label': 'যোগাযোগ',
-      'contact.title': 'যোগাযোগ করুন',
-      'contact.intro': 'অ্যাপয়েন্টমেন্ট, প্রশ্ন বা দ্বিতীয় মতামত — যে চ্যানেলটি আপনার জন্য উপযুক্ত সেটি বেছে নিন।',
-      'contact.email': 'ইমেইল',
-      'contact.instagram': 'ইনস্টাগ্রাম',
-      'contact.whatsapp': 'হোয়াটসঅ্যাপ',
-      'contact.scan_ig': 'স্ক্যান · @drkyana',
-      'contact.scan_wa': 'চ্যাটের জন্য স্ক্যান করুন',
-      'footer.copy': '© ২০২৬ ডাঃ কিয়ানা · দন্তচিকিৎসা · ঢাকা'
+  // Three languages: English (default), Persian, Bengali. Strings live in
+  // locales/{en,fa,bn}.yaml and are fetched on demand. The HTML's static
+  // default text is English, so English first-paint needs no network. For
+  // fa/bn there's a brief English flash before the fetch resolves. Plain
+  // text is replaced via textContent; entries that need inline HTML (e.g.
+  // <br>) opt in with data-i18n-html="1". Edit copy by changing the YAML
+  // files and running `python scripts/locales.py check`.
+  const SUPPORTED_LANGS = ['en', 'fa', 'bn'];
+  const localeCache = Object.create(null);
+
+  // Minimal YAML reader for our flat `key: "value"` format. Each non-comment
+  // non-blank line is `key: <JSON-style string>` so we just JSON.parse the
+  // value. If a maintainer adds nesting/anchors/multi-line scalars this will
+  // break — keep the YAML conservative.
+  function parseLocaleYaml(text) {
+    const out = Object.create(null);
+    const lines = text.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const raw = lines[i];
+      const stripped = raw.replace(/^﻿/, '').trim();
+      if (!stripped || stripped.startsWith('#')) continue;
+      const idx = stripped.indexOf(':');
+      if (idx <= 0) continue;
+      const key = stripped.slice(0, idx).trim();
+      let val = stripped.slice(idx + 1).trim();
+      if (!val) continue;
+      // strip trailing inline comment if value isn't quoted
+      if (val[0] !== '"' && val[0] !== "'") {
+        const hash = val.indexOf(' #');
+        if (hash >= 0) val = val.slice(0, hash).trim();
+      }
+      if (val[0] === '"') {
+        try { out[key] = JSON.parse(val); }
+        catch (_) { console.warn('locales: bad string at', key); }
+      } else if (val[0] === "'") {
+        // single-quoted: YAML escapes '' -> '
+        const m = val.match(/^'((?:[^']|'')*)'\s*$/);
+        if (m) out[key] = m[1].replace(/''/g, "'");
+      } else {
+        out[key] = val;
+      }
     }
-  };
+    return out;
+  }
+
+  async function loadLocale(lang) {
+    if (!SUPPORTED_LANGS.includes(lang)) lang = 'en';
+    if (localeCache[lang]) return localeCache[lang];
+    const res = await fetch(`locales/${lang}.yaml`);
+    if (!res.ok) throw new Error(`locale fetch failed: ${lang} ${res.status}`);
+    const dict = parseLocaleYaml(await res.text());
+    localeCache[lang] = dict;
+    return dict;
+  }
 
   const LANG_STORAGE_KEY = 'drkyana.lang';
 
   function detectInitialLang() {
     try {
       const saved = localStorage.getItem(LANG_STORAGE_KEY);
-      if (saved && translations[saved]) return saved;
+      if (saved && SUPPORTED_LANGS.includes(saved)) return saved;
     } catch (_) { /* localStorage may throw in private mode */ }
     const nav = (navigator.language || 'en').toLowerCase();
     if (nav.startsWith('fa') || nav.startsWith('pe')) return 'fa';
@@ -1109,8 +1016,11 @@
     return 'en';
   }
 
-  function applyLang(lang) {
-    const dict = translations[lang] || translations.en;
+  async function applyLang(lang) {
+    if (!SUPPORTED_LANGS.includes(lang)) lang = 'en';
+    let dict;
+    try { dict = await loadLocale(lang); }
+    catch (e) { console.warn(e); return; }
     document.documentElement.lang = lang;
 
     // Note: we intentionally do NOT flip the document to dir="rtl" for Farsi.
@@ -1148,7 +1058,9 @@
     const hero = document.querySelector('.hero');
     const langSelect = document.getElementById('langSelect');
 
-    // Apply language before anything else so first paint is in the right script
+    // Kick off the language load. The HTML's static text is English, so an
+    // English session renders correctly on first paint without waiting; fa/bn
+    // sessions briefly show English while locales/<lang>.yaml is fetched.
     applyLang(detectInitialLang());
 
     langSelect.addEventListener('change', (e) => {

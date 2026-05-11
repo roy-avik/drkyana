@@ -1,0 +1,57 @@
+# English (default). One key per line. Values are JSON-style double-quoted
+# strings — this keeps in-browser parsing trivial. Run `python scripts/locales.py
+# check` after edits to verify all locales stay in sync.
+
+meta.title: "Dr Kyana · Dental Surgeon · Dhaka"
+meta.description: "Dr Kyana — Dental Surgeon consulting at chambers across Dhaka. Modern dentistry, considered care: cleanings, root canal therapy, restorations, and routine preventive work."
+brand: "Dr Kyana"
+
+nav.home: "Home"
+nav.about: "About"
+nav.services: "Services"
+nav.practice: "Practice"
+nav.contact: "Contact"
+
+hero.pill: "✦ Dental Surgeon · Dhaka"
+hero.subtitle: "Modern dentistry. Considered care."
+hero.description: "Precise, unhurried dental care for patients across Dhaka — from routine cleanings to root canal therapy, delivered with modern technique and a calm chairside manner. Consultations at chambers throughout the city."
+
+cta.services: "View Services"
+cta.contact: "Get In Touch"
+
+about.label: "Approach"
+about.title: "About"
+about.p1: "I practice dentistry the way I'd want it for myself — unhurried, precise, and centered on the person in the chair. My clinical work covers scaling and root planing, root canal therapy, restorations, and routine preventive care."
+about.p2: "Good dentistry sits at the intersection of science and trust. I take the time to explain every step, listen to what's actually worrying you, and tailor treatment to fit — because clarity and comfort matter as much as the work itself."
+
+services.label: "Care"
+services.title: "Services"
+services.intro: "Evidence-based dentistry, modern technique, and a steady hand — across the procedures patients ask for most."
+services.scaling.title: "Scaling & Cleaning"
+services.scaling.desc: "Thorough professional cleaning to lift plaque and tartar, settle inflamed gums, and keep periodontal disease at bay."
+services.rct.title: "Root Canal Therapy"
+services.rct.desc: "Endodontic treatment for infected or damaged teeth — careful, calm, and aimed at saving the natural tooth."
+services.general.title: "General Dentistry"
+services.general.desc: "Exams, fillings, restorations, and routine preventive care — the everyday work that keeps a healthy mouth healthy."
+
+location.label: "Practice"
+location.title: "Where I see patients"
+location.intro: "I consult across multiple chambers in Dhaka. The location for your appointment is confirmed when you reach out — based on the area that's most convenient for you."
+location.servicearea: "Service area"
+location.address: "Chambers across Dhaka.<br>Location confirmed at booking."
+location.availability: "Availability"
+location.days: "Saturday – Thursday"
+location.appt: "By appointment"
+location.friday: "Friday"
+location.closed: "Closed"
+
+contact.label: "Connect"
+contact.title: "Get in touch"
+contact.intro: "Appointments, questions, or a second opinion — pick whichever channel suits you."
+contact.email: "Email"
+contact.instagram: "Instagram"
+contact.whatsapp: "WhatsApp"
+contact.scan_ig: "Scan · @drkyana"
+contact.scan_wa: "Scan to chat"
+
+footer.copy: "© 2026 Dr Kyana · Dental Surgery · Dhaka"
