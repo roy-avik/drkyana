@@ -732,16 +732,15 @@
   }
 
   /* ============ LANGUAGE SWITCHER ============ */
-  .lang-select-wrap {
+  .lang {
     position: relative;
+    margin-left: 16px;
+    font-family: inherit;
+  }
+  .lang-trigger {
     display: inline-flex;
     align-items: center;
-    margin-left: 16px;
-  }
-  .lang-select {
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
+    gap: 8px;
     background: rgba(15, 76, 129, 0.06);
     border: 1px solid transparent;
     border-radius: 999px;
@@ -751,28 +750,121 @@
     font-size: 0.82rem;
     font-weight: 600;
     line-height: 1;
-    padding: 8px 30px 8px 14px;
-    transition: background var(--transition), border-color var(--transition), color var(--transition);
+    padding: 8px 14px;
+    transition: background var(--transition), border-color var(--transition), color var(--transition), box-shadow var(--transition);
   }
-  .lang-select:hover { background: rgba(15, 76, 129, 0.1); }
-  .lang-select:focus-visible {
+  .lang-trigger:hover { background: rgba(15, 76, 129, 0.1); }
+  .lang-trigger:focus-visible {
     outline: none;
     border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
   }
-  .lang-select-wrap::after {
-    content: '';
+  .lang-trigger .globe {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    opacity: 0.85;
+  }
+  .lang-trigger .label {
+    display: inline-block;
+    min-width: 0;
+  }
+  .lang-trigger .chevron {
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+  }
+  .lang[data-open="true"] .lang-trigger {
+    background: rgba(15, 76, 129, 0.12);
+    border-color: rgba(15, 76, 129, 0.15);
+  }
+  .lang[data-open="true"] .lang-trigger .chevron { transform: rotate(180deg); }
+
+  .lang-menu {
     position: absolute;
-    right: 12px;
-    top: 50%;
-    width: 8px;
-    height: 8px;
-    margin-top: -5px;
-    border-right: 2px solid var(--primary);
-    border-bottom: 2px solid var(--primary);
-    transform: rotate(45deg);
+    top: calc(100% + 10px);
+    right: 0;
+    min-width: 200px;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: saturate(160%) blur(8px);
+    -webkit-backdrop-filter: saturate(160%) blur(8px);
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    border-radius: 14px;
+    padding: 6px;
+    margin: 0;
+    list-style: none;
+    box-shadow:
+      0 20px 40px -16px rgba(15, 76, 129, 0.28),
+      0 6px 16px -8px rgba(15, 23, 42, 0.12);
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+    transform-origin: top right;
     pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    z-index: 50;
   }
-  .lang-select option { color: var(--text); background: #ffffff; }
+  .lang[data-open="true"] .lang-menu {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+  }
+  .lang-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 10px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 500;
+    text-align: start;
+    transition: background var(--transition), color var(--transition);
+  }
+  .lang-option:hover,
+  .lang-option:focus-visible {
+    background: rgba(15, 76, 129, 0.07);
+    color: var(--primary);
+    outline: none;
+  }
+  .lang-option .native {
+    flex: 1;
+    line-height: 1.2;
+    font-weight: 600;
+  }
+  .lang-option .sub {
+    font-size: 0.72rem;
+    font-weight: 400;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .lang-option .check {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    color: var(--accent);
+    opacity: 0;
+    transform: scale(0.7);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+  .lang-option[aria-selected="true"] .check {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .lang-option[aria-selected="true"] {
+    color: var(--primary);
+    background: rgba(59, 130, 246, 0.07);
+  }
+  /* Persian font for its option only — the menu otherwise inherits Poppins. */
+  .lang-option[data-lang="fa"] .native { font-family: 'Vazirmatn', 'Poppins', sans-serif; direction: rtl; }
+  .lang-option[data-lang="bn"] .native { font-family: 'Noto Sans Bengali', 'Poppins', sans-serif; }
+  /* RTL flip: anchor menu to the left edge of the trigger when document is RTL. */
+  html[dir="rtl"] .lang-menu { right: auto; left: 0; transform-origin: top left; }
 
   /* Per-language body fonts. Poppins doesn't cover Persian or Bengali, so
      swap the primary face when the document language changes. */
@@ -792,8 +884,10 @@
   html[lang="bn"] .section-label { letter-spacing: 0.08em; }
 
   @media (max-width: 768px) {
-    .lang-select-wrap { margin-left: auto; margin-right: 8px; }
-    .lang-select { padding: 6px 26px 6px 12px; font-size: 0.78rem; }
+    .lang { margin-left: auto; margin-right: 8px; }
+    .lang-trigger { padding: 6px 12px; font-size: 0.78rem; gap: 6px; }
+    .lang-trigger .globe { width: 13px; height: 13px; }
+    .lang-menu { min-width: 180px; }
   }
 </style>
 </head>
@@ -812,12 +906,49 @@
           <li><a href="#contact" data-i18n="nav.contact">Contact</a></li>
         </ul>
       </nav>
-      <div class="lang-select-wrap">
-        <select class="lang-select" id="langSelect" aria-label="Language">
-          <option value="en">English</option>
-          <option value="fa">فارسی</option>
-          <option value="bn">বাংলা</option>
-        </select>
+      <div class="lang" id="langSwitcher" data-open="false">
+        <button type="button" class="lang-trigger" id="langTrigger"
+                aria-haspopup="listbox" aria-expanded="false"
+                aria-controls="langMenu" aria-label="Language">
+          <svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M3 12h18"></path>
+            <path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0 -18"></path>
+          </svg>
+          <span class="label" id="langLabel">English</span>
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <ul class="lang-menu" id="langMenu" role="listbox" tabindex="-1" aria-label="Language">
+          <li role="option" aria-selected="true" data-lang="en">
+            <button type="button" class="lang-option" data-lang="en" aria-selected="true" tabindex="-1">
+              <span class="native">English</span>
+              <span class="sub">EN</span>
+              <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </button>
+          </li>
+          <li role="option" aria-selected="false" data-lang="fa">
+            <button type="button" class="lang-option" data-lang="fa" aria-selected="false" tabindex="-1">
+              <span class="native" dir="rtl">فارسی</span>
+              <span class="sub">Persian</span>
+              <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </button>
+          </li>
+          <li role="option" aria-selected="false" data-lang="bn">
+            <button type="button" class="lang-option" data-lang="bn" aria-selected="false" tabindex="-1">
+              <span class="native">বাংলা</span>
+              <span class="sub">Bengali</span>
+              <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </button>
+          </li>
+        </ul>
       </div>
       <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false">
         <span></span><span></span><span></span>
@@ -1086,8 +1217,25 @@
     const meta = document.getElementById('metaDescription');
     if (meta && dict['meta.description']) meta.setAttribute('content', dict['meta.description']);
 
-    const sel = document.getElementById('langSelect');
-    if (sel && sel.value !== lang) sel.value = lang;
+    const switcher = document.getElementById('langSwitcher');
+    if (switcher) {
+      const labelEl = document.getElementById('langLabel');
+      const options = switcher.querySelectorAll('.lang-option');
+      options.forEach((opt) => {
+        const isActive = opt.dataset.lang === lang;
+        opt.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        opt.parentElement.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        if (isActive && labelEl) {
+          labelEl.textContent = opt.querySelector('.native').textContent;
+          labelEl.setAttribute('dir', lang === 'fa' ? 'rtl' : 'ltr');
+          labelEl.style.fontFamily = lang === 'fa'
+            ? "'Vazirmatn', 'Poppins', sans-serif"
+            : lang === 'bn'
+              ? "'Noto Sans Bengali', 'Poppins', sans-serif"
+              : '';
+        }
+      });
+    }
 
     try { localStorage.setItem(LANG_STORAGE_KEY, lang); } catch (_) {}
 
@@ -1101,15 +1249,72 @@
     const navToggle = document.getElementById('navToggle');
     const mainNav = document.getElementById('mainNav');
     const hero = document.querySelector('.hero');
-    const langSelect = document.getElementById('langSelect');
+    const langSwitcher = document.getElementById('langSwitcher');
+    const langTrigger = document.getElementById('langTrigger');
+    const langMenu = document.getElementById('langMenu');
+    const langOptions = Array.from(langSwitcher.querySelectorAll('.lang-option'));
 
     // Kick off the language load. The HTML's static text is English, so an
     // English session renders correctly on first paint without waiting; fa/bn
     // sessions briefly show English while locales/<lang>.yaml is fetched.
     applyLang(detectInitialLang());
 
-    langSelect.addEventListener('change', (e) => {
-      applyLang(e.target.value);
+    function setLangOpen(open) {
+      langSwitcher.setAttribute('data-open', open ? 'true' : 'false');
+      langTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) {
+        const active = langOptions.find((o) => o.getAttribute('aria-selected') === 'true') || langOptions[0];
+        // Defer focus so the menu's transition has actually engaged.
+        requestAnimationFrame(() => active && active.focus());
+      }
+    }
+
+    langTrigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setLangOpen(langSwitcher.getAttribute('data-open') !== 'true');
+    });
+
+    langOptions.forEach((opt) => {
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        applyLang(opt.dataset.lang);
+        setLangOpen(false);
+        langTrigger.focus();
+      });
+    });
+
+    langMenu.addEventListener('keydown', (e) => {
+      const idx = langOptions.indexOf(document.activeElement);
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        langOptions[(idx + 1 + langOptions.length) % langOptions.length].focus();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        langOptions[(idx - 1 + langOptions.length) % langOptions.length].focus();
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        langOptions[0].focus();
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        langOptions[langOptions.length - 1].focus();
+      } else if (e.key === 'Escape' || e.key === 'Tab') {
+        if (e.key === 'Escape') e.preventDefault();
+        setLangOpen(false);
+        if (e.key === 'Escape') langTrigger.focus();
+      }
+    });
+
+    langTrigger.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        setLangOpen(true);
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (langSwitcher.getAttribute('data-open') === 'true' && !langSwitcher.contains(e.target)) {
+        setLangOpen(false);
+      }
     });
 
     // Scroll shadow on header
