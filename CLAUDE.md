@@ -6,66 +6,104 @@ Brand voice: calm, considered, modern. Site tagline is **"Modern dentistry. Cons
 
 ## What this is
 
-One `index.html` (~1.0 MB) with the hero photo and both QR codes inlined as base64 data URIs, plus three locale YAMLs in `locales/` that the page fetches at runtime. No external CSS/JS assets, no frameworks, no build step in the deployment path. (The IG QR is the heavy part — embedded at full source resolution so the `@DRKYANA` handle text renders pixel-exact. Trimming weight would mean downsampling the IG card and accepting softer handle text.)
+A Vite + React 19 + TypeScript + Tailwind v4 SPA. Anchor-scrolled sections (Home / About / Services / Practice / Contact), three-language i18n (English / Persian / Bengali) via runtime-fetched YAML files. Built to a static bundle and deployed to GitHub Pages by a GH Actions workflow.
 
 Repo layout:
 
 ```
-index.html
-README.md                 # Operator guide.
-assets/                   # Source images for build_inline.py.
+index.html                    # Vite entry — mounts <App> into #root.
+vite.config.ts                # base: "/drkyana/" for GH Pages.
+tsconfig*.json
+package.json
+
+src/
+  main.tsx                    # React root + <I18nProvider>.
+  App.tsx                     # Section composition.
+  index.css                   # Tailwind import + @theme tokens + a few component classes.
+  components/
+    Header.tsx                # Sticky header with nav, mobile toggle, LangSwitcher.
+    LangSwitcher.tsx          # Custom dropdown (button + listbox) — globe / native script / chevron.
+    Hero.tsx                  # Photo + headline + CTAs.
+    About.tsx
+    Services.tsx              # 3-card grid.
+    Location.tsx              # Service-area card + Google Maps embed.
+    Contact.tsx               # Email / IG / WhatsApp cards with QR images.
+    Footer.tsx
+  i18n/
+    I18nProvider.tsx          # React context: detects lang, fetches yaml, caches, swaps <html lang/dir>.
+    useTranslation.ts         # Hook returning { lang, setLang, t, ready }.
+    parseYaml.ts              # Tiny parser matching the conservative format.
+
+public/
+  locales/{en,fa,bn}.yaml     # Source of truth for translations. Served at /drkyana/locales/<lang>.yaml.
+  assets/
+    photo.jpg                 # Optimized hero photo (1024 px).
+    insta-qr.png              # Instagram QR (pixel-exact at source resolution).
+    whatsapp-qr.png           # WhatsApp QR (caption stripped, ~360 px).
+
+assets/                       # SOURCE images (high-res originals). Read by scripts/optimize_images.py.
   photo.jpg
   insta-qr.png
   whatsapp-qr.jpg
-locales/                  # Runtime-fetched translations.
-  en.yaml
-  fa.yaml
-  bn.yaml
+
 scripts/
-  build_inline.py         # Re-embed assets/* as base64 in index.html.
-  locales.py              # Lint & manage the locale YAML files.
+  locales.py                  # Lint & manage the locale YAML files.
+  optimize_images.py          # Build public/assets/* from assets/*. Has --check for CI.
+
+.github/workflows/deploy.yml  # On push to main: lint locales, verify optimized assets,
+                              # typecheck, build, deploy to Pages.
 ```
 
 ## Architecture
 
-- **Hosting:** GitHub Pages on this repo's `main` branch, root path. URL: `https://roy-avik.github.io/drkyana/`.
-- **Source of truth:** `index.html` for layout/style and `locales/*.yaml` for copy. Edit, commit, push — Pages re-publishes within ~30 seconds.
-- **Photo:** embedded as base64 JPEG inside `index.html`. Original at `assets/photo.jpg`.
-- **QR codes:** the branded exports from each app. Instagram is `assets/insta-qr.png` — embedded at its full source resolution (~1017×1007) so the `@DRKYANA` handle, gradient border, and IG logo render exactly as exported, no resampling. WhatsApp is `assets/whatsapp-qr.jpg`, auto-cropped to drop the "Kiana Lotfi / WhatsApp Business Account" caption band and downsized to ~320 px. Both inlined as base64 PNGs by `scripts/build_inline.py`. Rendered through `.qr-frame--photo`, which strips the white outer card so the images carry their own design against the navy contact gradient.
-- **i18n:** strings live in `locales/{en,fa,bn}.yaml`. On load, `index.html` fetches `locales/<lang>.yaml`, parses it with a tiny inline reader, and writes values into every `[data-i18n]` element. The static HTML text is English, so an English session renders correctly on first paint without a network round-trip; fa/bn sessions briefly show English while the YAML is in flight. YAML format is intentionally conservative — one `key: "value"` per line, JSON-style double-quoted strings — so the browser parser stays trivial. Don't introduce nesting, anchors, or multi-line scalars without upgrading both the JS reader (in `index.html`) and the Python reader (in `scripts/locales.py`).
-- **Map:** Google Maps embed iframe pointed at Dhaka city (no pin) — reflecting that the practice is mobile across chambers in Dhaka rather than tied to one address. Inline comment in `index.html` explains how to swap it for a specific embed if she ever settles into a primary chamber.
+- **Hosting:** GitHub Pages on this repo, served from the `dist/` artifact built by `.github/workflows/deploy.yml`. URL: `https://roy-avik.github.io/drkyana/`.
+- **Base path:** `/drkyana/` everywhere. `vite.config.ts` sets `base: "/drkyana/"` and all runtime asset references use `import.meta.env.BASE_URL` (e.g. `${BASE_URL}assets/photo.jpg`, `${BASE_URL}locales/en.yaml`). If the repo is ever renamed, update one line in `vite.config.ts`.
+- **Source of truth:**
+  - Layout/style: `src/components/*.tsx` and `src/index.css` (Tailwind utilities + a few `@layer components` shortcuts: `.btn-primary`, `.btn-ghost`, `.card`, `.section-label`, `.container-page`).
+  - Copy: `public/locales/{en,fa,bn}.yaml`. Components call `const { t } = useTranslation()` and then `t('section.key', 'optional fallback')`. The fallback is what shows during the brief moment between mount and the locale fetch resolving (for fa/bn sessions — en is what static HTML already says, so it's instant).
+  - Source images: `assets/` (root). Optimized output lives in `public/assets/`. Re-run `python scripts/optimize_images.py` whenever you change a source image.
+- **Tailwind v4:** CSS-first config. The `@theme` block in `src/index.css` defines brand tokens (`--color-brand`, `--color-accent`, etc.) — those become `bg-brand`, `text-accent`, `ring-ink/5` utilities automatically. No `tailwind.config.ts` needed.
+- **i18n:** `I18nProvider` reads `localStorage.drkyana.lang` or falls back to `navigator.language` (`fa*` → Persian, `bn*` → Bengali, else English), then `fetch`es `public/locales/<lang>.yaml`, parses it with the tiny reader, and exposes `t()` via context. It also sets `<html lang>` and `<html dir>` (rtl for Persian), and swaps `<title>` / `<meta description>` per locale. First locale resolution flips `<body>` to `is-ready` to fade the page in. YAML format is intentionally conservative — one `key: "value"` per line, JSON-style double-quoted strings — so the browser parser (`src/i18n/parseYaml.ts`) and the Python linter (`scripts/locales.py`) stay trivial. Don't introduce nesting, anchors, or multi-line scalars without upgrading both.
+- **Language switcher:** `src/components/LangSwitcher.tsx`. Custom button + `role="listbox"` dropdown — solves the broken-`g` problem the native `<select>` had (chevron clipping descenders), and renders each language in its own script (Persian with `dir="rtl"` and the Vazirmatn font, Bengali with Noto Sans Bengali). Full keyboard support (Arrow/Home/End/Enter/Esc) and click-outside dismiss.
+- **Map:** Google Maps embed iframe pointed at Dhaka city (no pin) — reflecting that the practice is mobile across chambers in Dhaka. Inline comment in `Location.tsx` explains how to swap it for a specific embed if she ever settles into a primary chamber.
 
 ## How to update
 
 | Change | What to do |
 |---|---|
-| Copy text, colors, layout | Edit `index.html`, commit, push. |
-| Translated copy | Each translatable element carries a `data-i18n="key"` attribute; strings live in `locales/{en,fa,bn}.yaml`. Edit the value under the matching key in every locale, then run `python scripts/locales.py check` to verify parity. The static text in `index.html` should stay in sync with `locales/en.yaml` (it's what English visitors see on first paint, and what fa/bn visitors briefly see before the fetch resolves). |
-| Add a new translatable key | Mark the element with `data-i18n="section.newkey"` (use `data-i18n-html="1"` if the value contains inline HTML like `<br>`), then `python scripts/locales.py add section.newkey --en "..." --fa "..." --bn "..."`. |
-| Hero photo | Replace `assets/photo.jpg`, run `python scripts/build_inline.py`, commit both. |
-| Instagram QR | Export a fresh QR card from the IG app, save it over `assets/insta-qr.png` (convert from PNG if needed), run `python scripts/build_inline.py`, commit. The exact source resolution is embedded — keep the export reasonable (~1000 px square) or the page will balloon. |
-| WhatsApp QR | Export from WhatsApp → "Share my contact", save it over `assets/whatsapp-qr.jpg`, run `python scripts/build_inline.py`. The script auto-crops the "Kiana Lotfi / WhatsApp Business Account" caption; if WhatsApp changes that layout, eyeball the result in `index.html` and adjust `top_skip` in `autocrop_qr()` if needed. |
-| Practice / service area / availability | Edit the `<section id="location">` block in `index.html` directly. Title is "Where I see patients"; copy reflects a mobile, multi-chamber practice. |
-| Map embed | Replace the `<iframe src="...">` value inside the `.map-wrapper` div per the inline comment. Default is a Dhaka city overview (no pin). |
+| Copy text | Edit the matching key in **every** locale under `public/locales/`, then run `python scripts/locales.py check`. Components reference keys via `t('foo.bar', 'fallback')` — make sure new keys have a `t()` consumer somewhere in `src/`. |
+| Add a translatable string | `python scripts/locales.py add section.newkey --en "..." --fa "..." --bn "..."`, then reference it in the relevant component with `{t('section.newkey')}`. |
+| Layout / styling | Edit the component in `src/components/` and/or extend the `@theme` tokens in `src/index.css`. Tailwind utilities resolve at build time — `npm run dev` for the live preview. |
+| Hero photo | Replace `assets/photo.jpg`, run `python scripts/optimize_images.py`, commit both source and `public/assets/photo.jpg`. |
+| Instagram QR | Export a fresh QR card from the IG app, save it over `assets/insta-qr.png`, run `python scripts/optimize_images.py`. The optimizer **does not** resize this image so the `@DRKYANA` handle stays pixel-exact. |
+| WhatsApp QR | Export from WhatsApp → "Share my contact", save over `assets/whatsapp-qr.jpg`, run the optimizer. The script auto-crops the "Kiana Lotfi / WhatsApp Business Account" caption — if WhatsApp ever changes that layout, inspect the output in `public/assets/whatsapp-qr.png` and tweak `_autocrop_whatsapp()`. |
+| Practice / service area / availability | Edit copy in the locale files (keys under `location.*`). The block lives in `src/components/Location.tsx`. |
+| Map embed | Replace the `MAP_SRC` constant in `src/components/Location.tsx` per the inline comment. Default is a Dhaka city overview (no pin). |
 
-## The build script (`scripts/build_inline.py`)
-
-One-shot rebuilder for the embedded assets. Run it whenever any of the source images in `assets/` change. It:
-1. Downsamples `assets/photo.jpg` to 640px wide, q80 JPEG, ~58 KB.
-2. Inlines `assets/insta-qr.png` at its full source resolution as base64 PNG — no resize, no recompress beyond PNG re-encoding, so the `@DRKYANA` handle stays pixel-exact.
-3. Auto-crops `assets/whatsapp-qr.jpg` to remove the caption band, resizes to ~320px, inlines as base64 PNG.
-4. String-replaces the relevant `<img>` data URIs inside `index.html` and writes back.
-
-Idempotent — re-running with the same source images reproduces the same output. Matches each `<img>` by its `alt=` text, so replacing one source image won't disturb the others.
-
-Dependencies: `pip install pillow numpy`.
-
-## The locale linter (`scripts/locales.py`)
-
-Stdlib-only Python for managing `locales/*.yaml` without drifting locales out of sync. Run before every copy change is committed:
+## Local development
 
 ```
-python scripts/locales.py check    # default — validate parity & data-i18n usage
+npm install                # once
+npm run dev                # vite dev server, http://localhost:5173/drkyana/
+npm run build              # production build to dist/
+npm run preview            # serve dist/ locally
+npm run typecheck          # tsc -b --noEmit
+npm run locales:check      # python scripts/locales.py check
+npm run images:optimize    # python scripts/optimize_images.py
+```
+
+Python deps for the helper scripts: `pip install pillow numpy`.
+
+## Scripts
+
+Both Python scripts in `scripts/` are designed to be run by humans, agents, or CI:
+
+### `scripts/locales.py`
+
+Stdlib-only Python (no deps). Run before every copy change is committed:
+
+```
+python scripts/locales.py check    # default — validate parity & t() usage
 python scripts/locales.py keys     # print canonical key list (en order)
 python scripts/locales.py show KEY # show one key across all locales
 python scripts/locales.py add KEY --en "..." --fa "..." --bn "..."
@@ -74,7 +112,31 @@ python scripts/locales.py remove KEY
 python scripts/locales.py sort     # reorder fa/bn to match en.yaml (noisy diff)
 ```
 
-`check` errors on: missing/extra keys per locale, duplicates, unparseable lines, `data-i18n` attributes in `index.html` with no matching key. It warns on: empty values, `TODO:` stubs, and en.yaml keys with no `data-i18n` consumer.
+`check` errors on: missing/extra keys per locale, duplicates, unparseable lines, `t()` references in `src/` with no matching key. It warns on: empty values, `TODO:` stubs, and en.yaml keys with no `t()` consumer.
+
+### `scripts/optimize_images.py`
+
+Requires `pillow` and `numpy`. Reads source images from `assets/` and writes optimized versions to `public/assets/`.
+
+```
+python scripts/optimize_images.py           # rebuild every output
+python scripts/optimize_images.py --check   # exit 1 if any output is stale (used by CI)
+```
+
+Idempotent — running it twice produces the same bytes.
+
+## Deployment (`.github/workflows/deploy.yml`)
+
+On every push to `main`, the workflow:
+1. Lints locales (`python scripts/locales.py check`).
+2. Verifies optimized assets aren't stale (`python scripts/optimize_images.py --check`).
+3. Typechecks (`npm run typecheck`).
+4. Builds (`npm run build`).
+5. Uploads `dist/` and deploys to GitHub Pages.
+
+Pages re-publishes within ~30 seconds of the workflow finishing. If the workflow fails, the previous build stays live.
+
+Pages **must** be configured to "Build and deployment → Source: GitHub Actions" in repo Settings. (Old config was "Deploy from a branch" — flip it once.)
 
 ## Brand & content references
 
@@ -83,24 +145,24 @@ python scripts/locales.py sort     # reorder fa/bn to match en.yaml (noisy diff)
 - **Instagram:** [@drkyana](https://instagram.com/drkyana)
 - **WhatsApp:** `+8801614369673` → `https://wa.me/8801614369673`
 - **Practice model:** freelance — sees patients at multiple chambers across Dhaka, Bangladesh. Appointment location is set per booking. No single fixed clinic address.
-- **Brand color:** `#0f4c81` (deep blue), accent `#3b82f6`. Body text `#0f172a`, muted `#475569`. Backgrounds `#ffffff` / `#f8fafc`.
-- **Typography:** Google Fonts Poppins, weights 300/400/600/700. Persian uses Vazirmatn and Bengali uses Noto Sans Bengali — swapped in via `html[lang="fa"] body` / `html[lang="bn"] body` font-family overrides.
-- **Languages:** English (default), Farsi/Persian, and Bengali. Reflects that Dr Kyana is Iranian practicing in Bangladesh. The header `<select id="langSelect">` dropdown calls `applyLang(lang)`, which fetches `locales/<lang>.yaml`, walks every `[data-i18n]` node, swaps `<title>` and meta description, sets `dir="auto"` on each translated element (Persian words still read RTL within their text via Unicode bidi, without mirroring the whole UI), and persists the choice in `localStorage` (`drkyana.lang`). First-visit default reads `navigator.language` (`fa*` → Farsi, `bn*` → Bengali, else English). The fetched YAML is cached in-memory for the session.
+- **Brand color:** `#0f4c81` (brand), accent `#3b82f6`. Body text `#0f172a` (ink), muted `#475569`. Backgrounds `#ffffff` (surface) / `#f8fafc` (surface-alt). All exposed as Tailwind utilities (`bg-brand`, `text-muted`, etc.) via the `@theme` block in `src/index.css`.
+- **Typography:** Poppins (Latin), Vazirmatn (Persian), Noto Sans Bengali — loaded from Google Fonts in `index.html`. Family swap is driven by `html[lang="fa"]` / `html[lang="bn"]` in `src/index.css`.
+- **Languages:** English (default), Farsi/Persian, and Bengali. Reflects that Dr Kyana is Iranian practicing in Bangladesh.
 
 ## Workflow
 
-- **Delete merged PR branches.** After a PR merges, the assistant runs `git branch -D <name>` locally. The remote ref **cannot** be deleted from this harness — `git push origin --delete` is blocked with 403 by the proxy, and no MCP tool exposes the GitHub `DELETE /git/refs/...` endpoint. The durable fix is to enable **Settings → General → "Automatically delete head branches"** on the repo — GitHub then removes the head branch the moment a PR is merged. Until that's on, the assistant should remind you to click the "Delete branch" button on the merged PR.
+- **Delete merged PR branches.** After a PR merges, the assistant runs `git branch -D <name>` locally. The remote ref cannot be deleted from this harness — `git push origin --delete` is blocked with 403 by the proxy, and no MCP tool exposes the GitHub `DELETE /git/refs/...` endpoint. Either click "Delete branch" on the merged PR, or enable **Settings → General → "Automatically delete head branches"** on the repo.
 
 ## Out of scope (don't pull this in without asking)
 
 - **Patient management UX** — appointment booking, intake forms, patient records. She'll use AppSheet / Google Forms separately. If a future ask is "build the intake flow," confirm whether AppSheet is still the plan first.
 - **Anthropic API integration** — discussed but not warranted yet. Revisit only if AI features (intake summarization, WhatsApp triage drafts) become useful at real volume.
-- **Backend, database, auth, CMS** — none of that. This is a static page.
-- **Multi-page routing** — it's intentionally a single anchored page.
+- **Backend, database, auth, CMS** — none of that. Still a static page, just compiled.
+- **Multi-page routing** — it's intentionally a single anchored page. If multi-page ever becomes a real need, add `react-router` and consider whether it's still a "promo site" or has crossed into product territory.
 
 ## Useful gotchas
 
-- The hero `<img>` has an `onerror` fallback that swaps in a `👩‍⚕️` emoji circle if the photo data URI ever fails to decode. Keep the fallback when editing.
-- The hero `::after` pseudo-element renders the same photo as a heavy-blur backdrop (`filter: blur(70px)`, opacity 0.32). Lives behind a `z-index: -2` layer with `isolation: isolate` on `.hero` to clip it. Don't remove `isolation: isolate` without re-checking stacking context.
-- The QR cards use the `.qr-frame--photo` modifier (no white background, no padding) so the IG card's gradient border and the WhatsApp card's white area sit directly on the contact section's navy gradient. If you swap that background, the WhatsApp QR (white field, no border) will lose definition — recheck contrast or re-add a frame for that one card.
-- File is committed with LF line endings (`newline="\n"` in the build script). If a Windows editor flips them to CRLF, GH Pages still serves fine but git diffs get noisy.
+- The hero `<img>` has an `onError` fallback that hides the broken image and reveals a `👩‍⚕️` emoji circle. Keep both elements when editing.
+- Vite serves `public/` at the configured `base` path. References must use `${import.meta.env.BASE_URL}assets/...` (with the trailing slash already on BASE_URL) — don't hardcode `/drkyana/`.
+- The custom dropdown's listbox is positioned `right-0` by default and flips to `left-0` for RTL (Persian). If you add a fourth language with another script, double-check this still anchors sensibly.
+- Tailwind v4 `@theme` tokens become utilities automatically for colors. Font tokens (`--font-fa`, `--font-bn`) are referenced via `font-[var(--font-fa)]` arbitrary syntax in the LangSwitcher — keep that pattern if you add another scripted language.

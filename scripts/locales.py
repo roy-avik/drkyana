@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Lint and manage the locale YAML files in ``locales/``.
+Lint and manage the locale YAML files in ``public/locales/``.
 
 Designed for both humans and AI agents to edit copy without drifting locales
 out of sync. The YAML format is intentionally conservative — one
 ``key: "value"`` per line, JSON-style double-quoted strings — so the in-browser
-loader in ``index.html`` can read it with a trivial parser. Don't introduce
+parser in ``src/i18n/parseYaml.ts`` can read it trivially. Don't introduce
 nested keys, anchors, or multi-line scalars unless you also upgrade the
 browser-side parser.
 
@@ -35,8 +35,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-LOCALES_DIR = ROOT / "locales"
-HTML_FILE = ROOT / "index.html"
+LOCALES_DIR = ROOT / "public" / "locales"
+SRC_DIR = ROOT / "src"
 LOCALES = ("en", "fa", "bn")
 REFERENCE = "en"
 
@@ -128,21 +128,70 @@ def key_order(lines: list[Line]) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# index.html introspection.
+# Source introspection.
+#
+# Translation keys are referenced from React components via the i18n hook —
+# either `t("key", "fallback")` or `t('key')`. We scan src/**/*.{ts,tsx} for
+# both quote styles. Keys that the runtime sets manually (page title, meta
+# description) live in EXTRA_USED_KEYS below.
 # ---------------------------------------------------------------------------
 
-_DATA_I18N_RE = re.compile(r'data-i18n="([^"]+)"')
+# Static `t("section.key")` and `t('section.key')`.
+_T_CALL_RE = re.compile(r"""\bt\(\s*(['"])([A-Za-z_][\w.\-]*)\1""")
+
+# Any dotted identifier string literal anywhere in src/ (single, double, or
+# backtick quotes). Catches keys threaded through arrays or constants, e.g.
+# `{ key: 'nav.home' }` in Header.tsx.
+_DOTTED_STR_RE = re.compile(
+    r"""(?<!\w)(['"`])([a-z][\w\-]*(?:\.[\w\-]+)+)\1"""
+)
+
+# Template-literal patterns with interpolation: `prefix.${expr}.suffix`. We
+# capture the leading prefix and optional trailing suffix and treat every
+# concrete key matching `prefix.*.suffix` (or `prefix.*`) as used.
+_TEMPLATE_RE = re.compile(
+    r"""`([a-z][\w\-]*(?:\.[\w\-]+)*)\.\$\{[^}`]+\}(?:\.([\w\-]+(?:\.[\w\-]+)*))?`"""
+)
 
 
-def html_keys() -> set[str]:
-    """All keys referenced from data-i18n attributes in index.html."""
-    if not HTML_FILE.exists():
-        return set()
-    return set(_DATA_I18N_RE.findall(HTML_FILE.read_text(encoding="utf-8")))
+def source_keys(ref_keys: set[str] | None = None) -> set[str]:
+    """All locale keys referenced anywhere in src/.
+
+    Picks up static `t('…')` calls, dotted string literals stored in arrays
+    or constants, and template-literal patterns like `services.${k}.title`.
+    For template patterns we mark every ref_key that matches the static
+    prefix/suffix as used.
+    """
+    keys: set[str] = set()
+    if not SRC_DIR.exists():
+        return keys
+    for path in SRC_DIR.rglob("*"):
+        if path.suffix not in {".ts", ".tsx"}:
+            continue
+        text = path.read_text(encoding="utf-8")
+        for m in _T_CALL_RE.finditer(text):
+            keys.add(m.group(2))
+        for m in _DOTTED_STR_RE.finditer(text):
+            keys.add(m.group(2))
+        if ref_keys is not None:
+            for m in _TEMPLATE_RE.finditer(text):
+                prefix, suffix = m.group(1), m.group(2)
+                for k in ref_keys:
+                    if not k.startswith(prefix + "."):
+                        continue
+                    if suffix is None or k.endswith("." + suffix):
+                        keys.add(k)
+    return keys
 
 
-# Keys consumed in JS that don't appear as data-i18n attributes.
+# Keys consumed by the runtime but not via `t()` — title and meta description
+# are read directly from the dict in I18nProvider.
 EXTRA_USED_KEYS = {"meta.title", "meta.description"}
+
+# Dotted string literals that look like locale keys but aren't — e.g. the
+# localStorage namespace. Excluded from the "used" set so they don't generate
+# false-positive "missing key" errors.
+NON_LOCALE_DOTTED_STRINGS = {"drkyana.lang"}
 
 
 # ---------------------------------------------------------------------------
@@ -181,13 +230,13 @@ def cmd_check(_args) -> int:
             if v.strip().lower().startswith("todo"):
                 warnings.append(f"{lang}: TODO placeholder for {k!r}")
 
-    used = html_keys() | EXTRA_USED_KEYS
+    used = (source_keys(ref_keys) | EXTRA_USED_KEYS) - NON_LOCALE_DOTTED_STRINGS
     undefined = used - ref_keys
     unused = ref_keys - used
     if undefined:
-        errors.append(f"{REFERENCE}.yaml is missing keys used in index.html: {sorted(undefined)}")
+        errors.append(f"{REFERENCE}.yaml is missing keys used in src/: {sorted(undefined)}")
     if unused:
-        warnings.append(f"{REFERENCE}.yaml defines keys with no data-i18n usage: {sorted(unused)}")
+        warnings.append(f"{REFERENCE}.yaml defines keys with no t() consumer: {sorted(unused)}")
 
     for w in warnings:
         print(f"warn: {w}")
