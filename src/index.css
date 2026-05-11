@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #0f4c81;
+  --color-brand-dark: #0a3a63;
+  --color-accent: #3b82f6;
+  --color-ink: #0f172a;
+  --color-muted: #475569;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f8fafc;
+
+  --font-sans: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-fa: "Vazirmatn", "Poppins", sans-serif;
+  --font-bn: "Noto Sans Bengali", "Poppins", sans-serif;
+
+  --shadow-pop: 0 20px 40px -16px rgba(15, 76, 129, 0.28), 0 6px 16px -8px rgba(15, 23, 42, 0.12);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-surface text-ink font-sans antialiased;
+  }
+  html[lang="fa"] body { font-family: var(--font-fa); }
+  html[lang="bn"] body { font-family: var(--font-bn); }
+  html[lang="fa"] .tracking-tight,
+  html[lang="bn"] .tracking-tight {
+    letter-spacing: 0;
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-6xl px-5 md:px-8;
+  }
+  .section-label {
+    @apply text-xs font-semibold uppercase tracking-[0.18em] text-brand;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-full bg-brand px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-dark hover:shadow-lg hover:shadow-brand/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded-full border border-brand/15 bg-brand/5 px-6 py-3 text-sm font-semibold text-brand transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand/10 hover:border-brand/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+  }
+  .card {
+    @apply rounded-2xl bg-white p-6 ring-1 ring-ink/5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:shadow-brand/10 hover:ring-brand/15;
+  }
+}
+
+/* Fade page in once the locale resolves to avoid an English flash for fa/bn. */
+body.is-loading { opacity: 0; }
+body.is-ready { opacity: 1; transition: opacity 220ms ease-out; }
