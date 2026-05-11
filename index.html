@@ -40,7 +40,21 @@
     background: var(--bg);
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
+    /* Hidden until the locale resolves — see applyLang(). Eliminates the
+       English flash that fa/bn visitors would otherwise see while the YAML
+       is in flight, and the mid-swap glitch when switching languages. */
+    opacity: 0;
   }
+  @media (prefers-reduced-motion: no-preference) {
+    body { transition: opacity 0.25s ease; }
+  }
+  body.lang-ready { opacity: 1; }
+  /* Safety net: if the script never runs (JS disabled, hard error before
+     applyLang is reached), reveal the page after a beat so it isn't blank
+     forever. The class-driven path above takes precedence when JS is alive. */
+  @keyframes drkyana-failsafe-reveal { to { opacity: 1; } }
+  body { animation: drkyana-failsafe-reveal 0s linear 1.5s forwards; }
+  body.lang-ready { animation: none; }
 
   img { max-width: 100%; display: block; }
   a { color: inherit; text-decoration: none; }
@@ -1016,11 +1030,38 @@
     return 'en';
   }
 
+  // Match the CSS `body { transition: opacity 0.25s }` in <style> above.
+  // Used to wait out a fade-out before swapping text on a language change,
+  // so the swap itself never happens on a visible body.
+  const FADE_MS = 250;
+
+  function prefersReducedMotion() {
+    return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
   async function applyLang(lang) {
     if (!SUPPORTED_LANGS.includes(lang)) lang = 'en';
+    const body = document.body;
+    const wasVisible = body.classList.contains('lang-ready');
+
+    // Fade out if we're switching from an already-visible state. For first
+    // paint the body is already at opacity 0 (CSS default) so we skip the wait.
+    if (wasVisible && !prefersReducedMotion()) {
+      body.classList.remove('lang-ready');
+      await new Promise(r => setTimeout(r, FADE_MS));
+    } else {
+      body.classList.remove('lang-ready');
+    }
+
     let dict;
     try { dict = await loadLocale(lang); }
-    catch (e) { console.warn(e); return; }
+    catch (e) {
+      console.warn(e);
+      // Don't leave the page invisible if the fetch fails — fall back to
+      // whatever default text is already in the DOM.
+      body.classList.add('lang-ready');
+      return;
+    }
     document.documentElement.lang = lang;
 
     // Note: we intentionally do NOT flip the document to dir="rtl" for Farsi.
@@ -1049,6 +1090,10 @@
     if (sel && sel.value !== lang) sel.value = lang;
 
     try { localStorage.setItem(LANG_STORAGE_KEY, lang); } catch (_) {}
+
+    // Reveal / fade back in. requestAnimationFrame so the freshly-swapped
+    // text is committed before the opacity transition starts.
+    requestAnimationFrame(() => body.classList.add('lang-ready'));
   }
 
   (function() {
