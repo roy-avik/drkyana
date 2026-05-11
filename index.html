@@ -608,7 +608,96 @@
     .footer-inner { flex-direction: column; }
   }
 
+  /* ============ SCROLL ANIMATIONS ============ */
+  /* Pan-in + fade-in on entry; titles/labels/intros also fade out on exit.
+     Two paths: modern browsers use pure-CSS scroll-driven animations
+     (animation-timeline: view), older browsers get a tiny IntersectionObserver
+     that toggles .in-view (see script at bottom). */
+  .section-label,
+  .section-title,
+  .section-intro,
+  .about-content p,
+  .service-card,
+  .contact-card,
+  .location-info,
+  .map-wrapper {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+    will-change: opacity, transform;
+  }
+  .location-info { transform: translateX(-50px); }
+  .map-wrapper  { transform: translateX(50px); }
+  .in-view { opacity: 1 !important; transform: none !important; }
 
+  /* Stagger inside grids */
+  .services-grid .service-card:nth-child(2) { transition-delay: 0.10s; }
+  .services-grid .service-card:nth-child(3) { transition-delay: 0.20s; }
+  .contact-grid  .contact-card:nth-child(2) { transition-delay: 0.10s; }
+  .contact-grid  .contact-card:nth-child(3) { transition-delay: 0.20s; }
+  .about-content p:nth-child(2) { transition-delay: 0.15s; }
+
+  /* Progressive enhancement: pure-CSS scroll-driven animation in Chromium 115+ */
+  @supports (animation-timeline: view()) {
+    .section-label,
+    .section-title,
+    .section-intro,
+    .about-content p,
+    .service-card,
+    .contact-card,
+    .location-info,
+    .map-wrapper {
+      opacity: 1;
+      transform: none;
+      transition: none;
+      animation: scroll-fade-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 22%;
+    }
+    /* Section titles/labels/intros also fade out as they exit the top */
+    .section-label,
+    .section-title,
+    .section-intro {
+      animation: scroll-fade-in linear both, scroll-fade-out linear both;
+      animation-timeline: view(), view();
+      animation-range: entry 0% cover 22%, cover 78% exit 100%;
+    }
+    .location-info { animation-name: scroll-pan-right; }
+    .map-wrapper   { animation-name: scroll-pan-left; }
+  }
+
+  @keyframes scroll-fade-in {
+    from { opacity: 0; transform: translateY(40px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes scroll-fade-out {
+    from { opacity: 1; transform: none; }
+    to   { opacity: 0; transform: translateY(-30px); }
+  }
+  @keyframes scroll-pan-right {
+    from { opacity: 0; transform: translateX(-50px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes scroll-pan-left {
+    from { opacity: 0; transform: translateX(50px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* ============ QR CLICK AFFORDANCE ============ */
+  /* The whole .contact-card is already an <a>, so the QR is clickable —
+     these styles just make that obvious: pointer cursor + a lift on hover
+     and a press on tap, so the codes feel like buttons. */
+  .contact-card .qr-frame {
+    cursor: pointer;
+    transition: transform var(--transition), box-shadow var(--transition);
+  }
+  .contact-card:hover .qr-frame {
+    transform: scale(1.04);
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28);
+  }
+  .contact-card:active .qr-frame {
+    transform: scale(0.98);
+  }
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
@@ -617,6 +706,13 @@
       transition-duration: 0.01ms !important;
     }
     html { scroll-behavior: auto; }
+    .section-label, .section-title, .section-intro,
+    .about-content p, .service-card, .contact-card,
+    .location-info, .map-wrapper {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
   }
 </style>
 </head>
@@ -809,6 +905,31 @@
     requestAnimationFrame(() => {
       setTimeout(() => hero.classList.add('visible'), 60);
     });
+
+    // Scroll-reveal fallback: modern browsers use CSS animation-timeline: view()
+    // (see @supports block in <style>), so we only run this in browsers that
+    // lack it (Safari/Firefox today). Toggles .in-view as elements enter/leave.
+    const supportsScrollTimeline = window.CSS && CSS.supports && CSS.supports('animation-timeline: view()');
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!supportsScrollTimeline && !reduceMotion && 'IntersectionObserver' in window) {
+      const targets = document.querySelectorAll(
+        '.section-label, .section-title, .section-intro, .about-content p, .service-card, .contact-card, .location-info, .map-wrapper'
+      );
+      const fadeOutTargets = new Set(
+        document.querySelectorAll('.section-label, .section-title, .section-intro')
+      );
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          if (e.isIntersecting) {
+            e.target.classList.add('in-view');
+          } else if (fadeOutTargets.has(e.target) && e.boundingClientRect.top < 0) {
+            // Element scrolled past the top — fade it out too
+            e.target.classList.remove('in-view');
+          }
+        });
+      }, { threshold: 0.15, rootMargin: '0px 0px -10% 0px' });
+      targets.forEach(t => io.observe(t));
+    }
   })();
 </script>
 
