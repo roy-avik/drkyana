@@ -3,8 +3,8 @@ One-shot build: shrink the hero photo, inline the branded Instagram and
 WhatsApp QR exports as base64 PNGs, and rewrite index.html so it's fully
 self-contained.
 
-QR workflow: drop the official QR exports into the repo as
-`insta-qr.jpg` and `whatsapp-qr.jpg`. The WhatsApp export has a
+QR workflow: drop the official QR exports into `assets/` as
+`insta-qr.png` and `whatsapp-qr.jpg`. The WhatsApp export has a
 "Kiana Lotfi / WhatsApp Business Account" caption at the top — we
 auto-crop it out and keep just the QR. The IG export is used as-is
 (its `@DRKYANA` handle and gradient border are intentional branding).
@@ -17,8 +17,9 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
 HTML = ROOT / "index.html"
+ASSETS = ROOT / "assets"
 
 
 def encode_jpeg(im: Image.Image, max_side: int, quality: int) -> tuple[str, int]:
@@ -79,7 +80,7 @@ def autocrop_qr(im: Image.Image, top_skip: float = 0.25) -> Image.Image:
 
 
 # ---- 1. Shrink + recompress the hero photo --------------------------------
-photo_b64, photo_bytes = encode_jpeg(Image.open(ROOT / "photo.jpg"), 640, 80)
+photo_b64, photo_bytes = encode_jpeg(Image.open(ASSETS / "photo.jpg"), 640, 80)
 photo_uri = f"data:image/jpeg;base64,{photo_b64}"
 print(f"photo: jpeg={photo_bytes/1024:.0f} KB  b64={len(photo_b64)/1024:.0f} KB")
 
@@ -87,10 +88,10 @@ print(f"photo: jpeg={photo_bytes/1024:.0f} KB  b64={len(photo_b64)/1024:.0f} KB"
 # IG card is embedded at its full source resolution with no transforms — the
 # `@DRKYANA` handle, gradient border, and IG logo render exactly as exported.
 # WhatsApp export is auto-cropped to drop the caption band and downsized.
-insta_b64, insta_bytes = encode_png(Image.open(ROOT / "insta-qr.png"), max_side=None)
-wa_cropped = autocrop_qr(Image.open(ROOT / "whatsapp-qr.jpg"))
+insta_b64, insta_bytes = encode_png(Image.open(ASSETS / "insta-qr.png"), max_side=None)
+wa_cropped = autocrop_qr(Image.open(ASSETS / "whatsapp-qr.jpg"))
 wa_b64, wa_bytes = encode_png(wa_cropped, 320)
-print(f"insta QR:    png={insta_bytes/1024:.0f} KB  b64={len(insta_b64)/1024:.0f} KB  (full {Image.open(ROOT / 'insta-qr.png').size})")
+print(f"insta QR:    png={insta_bytes/1024:.0f} KB  b64={len(insta_b64)/1024:.0f} KB  (full {Image.open(ASSETS / 'insta-qr.png').size})")
 print(f"whatsapp QR: png={wa_bytes/1024:.0f} KB  b64={len(wa_b64)/1024:.0f} KB  (auto-cropped {wa_cropped.size})")
 
 # ---- 3. Rewrite the HTML ---------------------------------------------------
