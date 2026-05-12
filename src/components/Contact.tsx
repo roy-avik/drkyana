@@ -3,6 +3,7 @@ import { Carousel } from './Carousel';
 
 const INSTA_QR = `${import.meta.env.BASE_URL}assets/insta-qr.png`;
 const WHATSAPP_QR = `${import.meta.env.BASE_URL}assets/whatsapp-qr.png`;
+export const WHATSAPP_LINK = 'https://wa.me/8801614369673';
 
 const MailIcon = (
   <svg viewBox="0 0 24 24" aria-hidden="true" className="h-7 w-7">
@@ -69,7 +70,7 @@ export function Contact() {
 
     <a
       key="whatsapp"
-      href="https://wa.me/8801614369673"
+      href={WHATSAPP_LINK}
       target="_blank"
       rel="noopener noreferrer"
       className="group flex flex-col items-start gap-4 rounded-2xl bg-white/[0.06] p-6 backdrop-blur-sm ring-1 ring-white/10 transition hover:-translate-y-1 hover:bg-white/[0.1] hover:ring-white/20"
