@@ -25,7 +25,7 @@ src/
     LangSwitcher.tsx          # Custom dropdown (button + listbox) — globe / native script / chevron.
     Hero.tsx                  # Photo + headline + CTAs.
     About.tsx
-    Services.tsx              # 3-card grid.
+    Services.tsx              # Auto-advancing carousel (Carousel.tsx).
     Location.tsx              # Service-area card + Google Maps embed.
     Contact.tsx               # Email / IG / WhatsApp cards with QR images.
     Footer.tsx
@@ -160,9 +160,20 @@ Pages **must** be configured to "Build and deployment → Source: GitHub Actions
 - **Backend, database, auth, CMS** — none of that. Still a static page, just compiled.
 - **Multi-page routing** — it's intentionally a single anchored page. If multi-page ever becomes a real need, add `react-router` and consider whether it's still a "promo site" or has crossed into product territory.
 
+## RTL / Farsi caution
+
+Persian (Farsi) is a right-to-left script. **Do not set `dir="rtl"` on the `<html>` element.** We tried it — it flips every flexbox and grid on the page (nav order reverses, hero photo jumps to the wrong side, etc.). Instead we keep `dir="ltr"` always and rely on the Unicode Bidirectional Algorithm: Farsi characters are intrinsically RTL (Unicode bidi category AL/R), so they render in the correct right-to-left reading order inside any `<p>` or `<h*>` without any extra markup.
+
+Rules to follow when editing `I18nProvider.tsx` or adding a new RTL language:
+- **Never** set `document.documentElement.dir = 'rtl'` (or any per-language `dir` value). Always write `'ltr'`.
+- If you need per-paragraph text alignment for Farsi, add `html[lang="fa"] p { text-align: right }` (or similar) in `src/index.css` — that keeps the layout intact while right-aligning copy.
+- The LangSwitcher dropdown is already `right-0` / `left-0`-aware — don't introduce a separate RTL-flip there either.
+- If you add Arabic, Hebrew, or another RTL script in the future, apply the same pattern: force `dir="ltr"` on `<html>`, handle text alignment in CSS per `html[lang]`.
+
 ## Useful gotchas
 
 - The hero `<img>` has an `onError` fallback that hides the broken image and reveals a `👩‍⚕️` emoji circle. Keep both elements when editing.
 - Vite serves `public/` at the configured `base` path. References must use `${import.meta.env.BASE_URL}assets/...` (with the trailing slash already on BASE_URL) — don't hardcode `/drkyana/`.
 - The custom dropdown's listbox is positioned `right-0` by default and flips to `left-0` for RTL (Persian). If you add a fourth language with another script, double-check this still anchors sensibly.
 - Tailwind v4 `@theme` tokens become utilities automatically for colors. Font tokens (`--font-fa`, `--font-bn`) are referenced via `font-[var(--font-fa)]` arbitrary syntax in the LangSwitcher — keep that pattern if you add another scripted language.
+- **GitHub Pages source must be set to "GitHub Actions"** (repo Settings → Pages → Build and deployment → Source). If it's set to "Deploy from a branch", GH Pages serves the raw `index.html` (which has `src="/src/main.tsx"`) and the site goes blank. The deploy workflow uploads `dist/` as a Pages artifact — that only takes effect when the source is "GitHub Actions".
