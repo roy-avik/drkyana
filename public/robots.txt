@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://roy-avik.github.io/drkyana/sitemap.xml
