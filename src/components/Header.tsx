@@ -33,7 +33,7 @@ export function Header() {
     >
       <div className="container-page flex h-16 items-center md:h-20">
         <a href="#home" className="text-xl font-bold tracking-tight text-brand md:text-2xl">
-          {t('brand', 'Dr Kyana')}
+          {t('brand', 'Dr. Kyana')}
         </a>
 
         <nav

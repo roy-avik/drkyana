@@ -18,8 +18,8 @@ export function Hero() {
           <span className="inline-flex items-center rounded-full bg-brand/[0.07] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-brand">
             {t('hero.pill', '✦ Dental Surgeon · Dhaka')}
           </span>
-          <h1 className="mt-5 text-4xl font-bold leading-[1.05] tracking-tight text-brand md:text-6xl">
-            {t('brand', 'Dr Kyana')}
+          <h1 className="neon-heading mt-5 text-4xl font-bold leading-[1.05] tracking-tight text-brand md:text-6xl">
+            {t('brand', 'Dr. Kyana')}
           </h1>
           <p className="mt-4 text-xl font-medium text-ink md:text-2xl">
             {t('hero.subtitle', 'Modern dentistry. Considered care.')}
@@ -40,7 +40,7 @@ export function Hero() {
           <div className="absolute -inset-4 -z-10 rounded-full bg-gradient-to-tr from-brand/20 via-accent/10 to-transparent blur-2xl" aria-hidden="true" />
           <img
             src={PHOTO}
-            alt="Dr Kyana"
+            alt="Dr. Kyana"
             className="aspect-square w-full rounded-full object-cover shadow-2xl shadow-brand/20 ring-4 ring-white ring-offset-4 ring-offset-surface-alt"
             onError={(e) => {
               const img = e.currentTarget;
