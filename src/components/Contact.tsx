@@ -1,4 +1,5 @@
 import { useTranslation } from '../i18n/useTranslation';
+import { Carousel } from './Carousel';
 
 const INSTA_QR = `${import.meta.env.BASE_URL}assets/insta-qr.png`;
 const WHATSAPP_QR = `${import.meta.env.BASE_URL}assets/whatsapp-qr.png`;
@@ -31,6 +32,63 @@ const WaIcon = (
 
 export function Contact() {
   const { t } = useTranslation();
+
+  const cards = [
+    <a
+      key="email"
+      href="mailto:kyanalotfi96@gmail.com"
+      className="group flex flex-col items-start gap-4 rounded-2xl bg-white/[0.06] p-6 backdrop-blur-sm ring-1 ring-white/10 transition hover:-translate-y-1 hover:bg-white/[0.1] hover:ring-white/20"
+    >
+      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white">
+        {MailIcon}
+      </div>
+      <h3 className="text-lg font-semibold">{t('contact.email', 'Email')}</h3>
+      <p className="text-sm text-white/80 group-hover:text-white">kyanalotfi96@gmail.com</p>
+    </a>,
+
+    <a
+      key="instagram"
+      href="https://instagram.com/drkyana"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group flex flex-col items-start gap-4 rounded-2xl bg-white/[0.06] p-6 backdrop-blur-sm ring-1 ring-white/10 transition hover:-translate-y-1 hover:bg-white/[0.1] hover:ring-white/20"
+    >
+      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white">
+        {InstaIcon}
+      </div>
+      <h3 className="text-lg font-semibold">{t('contact.instagram', 'Instagram')}</h3>
+      <p className="text-sm text-white/80 group-hover:text-white">@drkyana</p>
+      <img
+        src={INSTA_QR}
+        alt="Instagram QR for @drkyana"
+        className="mt-2 w-full max-w-[180px] rounded-lg"
+        loading="lazy"
+      />
+      <p className="text-xs uppercase tracking-wider text-white/70">{t('contact.scan_ig', 'Scan · @drkyana')}</p>
+    </a>,
+
+    <a
+      key="whatsapp"
+      href="https://wa.me/8801614369673"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group flex flex-col items-start gap-4 rounded-2xl bg-white/[0.06] p-6 backdrop-blur-sm ring-1 ring-white/10 transition hover:-translate-y-1 hover:bg-white/[0.1] hover:ring-white/20"
+    >
+      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white">
+        {WaIcon}
+      </div>
+      <h3 className="text-lg font-semibold">{t('contact.whatsapp', 'WhatsApp')}</h3>
+      <p className="text-sm text-white/80 group-hover:text-white">+880 1614 369673</p>
+      <img
+        src={WHATSAPP_QR}
+        alt="WhatsApp QR"
+        className="mt-2 w-full max-w-[180px] rounded-lg bg-white p-2"
+        loading="lazy"
+      />
+      <p className="text-xs uppercase tracking-wider text-white/70">{t('contact.scan_wa', 'Scan to chat')}</p>
+    </a>,
+  ];
+
   return (
     <section
       id="contact"
@@ -52,58 +110,9 @@ export function Contact() {
           </p>
         </div>
 
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
-          <a
-            href="mailto:kyanalotfi96@gmail.com"
-            className="group flex flex-col items-start gap-4 rounded-2xl bg-white/[0.06] p-6 backdrop-blur-sm ring-1 ring-white/10 transition hover:-translate-y-1 hover:bg-white/[0.1] hover:ring-white/20"
-          >
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white">
-              {MailIcon}
-            </div>
-            <h3 className="text-lg font-semibold">{t('contact.email', 'Email')}</h3>
-            <p className="text-sm text-white/80 group-hover:text-white">kyanalotfi96@gmail.com</p>
-          </a>
-
-          <a
-            href="https://instagram.com/drkyana"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group flex flex-col items-start gap-4 rounded-2xl bg-white/[0.06] p-6 backdrop-blur-sm ring-1 ring-white/10 transition hover:-translate-y-1 hover:bg-white/[0.1] hover:ring-white/20"
-          >
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white">
-              {InstaIcon}
-            </div>
-            <h3 className="text-lg font-semibold">{t('contact.instagram', 'Instagram')}</h3>
-            <p className="text-sm text-white/80 group-hover:text-white">@drkyana</p>
-            <img
-              src={INSTA_QR}
-              alt="Instagram QR for @drkyana"
-              className="mt-2 w-full max-w-[180px] rounded-lg"
-              loading="lazy"
-            />
-            <p className="text-xs uppercase tracking-wider text-white/70">{t('contact.scan_ig', 'Scan · @drkyana')}</p>
-          </a>
-
-          <a
-            href="https://wa.me/8801614369673"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group flex flex-col items-start gap-4 rounded-2xl bg-white/[0.06] p-6 backdrop-blur-sm ring-1 ring-white/10 transition hover:-translate-y-1 hover:bg-white/[0.1] hover:ring-white/20"
-          >
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white">
-              {WaIcon}
-            </div>
-            <h3 className="text-lg font-semibold">{t('contact.whatsapp', 'WhatsApp')}</h3>
-            <p className="text-sm text-white/80 group-hover:text-white">+880 1614 369673</p>
-            <img
-              src={WHATSAPP_QR}
-              alt="WhatsApp QR"
-              className="mt-2 w-full max-w-[180px] rounded-lg bg-white p-2"
-              loading="lazy"
-            />
-            <p className="text-xs uppercase tracking-wider text-white/70">{t('contact.scan_wa', 'Scan to chat')}</p>
-          </a>
-        </div>
+        <Carousel dark interval={4000}>
+          {cards}
+        </Carousel>
       </div>
     </section>
   );

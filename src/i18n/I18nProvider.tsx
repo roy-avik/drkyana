@@ -72,9 +72,11 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, [lang]);
 
   // Mirror language onto <html> for font swapping & a11y.
+  // dir is intentionally kept ltr — the layout stays the same for all languages;
+  // Farsi characters are intrinsically RTL via Unicode bidi so they render correctly.
   useEffect(() => {
     document.documentElement.lang = lang;
-    document.documentElement.dir = lang === 'fa' ? 'rtl' : 'ltr';
+    document.documentElement.dir = 'ltr';
   }, [lang]);
 
   // Reveal page once first locale resolves.

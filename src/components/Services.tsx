@@ -1,4 +1,5 @@
 import { useTranslation } from '../i18n/useTranslation';
+import { Carousel } from './Carousel';
 
 const ICONS = {
   scaling: (
@@ -41,9 +42,10 @@ export function Services() {
             {t('services.intro')}
           </p>
         </div>
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
+
+        <Carousel>
           {SERVICES.map((s) => (
-            <article key={s.key} className="card group">
+            <article key={s.key} className="card group min-h-[200px]">
               <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-brand/[0.08] text-brand transition-colors group-hover:bg-brand/[0.12]">
                 <span className="block h-6 w-6">{s.icon}</span>
               </div>
@@ -55,7 +57,7 @@ export function Services() {
               </p>
             </article>
           ))}
-        </div>
+        </Carousel>
       </div>
     </section>
   );

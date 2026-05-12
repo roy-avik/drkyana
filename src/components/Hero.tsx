@@ -36,12 +36,12 @@ export function Hero() {
           </div>
         </div>
 
-        <div className="relative mx-auto w-full max-w-md">
-          <div className="absolute -inset-4 -z-10 rounded-[2rem] bg-gradient-to-tr from-brand/20 via-accent/10 to-transparent blur-2xl" aria-hidden="true" />
+        <div className="relative mx-auto w-full max-w-sm">
+          <div className="absolute -inset-4 -z-10 rounded-full bg-gradient-to-tr from-brand/20 via-accent/10 to-transparent blur-2xl" aria-hidden="true" />
           <img
             src={PHOTO}
             alt="Dr Kyana"
-            className="aspect-square w-full rounded-[1.75rem] object-cover shadow-2xl shadow-brand/20 ring-1 ring-ink/5"
+            className="aspect-square w-full rounded-full object-cover shadow-2xl shadow-brand/20 ring-4 ring-white ring-offset-4 ring-offset-surface-alt"
             onError={(e) => {
               const img = e.currentTarget;
               img.style.display = 'none';
@@ -50,7 +50,7 @@ export function Hero() {
             }}
           />
           <div
-            className="hidden aspect-square w-full items-center justify-center rounded-[1.75rem] bg-brand/10 text-7xl"
+            className="hidden aspect-square w-full items-center justify-center rounded-full bg-brand/10 text-7xl"
             aria-hidden="true"
           >
             👩‍⚕️
