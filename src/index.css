@@ -113,3 +113,8 @@ body.is-ready { opacity: 1; transition: opacity 220ms ease-out; }
   animation: neon-sign 4.2s linear infinite;
   will-change: opacity, text-shadow;
 }
+
+.qc-badge { @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-white; }
+.qc-badge--routine { @apply bg-green-600; }
+.qc-badge--soon { @apply bg-amber-500; }
+.qc-badge--urgent { @apply bg-red-600; }
