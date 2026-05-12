@@ -143,10 +143,7 @@ export function LangSwitcher() {
                 ].join(' ')}
                 aria-selected={selected}
               >
-                <span
-                  className={`flex-1 font-semibold leading-tight ${opt.fontClass ?? ''}`}
-                  dir={opt.rtl ? 'rtl' : 'ltr'}
-                >
+                <span className={`flex-1 font-semibold leading-tight ${opt.fontClass ?? ''}`}>
                   {opt.native}
                 </span>
                 <span className="text-[0.7rem] font-normal tracking-wide text-muted">{opt.sub}</span>
