@@ -6,7 +6,7 @@ const NAV = [
   { href: '#home', key: 'nav.home', en: 'Home' },
   { href: '#about', key: 'nav.about', en: 'About' },
   { href: '#services', key: 'nav.services', en: 'Services' },
-  { href: '#quick-check', key: 'nav.quickCheck', en: 'Quick check' },
+  { href: '#receptionist', key: 'nav.receptionist', en: 'AI receptionist' },
   { href: '#location', key: 'nav.practice', en: 'Practice' },
   { href: '#contact', key: 'nav.contact', en: 'Contact' },
 ];

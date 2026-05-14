@@ -3,7 +3,7 @@ import { Hero } from './components/Hero';
 import { About } from './components/About';
 import { Services } from './components/Services';
 import { Location } from './components/Location';
-import { QuickCheck } from './components/QuickCheck';
+import { Receptionist } from './components/Receptionist';
 import { Contact } from './components/Contact';
 import { Footer } from './components/Footer';
 
@@ -15,7 +15,7 @@ export function App() {
         <Hero />
         <About />
         <Services />
-        <QuickCheck />
+        <Receptionist />
         <Location />
         <Contact />
       </main>

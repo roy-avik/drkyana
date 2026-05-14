@@ -1,12 +1,14 @@
 # Dr Kyana — Portfolio Site
 
-Single-page promotional site for Dr Kyana, a dental surgeon consulting at chambers across Dhaka on a freelance basis (no single fixed clinic — appointment locations are confirmed per patient). Lives on her Instagram bio and (eventually) a business card. Patient management is **explicitly out of scope** — that's handled separately via AppSheet / Google Forms.
+Single-page promotional site for Dr Kyana, a dental surgeon consulting at chambers across Dhaka on a freelance basis (no single fixed clinic — appointment locations are confirmed per patient). Lives on her Instagram bio and (eventually) a business card. Free-form patient management is **out of scope** — that's handled separately via AppSheet / Google Forms. The site does host one inline structured intake: the **AI receptionist** in the `#receptionist` section — an on-device intent classifier (Transformers.js + multilingual MiniLM) that takes an English or Bengali message, routes it to the right canonical intent (book appointment / urgent / hours / location / services / pricing / insurance / greeting / reschedule / other), and hands off to WhatsApp with a structured English message. It does not yet persist anything — see "Deferred" below.
 
 Brand voice: calm, considered, modern. Site tagline is **"Modern dentistry. Considered care."** Don't reintroduce "fresh graduate" framing — it was deliberately removed to project a more established, professional brand.
 
 ## What this is
 
-A Vite + React 19 + TypeScript + Tailwind v4 SPA. Anchor-scrolled sections (Home / About / Services / Practice / Contact), three-language i18n (English / Persian / Bengali) via runtime-fetched YAML files. Built to a static bundle and deployed to GitHub Pages by a GH Actions workflow.
+A Vite + React 19 + TypeScript + Tailwind v4 SPA. Anchor-scrolled marketing site (Home / About / Services / AI receptionist / Practice / Contact) — the receptionist is an inline section, not a separate route. Three-language i18n (English / Persian / Bengali) via runtime-fetched YAML files. Built to a static bundle and deployed to GitHub Pages by a GH Actions workflow.
+
+**v1 audience scope:** the receptionist currently classifies messages in English and Bengali (Dr Kyana's clients). Farsi is kept in the i18n layer (marketing site translations + LangSwitcher entry) so we can light up FA receptionist intents later without re-plumbing locales — Persian patients today see the marketing site in Farsi and the receptionist UI in Farsi, but the intent examples and Dr Kyana's outgoing WhatsApp message stay English. Whichever language the patient writes in, the outgoing WhatsApp message is always English (Dr Kyana reads English and Farsi but not Bengali).
 
 Repo layout:
 
@@ -22,26 +24,32 @@ src/
   index.css                   # Tailwind import + @theme tokens + a few component classes.
   components/
     Header.tsx                # Sticky header with nav, mobile toggle, LangSwitcher.
-    LangSwitcher.tsx          # Custom dropdown (button + listbox) — globe / native script / chevron.
-    Hero.tsx                  # Photo + headline + CTAs.
+    LangSwitcher.tsx          # Custom dropdown (button + listbox).
+    Hero.tsx
     About.tsx
-    Services.tsx              # Auto-advancing carousel (Carousel.tsx).
-    Location.tsx              # Service-area card + Google Maps embed.
-    Contact.tsx               # Email / IG / WhatsApp cards with QR images.
+    Services.tsx
+    Location.tsx
+    Contact.tsx               # Exports WHATSAPP_LINK as the one source of truth.
+    Receptionist.tsx          # Inline AI receptionist chat: intent classification + slot-filling + WhatsApp handoff.
     Footer.tsx
+  services/
+    intents.ts                # Canonical receptionist intents with example phrases (EN + BN).
+    intentClassifier.ts       # Transformers.js wrapper: lazy-loads multilingual MiniLM, embeds + cosine matches against centroids. WASM served from jsDelivr CDN at runtime.
+    whatsapp.ts               # Builds the WhatsApp deeplink with an English structured message from intent + slots + raw note.
   i18n/
-    I18nProvider.tsx          # React context: detects lang, fetches yaml, caches, swaps <html lang/dir>.
-    useTranslation.ts         # Hook returning { lang, setLang, t, ready }.
-    parseYaml.ts              # Tiny parser matching the conservative format.
+    I18nProvider.tsx
+    useTranslation.ts
+    parseYaml.ts
 
 public/
-  locales/{en,fa,bn}.yaml     # Source of truth for translations. Served at /drkyana/locales/<lang>.yaml.
+  locales/{en,fa,bn}.yaml
   assets/
-    photo.jpg                 # Optimized hero photo (1024 px).
-    insta-qr.png              # Instagram QR (pixel-exact at source resolution).
-    whatsapp-qr.png           # WhatsApp QR (caption stripped, ~360 px).
+    photo.jpg
+    insta-qr.png
+    whatsapp-qr.png
+  tooth.svg                   # Favicon source.
 
-assets/                       # SOURCE images (high-res originals). Read by scripts/optimize_images.py.
+assets/                       # SOURCE images for scripts/optimize_images.py.
   photo.jpg
   insta-qr.png
   whatsapp-qr.jpg
@@ -66,6 +74,7 @@ scripts/
 - **i18n:** `I18nProvider` reads `localStorage.drkyana.lang` or falls back to `navigator.language` (`fa*` → Persian, `bn*` → Bengali, else English), then `fetch`es `public/locales/<lang>.yaml`, parses it with the tiny reader, and exposes `t()` via context. It also sets `<html lang>` and `<html dir>` (rtl for Persian), and swaps `<title>` / `<meta description>` per locale. First locale resolution flips `<body>` to `is-ready` to fade the page in. YAML format is intentionally conservative — one `key: "value"` per line, JSON-style double-quoted strings — so the browser parser (`src/i18n/parseYaml.ts`) and the Python linter (`scripts/locales.py`) stay trivial. Don't introduce nesting, anchors, or multi-line scalars without upgrading both.
 - **Language switcher:** `src/components/LangSwitcher.tsx`. Custom button + `role="listbox"` dropdown — solves the broken-`g` problem the native `<select>` had (chevron clipping descenders), and renders each language in its own script (Persian with `dir="rtl"` and the Vazirmatn font, Bengali with Noto Sans Bengali). Full keyboard support (Arrow/Home/End/Enter/Esc) and click-outside dismiss.
 - **Map:** Google Maps embed iframe pointed at Dhaka city (no pin) — reflecting that the practice is mobile across chambers in Dhaka. Inline comment in `Location.tsx` explains how to swap it for a specific embed if she ever settles into a primary chamber.
+- **AI receptionist:** inline `<Receptionist/>` section between Services and Location. On the patient's first message, lazy-loads `@huggingface/transformers` + `Xenova/paraphrase-multilingual-MiniLM-L12-v2` (q8 quantized, ~120 MB from the HuggingFace CDN, browser HTTP-cached after first visit). The ONNX Runtime WASM is sourced from the jsDelivr CDN at runtime via `env.backends.onnx.wasm.wasmPaths` — we strip the duplicate copies Vite would otherwise emit via a tiny post-build plugin in `vite.config.ts` (the asyncify variant alone is ~23 MB; we'd blow past GH Pages budgets). All embedding + classification happens in the patient's browser; nothing leaves the device until they tap "Send to Dr Kyana on WhatsApp." Intent definitions, example phrases per intent, and booking slot schemas live in `src/services/intents.ts`. The classifier ranks each canonical intent by cosine similarity over the mean of its example embeddings; below `OTHER_THRESHOLD` (0.42) we fall back to the `other` intent and forward the raw message verbatim. The `book_appointment` intent triggers a multi-turn slot-filling chat (visit type → preferred time → name → optional note) before the WhatsApp handoff; everything else is a one-shot templated response + CTA.
 
 ## How to update
 
@@ -79,6 +88,10 @@ scripts/
 | WhatsApp QR | Export from WhatsApp → "Share my contact", save over `assets/whatsapp-qr.jpg`, run the optimizer. The script auto-crops the "Kiana Lotfi / WhatsApp Business Account" caption — if WhatsApp ever changes that layout, inspect the output in `public/assets/whatsapp-qr.png` and tweak `_autocrop_whatsapp()`. |
 | Practice / service area / availability | Edit copy in the locale files (keys under `location.*`). The block lives in `src/components/Location.tsx`. |
 | Map embed | Replace the `MAP_SRC` constant in `src/components/Location.tsx` per the inline comment. Default is a Dhaka city overview (no pin). |
+| Receptionist visible copy | Locale keys under `receptionist.*`. Run `python scripts/locales.py add receptionist.foo --en "..." --fa "..." --bn "..."` for new strings. |
+| Receptionist intents | `src/services/intents.ts`. Each intent has 5–10 example phrases (mix EN + BN) — these are mean-pooled into a centroid the classifier matches against. Add a phrase patients are likely to use that's failing to match. To add a new intent, also add `receptionist.intent.<id>.response` to the locales and a corresponding case in `src/services/whatsapp.ts`. |
+| Booking flow / slots | `BOOKING_SLOTS` in `src/services/intents.ts` defines the slot order, option chips, and freetext-or-not. Visit-type and time-window options carry their own EN/BN/FA labels per slot. |
+| Outgoing WhatsApp message format | `src/services/whatsapp.ts`'s `buildMessage()`. Always emits English (Dr Kyana reads English / Farsi but not Bengali) with the patient's raw note appended as a quoted block for context. |
 
 ## Local development
 
@@ -155,10 +168,19 @@ Pages **must** be configured to "Build and deployment → Source: GitHub Actions
 
 ## Out of scope (don't pull this in without asking)
 
-- **Patient management UX** — appointment booking, intake forms, patient records. She'll use AppSheet / Google Forms separately. If a future ask is "build the intake flow," confirm whether AppSheet is still the plan first.
-- **Anthropic API integration** — discussed but not warranted yet. Revisit only if AI features (intake summarization, WhatsApp triage drafts) become useful at real volume.
+- **Free-form patient management UX** — appointment booking, intake forms, patient records living anywhere persistent. The AI receptionist emits a structured WhatsApp message and that's the boundary. Everything broader stays on AppSheet / Google Forms separately. If a future ask is "build the intake flow," confirm whether AppSheet is still the plan first.
+- **Persistence of receptionist submissions.** Sketched in "Deferred" — Google Sheet + Apps Script proxy + AppSheet on top — but explicitly not implemented. Do not add a `fetch` from `<Receptionist/>` to any remote endpoint without confirming first.
+- **Generative responses.** The receptionist is a classifier with templated responses, not a chat LLM. We picked this on purpose (no hallucination, no medical advice, smaller download). Do not swap in a generative model (`xenova/qwen`, etc.) without confirming the tradeoff with the user.
+- **Anthropic API integration** — discussed but not warranted yet. The on-device classifier covers the receptionist use case.
 - **Backend, database, auth, CMS** — none of that. Still a static page, just compiled.
-- **Multi-page routing** — it's intentionally a single anchored page. If multi-page ever becomes a real need, add `react-router` and consider whether it's still a "promo site" or has crossed into product territory.
+- **PWA install / standalone shell.** Removed when the receptionist moved inline. The site is plain HTTPS, no service worker, no manifest. If we ever want offline support, vite-plugin-pwa fits cleanly back in.
+
+## Deferred
+
+- **Farsi receptionist intents.** Today the multilingual MiniLM model embeds Farsi into the same vector space as English/Bengali so FA messages "kind of work" — but the canonical example phrases in `src/services/intents.ts` are EN + BN only. Add FA phrases per intent to lift accuracy when she onboards her first Iranian patients.
+- **Persistence of receptionist submissions to a Google Sheet, with AppSheet as Dr Kyana's mobile management surface.** Shape: ~30-line Apps Script web app deployed as anyone-can-execute, URL stored as the `SHEETS_WEBHOOK_URL` repo secret and injected at build time as `VITE_SHEETS_WEBHOOK_URL`. Client-side, a `src/services/receptionistLog.ts` would `fetch` (`mode: 'no-cors'`, `Content-Type: text/plain`, `keepalive: true`) on the WhatsApp-button click, best-effort, silent failure. AppSheet on the same Sheet gives her push notifications for `intent=urgent` and a `new / contacted / scheduled / done / closed` status workflow without touching the raw sheet. Direct AppSheet REST API was ruled out because its `ApplicationAccessKey` would leak in the public bundle.
+- **Web Worker for inference.** The classifier currently runs on the main thread. For long inputs / slower devices, move `pipeline` + `embed` into a Worker so the chat UI never jank-stalls.
+- **CDN-pinned wasm version.** `intentClassifier.ts` points `wasmPaths` at `@huggingface/transformers@3` on jsDelivr — pin a specific subversion before going live to avoid CDN drift breaking inference unannounced.
 
 ## RTL / Farsi caution
 
