@@ -1,12 +1,12 @@
 # Dr Kyana — Portfolio Site
 
-Single-page promotional site for Dr Kyana, a dental surgeon consulting at chambers across Dhaka on a freelance basis (no single fixed clinic — appointment locations are confirmed per patient). Lives on her Instagram bio and (eventually) a business card. Patient management is **explicitly out of scope** — that's handled separately via AppSheet / Google Forms.
+Single-page promotional site for Dr Kyana, a dental surgeon consulting at chambers across Dhaka on a freelance basis (no single fixed clinic — appointment locations are confirmed per patient). Lives on her Instagram bio and (eventually) a business card. Free-form patient management is **out of scope** — that's handled separately via AppSheet / Google Forms. The one structured intake the site does host is the **Quick Check PWA** at `#/quick-check`: an installable Chrome-only tool that runs on-device AI triage and hands off to WhatsApp. It does not yet persist anything — see "Deferred" below.
 
 Brand voice: calm, considered, modern. Site tagline is **"Modern dentistry. Considered care."** Don't reintroduce "fresh graduate" framing — it was deliberately removed to project a more established, professional brand.
 
 ## What this is
 
-A Vite + React 19 + TypeScript + Tailwind v4 SPA. Anchor-scrolled sections (Home / About / Services / Practice / Contact), three-language i18n (English / Persian / Bengali) via runtime-fetched YAML files. Built to a static bundle and deployed to GitHub Pages by a GH Actions workflow.
+A Vite + React 19 + TypeScript + Tailwind v4 SPA. Anchor-scrolled marketing site (Home / About / Services / Practice / Contact) plus one hash-routed standalone surface (`#/quick-check`) that doubles as an installable Chrome PWA. Three-language i18n (English / Persian / Bengali) via runtime-fetched YAML files. Built to a static bundle and deployed to GitHub Pages by a GH Actions workflow.
 
 Repo layout:
 
@@ -18,30 +18,39 @@ package.json
 
 src/
   main.tsx                    # React root + <I18nProvider>.
-  App.tsx                     # Section composition.
+  App.tsx                     # Hash-route switch: marketing site or <QuickCheckApp/>.
+  router.ts                   # useHashRoute() — tiny hashchange-subscribed hook.
   index.css                   # Tailwind import + @theme tokens + a few component classes.
   components/
     Header.tsx                # Sticky header with nav, mobile toggle, LangSwitcher.
-    LangSwitcher.tsx          # Custom dropdown (button + listbox) — globe / native script / chevron.
-    Hero.tsx                  # Photo + headline + CTAs.
+    LangSwitcher.tsx          # Custom dropdown (button + listbox).
+    Hero.tsx
     About.tsx
-    Services.tsx              # Auto-advancing carousel (Carousel.tsx).
-    Location.tsx              # Service-area card + Google Maps embed.
-    Contact.tsx               # Email / IG / WhatsApp cards with QR images.
+    Services.tsx
+    Location.tsx
+    Contact.tsx               # Exports WHATSAPP_LINK as the one source of truth.
+    QuickCheck.tsx            # Exports <QuickCheckBody/> — the edge-AI triage card body.
+    QuickCheckCta.tsx         # Homepage CTA pointing at #/quick-check.
+    InstallPrompt.tsx         # Captures beforeinstallprompt; handles iOS / standalone.
     Footer.tsx
+  routes/
+    QuickCheckApp.tsx         # Standalone PWA shell wrapping <QuickCheckBody/>.
   i18n/
-    I18nProvider.tsx          # React context: detects lang, fetches yaml, caches, swaps <html lang/dir>.
-    useTranslation.ts         # Hook returning { lang, setLang, t, ready }.
-    parseYaml.ts              # Tiny parser matching the conservative format.
+    I18nProvider.tsx
+    useTranslation.ts
+    parseYaml.ts
 
 public/
-  locales/{en,fa,bn}.yaml     # Source of truth for translations. Served at /drkyana/locales/<lang>.yaml.
+  locales/{en,fa,bn}.yaml
+  icons/
+    quick-check-{192,512,maskable}.png   # PWA manifest icons (generated).
   assets/
-    photo.jpg                 # Optimized hero photo (1024 px).
-    insta-qr.png              # Instagram QR (pixel-exact at source resolution).
-    whatsapp-qr.png           # WhatsApp QR (caption stripped, ~360 px).
+    photo.jpg
+    insta-qr.png
+    whatsapp-qr.png
+  tooth.svg                   # Favicon + PWA icon source.
 
-assets/                       # SOURCE images (high-res originals). Read by scripts/optimize_images.py.
+assets/                       # SOURCE images for scripts/optimize_images.py.
   photo.jpg
   insta-qr.png
   whatsapp-qr.jpg
@@ -49,6 +58,7 @@ assets/                       # SOURCE images (high-res originals). Read by scri
 scripts/
   locales.py                  # Lint & manage the locale YAML files.
   optimize_images.py          # Build public/assets/* from assets/*. Has --check for CI.
+  generate_pwa_icons.py       # Rasterize public/tooth.svg into public/icons/*.png.
 
 .github/workflows/deploy.yml  # On push to main: lint locales, verify optimized assets,
                               # typecheck, build, deploy to Pages.
@@ -66,6 +76,7 @@ scripts/
 - **i18n:** `I18nProvider` reads `localStorage.drkyana.lang` or falls back to `navigator.language` (`fa*` → Persian, `bn*` → Bengali, else English), then `fetch`es `public/locales/<lang>.yaml`, parses it with the tiny reader, and exposes `t()` via context. It also sets `<html lang>` and `<html dir>` (rtl for Persian), and swaps `<title>` / `<meta description>` per locale. First locale resolution flips `<body>` to `is-ready` to fade the page in. YAML format is intentionally conservative — one `key: "value"` per line, JSON-style double-quoted strings — so the browser parser (`src/i18n/parseYaml.ts`) and the Python linter (`scripts/locales.py`) stay trivial. Don't introduce nesting, anchors, or multi-line scalars without upgrading both.
 - **Language switcher:** `src/components/LangSwitcher.tsx`. Custom button + `role="listbox"` dropdown — solves the broken-`g` problem the native `<select>` had (chevron clipping descenders), and renders each language in its own script (Persian with `dir="rtl"` and the Vazirmatn font, Bengali with Noto Sans Bengali). Full keyboard support (Arrow/Home/End/Enter/Esc) and click-outside dismiss.
 - **Map:** Google Maps embed iframe pointed at Dhaka city (no pin) — reflecting that the practice is mobile across chambers in Dhaka. Inline comment in `Location.tsx` explains how to swap it for a specific embed if she ever settles into a primary chamber.
+- **Quick Check PWA:** the `#/quick-check` route renders `<QuickCheckApp/>` instead of the marketing site. It hosts `<QuickCheckBody/>` (Chrome Prompt API triage from PR #14) plus an install prompt. `vite-plugin-pwa` emits the manifest and service worker; `start_url` is `/drkyana/#/quick-check` so installed launches go straight to the tool. iOS users see an honest "Apple won't let any iPhone browser run on-device AI" notice instead of a misleading "install Chrome" prompt — every iOS browser is forced onto WebKit, so Chrome iOS can't run the Prompt API either. Hash routing was chosen over path routing because GH Pages has no SPA fallback rewrite. The homepage advertises the route via a single compact CTA card (`<QuickCheckCta/>`); the marketing nav has no link to it (the PWA shell has its own header).
 
 ## How to update
 
@@ -79,6 +90,9 @@ scripts/
 | WhatsApp QR | Export from WhatsApp → "Share my contact", save over `assets/whatsapp-qr.jpg`, run the optimizer. The script auto-crops the "Kiana Lotfi / WhatsApp Business Account" caption — if WhatsApp ever changes that layout, inspect the output in `public/assets/whatsapp-qr.png` and tweak `_autocrop_whatsapp()`. |
 | Practice / service area / availability | Edit copy in the locale files (keys under `location.*`). The block lives in `src/components/Location.tsx`. |
 | Map embed | Replace the `MAP_SRC` constant in `src/components/Location.tsx` per the inline comment. Default is a Dhaka city overview (no pin). |
+| Quick Check copy or triage prompt | Locale keys under `quickCheck.*` for visible strings. System prompt is the `SYSTEM_PROMPT` constant in `src/components/QuickCheck.tsx` — keep it conservative (no diagnosis, no medication names). |
+| PWA install copy or behaviour | `src/components/InstallPrompt.tsx` for the install button / iOS notice / chrome-only fallback. Manifest fields (name, start_url, theme color, icons) live in `vite.config.ts` under the `VitePWA({ manifest: ... })` block. |
+| PWA icons | Replace `public/tooth.svg`, run `python3 scripts/generate_pwa_icons.py` (needs `pip install cairosvg pillow`), commit both the SVG and the regenerated PNGs in `public/icons/`. |
 
 ## Local development
 
@@ -92,7 +106,7 @@ npm run locales:check      # python scripts/locales.py check
 npm run images:optimize    # python scripts/optimize_images.py
 ```
 
-Python deps for the helper scripts: `pip install pillow numpy`.
+Python deps for the helper scripts: `pip install pillow numpy cairosvg` (cairosvg only needed by `generate_pwa_icons.py`).
 
 ## Scripts
 
@@ -155,10 +169,17 @@ Pages **must** be configured to "Build and deployment → Source: GitHub Actions
 
 ## Out of scope (don't pull this in without asking)
 
-- **Patient management UX** — appointment booking, intake forms, patient records. She'll use AppSheet / Google Forms separately. If a future ask is "build the intake flow," confirm whether AppSheet is still the plan first.
+- **Free-form patient management UX** — appointment booking, intake forms, patient records. The Quick Check PWA emits a single triage payload (urgency / category / WhatsApp handoff) and is the only structured intake the site touches. Everything broader stays on AppSheet / Google Forms separately. If a future ask is "build the intake flow," confirm whether AppSheet is still the plan first.
+- **Persistence of Quick Check submissions.** Sketched in "Deferred" — Google Sheet + Apps Script proxy + AppSheet on top — but explicitly not implemented in the current build. Do not add a fetch from `<QuickCheckBody/>` to any remote endpoint without confirming first.
 - **Anthropic API integration** — discussed but not warranted yet. Revisit only if AI features (intake summarization, WhatsApp triage drafts) become useful at real volume.
 - **Backend, database, auth, CMS** — none of that. Still a static page, just compiled.
-- **Multi-page routing** — it's intentionally a single anchored page. If multi-page ever becomes a real need, add `react-router` and consider whether it's still a "promo site" or has crossed into product territory.
+- **Path-based routing (e.g. `/quick-check`).** GH Pages doesn't do SPA fallback rewrites; hash routing is intentional. Migrating later would need a `404.html` redirect shim.
+- **iOS install.** Apple forces every iOS browser onto WebKit, so neither Safari nor Chrome iOS can run the Prompt API. iOS Safari's "Add to Home Screen" would produce a working shell but a non-functional triage; we deliberately don't promote install on iOS.
+
+## Deferred
+
+- **Persistence of Quick Check submissions to a Google Sheet, with AppSheet as Dr Kyana's mobile management surface.** Shape: ~30-line Apps Script web app deployed as anyone-can-execute, URL stored as the `SHEETS_WEBHOOK_URL` repo secret and injected at build time as `VITE_SHEETS_WEBHOOK_URL`. Client-side, a `src/services/triageLog.ts` would `fetch` (`mode: 'no-cors'`, `Content-Type: text/plain`, `keepalive: true`) on the WhatsApp-button click, best-effort, silent failure. AppSheet on the same Sheet gives her push notifications for `urgency=urgent` and a `new / contacted / scheduled / done / closed` status workflow without touching the raw sheet. Direct AppSheet REST API was ruled out because its `ApplicationAccessKey` would leak in the public bundle.
+- **PWA icon artwork.** Current icons are auto-rasterized from `public/tooth.svg` (white tooth on brand-navy). Replace `tooth.svg` and re-run `python3 scripts/generate_pwa_icons.py` to update.
 
 ## RTL / Farsi caution
 

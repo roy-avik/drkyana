@@ -23,7 +23,7 @@ const SYSTEM_PROMPT = `You are a conservative dental-triage assistant for Dr Kya
 
 let session: LanguageModelSession | null = null;
 
-export function QuickCheck() {
+export function QuickCheckBody() {
   const { t } = useTranslation();
   const [status, setStatus] = useState<AvailabilityState>('checking');
   const [input, setInput] = useState('');
@@ -84,24 +84,54 @@ export function QuickCheck() {
   const message = `Hello Dr Kyana — ${input.trim().slice(0, 300)}.\nAI quick check: ${triage ? `${t(`quickCheck.urgency.${triage.urgency}`)} / ${t(`quickCheck.category.${triage.category}`)}` : t('quickCheck.error')}.`;
   const waHref = `${whatsappBase}?text=${encodeURIComponent(message)}`;
 
-  return <section id="quick-check" className="py-20 md:py-28"><div className="container-page">
-    <span className="section-label">{t('quickCheck.label', 'Quick check')}</span>
-    <h2 className="mt-3 text-3xl font-bold tracking-tight md:text-4xl">{t('quickCheck.title')}</h2>
-    <p className="mt-5 text-muted md:text-lg">{t('quickCheck.subtitle')}</p>
-    <p className="mt-5 rounded-xl bg-surface-alt p-3 text-sm text-muted">{t('quickCheck.disclaimer')}</p>
-    {status === 'unavailable' ? <p className="mt-6 rounded-xl border border-brand/20 bg-brand/5 p-4 text-sm text-brand">{t('quickCheck.fallback')} <a href={whatsappBase} target="_blank" rel="noreferrer" className="font-semibold underline">WhatsApp</a></p> : <>
-      <textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder={t('quickCheck.placeholder')} className="mt-6 min-h-28 w-full rounded-2xl border border-ink/10 p-4" />
-      <button disabled={loading || status === 'downloading' || !input.trim()} onClick={() => void onRun()} className="btn-primary mt-4">
-        {loading || status === 'downloading' ? `${t('quickCheck.button.loading')} ${progress ? `(${progress}%)` : ''}` : status === 'downloadable' ? t('quickCheck.button.preparing') : t('quickCheck.button.ready')}
-      </button>
-      {(triage || error) && <div className="mt-6 rounded-2xl bg-surface-alt p-5 ring-1 ring-ink/5">
-        {triage ? <>
-          <p><span className={`qc-badge qc-badge--${triage.urgency}`}>{t(`quickCheck.urgency.${triage.urgency}`)}</span></p>
-          <p className="mt-3 font-semibold">{t(`quickCheck.category.${triage.category}`)}</p>
-          <p className="mt-2 text-sm text-muted">{triage.reason}</p>
-        </> : <p className="text-sm text-muted">{t('quickCheck.error')}</p>}
-        <a href={waHref} target="_blank" rel="noreferrer" className="btn-ghost mt-4">{t('quickCheck.cta')}</a>
-      </div>}
-    </>}
-  </div></section>;
+  return (
+    <div>
+      <h2 className="text-2xl font-bold tracking-tight text-ink md:text-3xl">{t('quickCheck.title')}</h2>
+      <p className="mt-3 text-sm text-muted md:text-base">{t('quickCheck.subtitle')}</p>
+      <p className="mt-5 rounded-xl bg-surface-alt p-3 text-sm text-muted">{t('quickCheck.disclaimer')}</p>
+      {status === 'unavailable' ? (
+        <p className="mt-6 rounded-xl border border-brand/20 bg-brand/5 p-4 text-sm text-brand">
+          {t('quickCheck.fallback')}{' '}
+          <a href={whatsappBase} target="_blank" rel="noreferrer" className="font-semibold underline">WhatsApp</a>
+        </p>
+      ) : (
+        <>
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={t('quickCheck.placeholder')}
+            className="mt-6 min-h-28 w-full rounded-2xl border border-ink/10 bg-white p-4 text-ink focus:outline-none focus:ring-2 focus:ring-brand/30"
+          />
+          <button
+            type="button"
+            disabled={loading || status === 'downloading' || !input.trim()}
+            onClick={() => void onRun()}
+            className="btn-primary mt-4 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-brand disabled:hover:shadow-none"
+          >
+            {loading || status === 'downloading'
+              ? `${t('quickCheck.button.loading')} ${progress ? `(${progress}%)` : ''}`
+              : status === 'downloadable'
+                ? t('quickCheck.button.preparing')
+                : t('quickCheck.button.ready')}
+          </button>
+          {(triage || error) && (
+            <div className="mt-6 rounded-2xl bg-surface-alt p-5 ring-1 ring-ink/5">
+              {triage ? (
+                <>
+                  <p>
+                    <span className={`qc-badge qc-badge--${triage.urgency}`}>{t(`quickCheck.urgency.${triage.urgency}`)}</span>
+                  </p>
+                  <p className="mt-3 font-semibold">{t(`quickCheck.category.${triage.category}`)}</p>
+                  <p className="mt-2 text-sm text-muted">{triage.reason}</p>
+                </>
+              ) : (
+                <p className="text-sm text-muted">{t('quickCheck.error')}</p>
+              )}
+              <a href={waHref} target="_blank" rel="noreferrer" className="btn-ghost mt-4">{t('quickCheck.cta')}</a>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
 }

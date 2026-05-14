@@ -3,11 +3,17 @@ import { Hero } from './components/Hero';
 import { About } from './components/About';
 import { Services } from './components/Services';
 import { Location } from './components/Location';
-import { QuickCheck } from './components/QuickCheck';
+import { QuickCheckCta } from './components/QuickCheckCta';
 import { Contact } from './components/Contact';
 import { Footer } from './components/Footer';
+import { QuickCheckApp } from './routes/QuickCheckApp';
+import { useHashRoute } from './router';
 
 export function App() {
+  const route = useHashRoute();
+
+  if (route === '/quick-check') return <QuickCheckApp />;
+
   return (
     <>
       <Header />
@@ -15,7 +21,7 @@ export function App() {
         <Hero />
         <About />
         <Services />
-        <QuickCheck />
+        <QuickCheckCta />
         <Location />
         <Contact />
       </main>
