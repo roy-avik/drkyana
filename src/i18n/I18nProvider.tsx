@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import { parseYaml } from './parseYaml';
+import enYamlRaw from '../../public/locales/en.yaml?raw';
 
 export type Lang = 'en' | 'fa' | 'bn';
 export const LANGS: Lang[] = ['en', 'fa', 'bn'];
@@ -36,11 +37,12 @@ function detectInitial(): Lang {
 }
 
 const cache = new Map<Lang, Dict>();
+cache.set('en', parseYaml(enYamlRaw));
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => detectInitial());
   const [dict, setDict] = useState<Dict>(() => cache.get(detectInitial()) ?? {});
-  const [ready, setReady] = useState<boolean>(false);
+  const [ready, setReady] = useState<boolean>(() => cache.has(lang));
 
   useEffect(() => {
     let cancelled = false;

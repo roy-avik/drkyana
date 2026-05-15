@@ -165,6 +165,7 @@ Pages **must** be configured to "Build and deployment → Source: GitHub Actions
 ## Workflow
 
 - **Delete merged PR branches.** After a PR merges, the assistant runs `git branch -D <name>` locally. The remote ref cannot be deleted from this harness — `git push origin --delete` is blocked with 403 by the proxy, and no MCP tool exposes the GitHub `DELETE /git/refs/...` endpoint. Either click "Delete branch" on the merged PR, or enable **Settings → General → "Automatically delete head branches"** on the repo.
+- **Always pull `main` before starting a new branch.** This repo is actively developed on both cloud & local environments, and the GH Pages deployment is tied to `main` — if your branch diverges too much, you risk merge conflicts or even build breakage when the deploy workflow runs. Pulling latest `main` before starting a new branch keeps you up to date with recent changes and reduces friction at merge time.
 
 ## Out of scope (don't pull this in without asking)
 
