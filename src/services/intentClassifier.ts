@@ -1,9 +1,11 @@
 // Tiny on-device intent classifier built on Transformers.js + multilingual
 // MiniLM. The model + the transformers.js library + the ~9 MB ONNX Runtime
 // Web WASM are all fetched lazily the first time the patient sends a
-// message, then cached by the browser's HTTP cache. The dynamic `import()`
-// below keeps all of this out of the marketing-site bundle — the homepage
-// pays nothing until someone interacts with the receptionist.
+// message, then cached by the browser's Cache Storage API (via the
+// env.useBrowserCache flag set below) so they survive across reloads even
+// under cache pressure. The dynamic `import()` below keeps all of this
+// out of the marketing-site bundle — the homepage pays nothing until
+// someone interacts with the receptionist.
 //
 // We embed the patient's message and every canonical example phrase from
 // intents.ts into the same vector space, then pick the intent whose
@@ -45,6 +47,11 @@ export function loadClassifier(onProgress?: (p: LoadProgress) => void): Promise<
           'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3/dist/';
       }
       env.allowLocalModels = false;
+      // Persist the model shards in Cache Storage so a returning patient
+      // doesn't re-download ~120 MB. Defaults to true on current versions
+      // of @huggingface/transformers — pinned explicitly so a future
+      // default flip can't silently turn it off.
+      env.useBrowserCache = true;
       const pipe = await pipeline('feature-extraction', MODEL, {
         dtype: 'q8',
         progress_callback: (p: LoadProgress) => onProgress?.(p),
