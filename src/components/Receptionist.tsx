@@ -12,7 +12,7 @@ type Phase = 'idle' | 'loading' | 'classifying' | 'asking_slot' | 'reviewing' | 
 type ChatMsg = { role: 'bot' | 'user'; text: string };
 
 export function Receptionist() {
-  const { t } = useTranslation();
+  const { t, ready } = useTranslation();
   const [phase, setPhase] = useState<Phase>('idle');
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [draft, setDraft] = useState('');
@@ -23,11 +23,11 @@ export function Receptionist() {
   const [slotIdx, setSlotIdx] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Seed the greeting once translations are ready.
   useEffect(() => {
-    setMessages([{ role: 'bot', text: t('receptionist.greeting') }]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (ready) {
+      setMessages([{ role: 'bot', text: t('receptionist.greeting') }]);
+    }
+  }, [ready, t]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
