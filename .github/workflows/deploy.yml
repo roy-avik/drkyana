@@ -46,6 +46,9 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          VITE_SHEETS_WEBHOOK_URL: ${{ secrets.VITE_SHEETS_WEBHOOK_URL }}
+          VITE_SHEETS_TOKEN: ${{ secrets.VITE_SHEETS_TOKEN }}
 
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v4

@@ -40,9 +40,15 @@ export const INTENTS: Intent[] = [
       'I want to see Dr Kyana',
       'How do I schedule a visit',
       'Need to book a cleaning',
+      'I need to extract my wisdom tooth',
+      'I have a cavity that needs filling',
+      'My tooth needs a root canal',
+      'I want to get my teeth checked',
       'আমি একটা অ্যাপয়েন্টমেন্ট নিতে চাই',
       'ডাঃ কিয়ানার সাথে দেখা করতে চাই',
       'দাঁত পরিষ্কারের জন্য সময় নিতে চাই',
+      'আমার আক্কেল দাঁত ফেলতে হবে',
+      'দাঁতে গর্ত হয়েছে ভরাট করতে হবে',
     ],
   },
   {
@@ -67,10 +73,12 @@ export const INTENTS: Intent[] = [
       'Severe pain, my face is swollen',
       "I'm in agony, the pain is unbearable",
       'Broken tooth from a fall',
+      'Wisdom tooth pain is killing me',
       'দাঁত থেকে রক্ত পড়ছে',
       'খুব ব্যথা করছে সহ্য করতে পারছি না',
       'মুখ ফুলে গেছে',
       'দাঁত ভেঙে গেছে',
+      'আক্কেল দাঁতে অসহ্য ব্যথা',
     ],
   },
   {
@@ -158,43 +166,6 @@ export const INTENTS: Intent[] = [
     // is below the OTHER_THRESHOLD (see intentClassifier.ts).
     examples: [],
   },
-];
-
-// Booking slot schema. Each slot is asked one at a time in the chat flow.
-// `options` defines the choice chips for that slot; `freetext: true` lets the
-// patient also type a custom value.
-
-export type Slot = {
-  id: 'visit_type' | 'preferred_time' | 'name' | 'note';
-  freetext: boolean;
-  options?: { id: string; en: string; bn: string; fa: string }[];
-};
-
-export const BOOKING_SLOTS: Slot[] = [
-  {
-    id: 'visit_type',
-    freetext: true,
-    options: [
-      { id: 'cleaning', en: 'Cleaning / scaling', bn: 'ক্লিনিং / স্কেলিং', fa: 'جرم‌گیری' },
-      { id: 'pain', en: 'Tooth pain', bn: 'দাঁতের ব্যথা', fa: 'دندان درد' },
-      { id: 'filling', en: 'Filling / cavity', bn: 'ফিলিং / গর্ত', fa: 'پر کردن' },
-      { id: 'rct', en: 'Root canal', bn: 'রুট ক্যানেল', fa: 'درمان ریشه' },
-      { id: 'consult', en: 'Consultation', bn: 'পরামর্শ', fa: 'مشاوره' },
-      { id: 'other', en: 'Other', bn: 'অন্যান্য', fa: 'دیگر' },
-    ],
-  },
-  {
-    id: 'preferred_time',
-    freetext: true,
-    options: [
-      { id: 'this_week', en: 'This week', bn: 'এই সপ্তাহে', fa: 'این هفته' },
-      { id: 'this_weekend', en: 'This weekend', bn: 'এই সপ্তাহান্তে', fa: 'این آخر هفته' },
-      { id: 'next_week', en: 'Next week', bn: 'আগামী সপ্তাহে', fa: 'هفته آینده' },
-      { id: 'flexible', en: 'Flexible', bn: 'নমনীয়', fa: 'انعطاف‌پذیر' },
-    ],
-  },
-  { id: 'name', freetext: true },
-  { id: 'note', freetext: true },
 ];
 
 export function findIntent(id: IntentId): Intent {

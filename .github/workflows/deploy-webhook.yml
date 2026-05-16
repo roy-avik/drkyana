@@ -1,0 +1,53 @@
+name: Deploy Webhook
+
+# Pushes scripts/receptionist-webhook.gs to Google Apps Script via clasp
+# whenever the webhook code changes. Keeps the live deployment in sync
+# with the repo automatically.
+#
+# One-time setup required — see CLAUDE.md § "Apps Script CI" for the full
+# walkthrough. Short version:
+#   1. Create a Google Cloud project, enable Apps Script API.
+#   2. Create OAuth Desktop credentials, run `clasp login --creds creds.json`.
+#   3. Copy ~/.clasprc.json contents → repo secret CLASP_CREDENTIALS.
+#   4. Create the Apps Script project, note the script ID → APPS_SCRIPT_ID.
+#   5. Deploy the web app once manually, note deployment ID → APPS_SCRIPT_DEPLOYMENT_ID.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/receptionist-webhook.gs'
+      - 'scripts/appsscript.json'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Install clasp
+        run: npm install -g @google/clasp
+
+      - name: Authenticate clasp
+        run: echo '${{ secrets.CLASP_CREDENTIALS }}' > ~/.clasprc.json
+
+      - name: Write .clasp.json
+        working-directory: scripts
+        run: printf '{"scriptId":"%s","rootDir":"."}' "$SCRIPT_ID" > .clasp.json
+        env:
+          SCRIPT_ID: ${{ secrets.APPS_SCRIPT_ID }}
+
+      - name: Push to Apps Script
+        working-directory: scripts
+        run: clasp push --force
+
+      - name: Update deployment
+        working-directory: scripts
+        run: clasp deploy -i "$DEPLOYMENT_ID" -d "Auto-deploy $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        env:
+          DEPLOYMENT_ID: ${{ secrets.APPS_SCRIPT_DEPLOYMENT_ID }}

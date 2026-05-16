@@ -11,3 +11,5 @@ dist/
 *.log
 .vite/
 *.tsbuildinfo
+.clasp.json
+.clasprc.json
