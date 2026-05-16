@@ -368,14 +368,14 @@ export function Receptionist() {
                 <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-ink/10 border-t-brand" />
                 <p className="text-sm text-muted">
                   {loadPct !== null && loadPct > 0
-                    ? `${t('receptionist.loading')} (${Math.round(loadPct * 100)}%)`
+                    ? `${t('receptionist.loading')} (${Math.round(loadPct)}%)`
                     : t('receptionist.loading')}
                 </p>
                 {loadPct !== null && loadPct > 0 && (
                   <div className="h-1.5 w-48 overflow-hidden rounded-full bg-ink/5">
                     <div
                       className="h-full rounded-full bg-brand transition-all duration-300"
-                      style={{ width: `${Math.round(loadPct * 100)}%` }}
+                      style={{ width: `${Math.round(loadPct)}%` }}
                     />
                   </div>
                 )}
