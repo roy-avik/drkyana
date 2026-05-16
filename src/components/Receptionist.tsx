@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from '../i18n/useTranslation';
 import {
   classify,
+  isModelReady,
   loadClassifier,
   type LoadProgress,
 } from '../services/intentClassifier';
@@ -22,6 +23,7 @@ import { logIntake } from '../services/receptionistLog';
 // ---------------------------------------------------------------------------
 
 type Phase =
+  | 'standby'
   | 'idle'
   | 'loading'
   | 'classifying'
@@ -41,10 +43,10 @@ const CLINICAL_INTENTS = new Set<IntentId>([
 // ---------------------------------------------------------------------------
 
 export function Receptionist() {
-  const { t, lang, ready } = useTranslation();
+  const { t, lang } = useTranslation();
 
   // Core state
-  const [phase, setPhase] = useState<Phase>('idle');
+  const [phase, setPhase] = useState<Phase>('standby');
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [draft, setDraft] = useState('');
   const [loadPct, setLoadPct] = useState<number | null>(null);
@@ -63,12 +65,34 @@ export function Receptionist() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Greeting on mount
+  // Preload model on visit (async, silent — no UI until user clicks the button)
   useEffect(() => {
-    if (ready) {
+    loadClassifier((p: LoadProgress) => {
+      if (typeof p.progress === 'number') setLoadPct(p.progress);
+    }).catch(() => {
+      // Silent failure during preload — handled when user clicks start
+    });
+  }, []);
+
+  function onStartChat() {
+    if (isModelReady()) {
       setMessages([{ role: 'bot', text: t('receptionist.greeting') }]);
+      setPhase('idle');
+    } else {
+      setPhase('loading');
+      loadClassifier((p: LoadProgress) => {
+        if (typeof p.progress === 'number') setLoadPct(p.progress);
+      })
+        .then(() => {
+          setMessages([{ role: 'bot', text: t('receptionist.greeting') }]);
+          setPhase('idle');
+        })
+        .catch(() => {
+          setMessages([{ role: 'bot', text: t('receptionist.greeting') }]);
+          setPhase('idle');
+        });
     }
-  }, [ready, t]);
+  }
 
   // Auto-scroll
   useEffect(() => {
@@ -319,40 +343,75 @@ export function Receptionist() {
           </div>
 
           <div className="mt-8 overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-ink/5">
-            {/* Progress bar */}
-            {phase === 'asking_slot' && (
-              <div className="h-1 bg-ink/5">
-                <div
-                  className="h-full bg-brand transition-all duration-500"
-                  style={{ width: `${Math.round(progress * 100)}%` }}
-                />
+            {/* Standby — entry point */}
+            {phase === 'standby' && (
+              <div className="flex flex-col items-center gap-5 px-6 py-10 md:py-14">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand/8">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-7 w-7 text-brand">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
+                  </svg>
+                </div>
+                <p className="max-w-sm text-center text-sm text-muted">{t('receptionist.privacy')}</p>
+                <button
+                  type="button"
+                  onClick={onStartChat}
+                  className="btn-primary px-8 py-3"
+                >
+                  {t('receptionist.start_button')}
+                </button>
               </div>
             )}
 
-            {/* Chat messages */}
-            <div
-              ref={scrollRef}
-              className="flex max-h-[32rem] flex-col gap-3 overflow-y-auto p-5 md:p-6"
-            >
-              {messages.map((m, i) => (
-                <ChatBubble key={i} role={m.role} text={m.text} />
-              ))}
-              {phase === 'loading' && (
-                <ChatBubble
-                  role="bot"
-                  text={
-                    loadPct !== null && loadPct > 0
-                      ? `${t('receptionist.loading')} (${Math.round(loadPct * 100)}%)`
-                      : t('receptionist.loading')
-                  }
-                />
-              )}
-              {phase === 'classifying' && (
-                <ChatBubble role="bot" text={t('receptionist.thinking')} />
-              )}
-            </div>
+            {/* Loading — waiting for model download */}
+            {phase === 'loading' && (
+              <div className="flex flex-col items-center gap-4 px-6 py-10 md:py-14">
+                <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-ink/10 border-t-brand" />
+                <p className="text-sm text-muted">
+                  {loadPct !== null && loadPct > 0
+                    ? `${t('receptionist.loading')} (${Math.round(loadPct * 100)}%)`
+                    : t('receptionist.loading')}
+                </p>
+                {loadPct !== null && loadPct > 0 && (
+                  <div className="h-1.5 w-48 overflow-hidden rounded-full bg-ink/5">
+                    <div
+                      className="h-full rounded-full bg-brand transition-all duration-300"
+                      style={{ width: `${Math.round(loadPct * 100)}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Active chat phases */}
+            {phase !== 'standby' && phase !== 'loading' && (
+              <>
+                {/* Progress bar */}
+                {phase === 'asking_slot' && (
+                  <div className="h-1 bg-ink/5">
+                    <div
+                      className="h-full bg-brand transition-all duration-500"
+                      style={{ width: `${Math.round(progress * 100)}%` }}
+                    />
+                  </div>
+                )}
+
+                {/* Chat messages */}
+                <div
+                  ref={scrollRef}
+                  className="flex max-h-[32rem] flex-col gap-3 overflow-y-auto p-5 md:p-6"
+                >
+                  {messages.map((m, i) => (
+                    <ChatBubble key={i} role={m.role} text={m.text} />
+                  ))}
+                  {phase === 'classifying' && (
+                    <ChatBubble role="bot" text={t('receptionist.thinking')} />
+                  )}
+                </div>
+              </>
+            )}
 
             {/* Input area */}
+            {phase !== 'standby' && phase !== 'loading' && (
             <div className="border-t border-ink/5 bg-surface-alt p-4 md:p-5">
               {phase === 'idle' && (
                 <ChatInput
@@ -363,7 +422,7 @@ export function Receptionist() {
                 />
               )}
 
-              {(phase === 'loading' || phase === 'classifying') && (
+              {phase === 'classifying' && (
                 <div className="h-12 animate-pulse rounded-2xl bg-ink/5" />
               )}
 
@@ -413,9 +472,12 @@ export function Receptionist() {
                 />
               )}
             </div>
+            )}
           </div>
 
-          <p className="mt-4 text-center text-xs text-muted">{t('receptionist.privacy')}</p>
+          {phase !== 'standby' && (
+            <p className="mt-4 text-center text-xs text-muted">{t('receptionist.privacy')}</p>
+          )}
         </div>
       </div>
     </section>

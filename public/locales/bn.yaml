@@ -110,3 +110,4 @@ intake.slot.preferred_days.ask: "কোন দিনগুলো আপনার
 intake.slot.time_of_day.ask: "দিনের কোন সময় পছন্দ?"
 intake.slot.urgency.ask: "কত দ্রুত দেখানো দরকার?"
 intake.slot.payment.ask: "পেমেন্ট পদ্ধতি?"
+receptionist.start_button: "আপনার সমস্যা বর্ণনা করুন"

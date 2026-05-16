@@ -1,17 +1,6 @@
-// Tiny on-device intent classifier built on Transformers.js + multilingual
-// MiniLM. The model + the transformers.js library + the ~9 MB ONNX Runtime
-// Web WASM are all fetched lazily the first time the patient sends a
-// message, then cached by the browser's Cache Storage API (via the
-// env.useBrowserCache flag set below) so they survive across reloads even
-// under cache pressure. The dynamic `import()` below keeps all of this
-// out of the marketing-site bundle — the homepage pays nothing until
-// someone interacts with the receptionist.
-//
-// We embed the patient's message and every canonical example phrase from
-// intents.ts into the same vector space, then pick the intent whose
-// centroid (mean of its example embeddings) is closest by cosine similarity.
-// If no intent clears OTHER_THRESHOLD we fall back to 'other' and forward
-// the raw message to Dr Kyana verbatim.
+// On-device intent classifier: Transformers.js v4 + multilingual MiniLM.
+// Preloaded on page visit, cached in Cache Storage (env.useBrowserCache).
+// ONNX WASM auto-resolved from onnxruntime-web on jsDelivr by v4.
 
 import { INTENTS, type Intent, type IntentId } from './intents';
 
@@ -26,31 +15,25 @@ export type ClassifyResult = {
 
 export type LoadProgress = { status: string; file?: string; progress?: number };
 
-// Loosely-typed runtime handle — keeps this module's exports stable even
-// though transformers.js types only resolve after the dynamic import.
 type EmbedFn = (text: string) => Promise<Float32Array>;
 
 type Centroid = { intent: Intent; vector: Float32Array };
 
 let bootstrap: Promise<{ embed: EmbedFn; centroids: Centroid[] }> | null = null;
+let modelReady = false;
+
+export function isModelReady(): boolean {
+  return modelReady;
+}
 
 export function loadClassifier(onProgress?: (p: LoadProgress) => void): Promise<void> {
   if (!bootstrap) {
     bootstrap = (async () => {
       const { pipeline, env } = await import('@huggingface/transformers');
-      // Load the ONNX Runtime WASM binaries from the jsDelivr CDN instead of
-      // bundling them through Vite (the asyncify variant alone is ~23 MB and
-      // would blow past GH Pages' practical hosting budget). The model
-      // weights themselves still come from the HuggingFace CDN.
-      if (env.backends.onnx.wasm) {
-        env.backends.onnx.wasm.wasmPaths =
-          'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3/dist/';
-      }
+      // v4 auto-resolves ONNX Runtime WASM from the onnxruntime-web package
+      // on jsDelivr — no manual wasmPaths override needed. The WASM files
+      // are stripped from the Vite build (see skipOnnxWasmAssets plugin).
       env.allowLocalModels = false;
-      // Persist the model shards in Cache Storage so a returning patient
-      // doesn't re-download ~120 MB. Defaults to true on current versions
-      // of @huggingface/transformers — pinned explicitly so a future
-      // default flip can't silently turn it off.
       env.useBrowserCache = true;
       const pipe = await pipeline('feature-extraction', MODEL, {
         dtype: 'q8',
@@ -66,6 +49,7 @@ export function loadClassifier(onProgress?: (p: LoadProgress) => void): Promise<
         const vectors = await Promise.all(intent.examples.map(embed));
         centroids.push({ intent, vector: meanPool(vectors) });
       }
+      modelReady = true;
       return { embed, centroids };
     })();
   }

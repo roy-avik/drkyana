@@ -110,3 +110,4 @@ intake.slot.preferred_days.ask: "کدام روزها برایتان مناسب �
 intake.slot.time_of_day.ask: "چه ساعتی از روز ترجیح می‌دهید؟"
 intake.slot.urgency.ask: "چه فوریتی برای ویزیت دارید؟"
 intake.slot.payment.ask: "روش پرداخت؟"
+receptionist.start_button: "مشکل خود را شرح دهید"

@@ -111,3 +111,4 @@ intake.slot.preferred_days.ask: "Which days work for you? (Select all that apply
 intake.slot.time_of_day.ask: "Preferred time of day?"
 intake.slot.urgency.ask: "How soon do you need to be seen?"
 intake.slot.payment.ask: "Payment method?"
+receptionist.start_button: "Describe your problem"
