@@ -106,11 +106,33 @@ function doPost(e) {
     ];
     intakesTab.appendRow(intakeRow);
 
+    notifyUrgent(intake, patient, intakeId);
+
     return jsonResponse({ ok: true, intakeId: intakeId });
   } catch (err) {
     Logger.log('doPost error: ' + err.message);
     return jsonResponse({ ok: false, error: err.message });
   }
+}
+
+function notifyUrgent(intake, patient, intakeId) {
+  var level = (intake.triageLevel || '').toUpperCase();
+  if (level !== 'RED' && level !== 'ORANGE') return;
+
+  var to = 'kyanalotfi96@gmail.com';
+  var subject = 'URGENT ' + level + ' intake: ' + (patient.name || patient.phone);
+  var body = [
+    'Triage: ' + level,
+    'Patient: ' + (patient.name || 'Unknown'),
+    'Phone: ' + (patient.phone || ''),
+    'Intent: ' + (intake.intent || ''),
+    'Message: ' + (intake.rawMessage || '').substring(0, 300),
+    '',
+    'View in AppSheet or check the Intakes tab.',
+    'Intake ID: ' + intakeId
+  ].join('\n');
+
+  MailApp.sendEmail(to, subject, body);
 }
 
 function arrJoin(v) {

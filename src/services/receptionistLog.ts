@@ -1,14 +1,18 @@
-// Fire-and-forget POST to the Apps Script webhook.
-// Sends intake data to Google Sheets alongside the WhatsApp handoff.
-// Silent failure — WhatsApp remains the fallback channel.
+import type { IntentId } from './intents';
+import type { TriageResult } from './triage';
 
-import type { IntakeData } from './whatsapp';
+export type IntakeData = {
+  intent: IntentId;
+  rawPatientText: string;
+  collected: Record<string, string | string[]>;
+  triage?: TriageResult;
+};
 
 const WEBHOOK_URL = import.meta.env.VITE_SHEETS_WEBHOOK_URL as string | undefined;
 const WEBHOOK_TOKEN = import.meta.env.VITE_SHEETS_TOKEN as string | undefined;
 
-export function logIntake(data: IntakeData, locale: string): void {
-  if (!WEBHOOK_URL || !WEBHOOK_TOKEN) return;
+export async function logIntake(data: IntakeData, locale: string): Promise<boolean> {
+  if (!WEBHOOK_URL || !WEBHOOK_TOKEN) return false;
 
   const { intent, rawPatientText, collected, triage } = data;
 
@@ -44,15 +48,16 @@ export function logIntake(data: IntakeData, locale: string): void {
   };
 
   try {
-    fetch(WEBHOOK_URL, {
+    await fetch(WEBHOOK_URL, {
       method: 'POST',
       mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ token: WEBHOOK_TOKEN, patient, intake }),
       keepalive: true,
     });
+    return true;
   } catch {
-    // silent — WhatsApp is the primary channel
+    return false;
   }
 }
 
