@@ -15,8 +15,7 @@ import {
   type IntakeSlot,
 } from '../services/intakeSchema';
 import { assessTriage, triageColor, type TriageResult } from '../services/triage';
-import { buildWhatsAppHref, type IntakeData } from '../services/whatsapp';
-import { logIntake } from '../services/receptionistLog';
+import { logIntake, type IntakeData } from '../services/receptionistLog';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -311,10 +310,9 @@ export function Receptionist() {
     triage: triage ?? undefined,
   }), [intent, rawPatientText, collected, triage]);
 
-  const waHref = useMemo(() => {
-    if (!intent) return '';
-    return buildWhatsAppHref(intakeData);
-  }, [intent, intakeData]);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   // -----------------------------------------------------------------------
   // Progress
@@ -458,18 +456,25 @@ export function Receptionist() {
                 <IntakeReview
                   collected={collected}
                   triage={triage}
-                  waHref={waHref}
-                  onSend={() => { logIntake(intakeData, lang); setPhase('done'); }}
+                  submitting={submitting}
+                  onSend={async () => {
+                    setSubmitting(true);
+                    setSubmitError(false);
+                    const ok = await logIntake(intakeData, lang);
+                    setSubmitting(false);
+                    if (ok) { setSubmitted(true); setPhase('done'); } else { setSubmitError(true); }
+                  }}
                   lang={lang}
                   sendLabel={t('receptionist.cta.send')}
+                  errorLabel={t('receptionist.submit.error')}
+                  submitError={submitError}
                 />
               )}
 
-              {phase === 'done' && intent && (
-                <ResponseCta
-                  intent={intent}
-                  waHref={waHref}
-                />
+              {phase === 'done' && submitted && (
+                <div className="rounded-2xl bg-green-50 p-4 text-center text-sm text-green-800 ring-1 ring-green-200">
+                  {t('receptionist.submit.success')}
+                </div>
               )}
             </div>
             )}
@@ -750,17 +755,21 @@ function SkipButton({ label, onClick }: { label: string; onClick: () => void }) 
 function IntakeReview({
   collected,
   triage,
-  waHref,
+  submitting,
   onSend,
   lang,
   sendLabel,
+  errorLabel,
+  submitError,
 }: {
   collected: Record<string, string | string[]>;
   triage: TriageResult | null;
-  waHref: string;
+  submitting: boolean;
   onSend: () => void;
   lang: string;
   sendLabel: string;
+  errorLabel: string;
+  submitError: boolean;
 }) {
   const reviewFields = Object.entries(collected).filter(([, v]) => {
     if (Array.isArray(v)) return v.length > 0;
@@ -782,41 +791,23 @@ function IntakeReview({
           </div>
         ))}
       </dl>
-      <a
-        href={waHref}
-        target="_blank"
-        rel="noreferrer"
+      {submitError && (
+        <p className="text-center text-xs text-red-600">{errorLabel}</p>
+      )}
+      <button
+        type="button"
+        disabled={submitting}
         onClick={onSend}
         className={[
-          'block w-full rounded-full px-6 py-3 text-center text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5',
+          'block w-full rounded-full px-6 py-3 text-center text-sm font-semibold transition-all duration-200',
+          submitting ? 'opacity-60 cursor-wait' : 'hover:-translate-y-0.5',
           triage?.level === 'RED'
             ? 'bg-red-600 text-white hover:bg-red-700 hover:shadow-lg hover:shadow-red-600/30'
             : 'bg-brand text-white hover:bg-brand-dark hover:shadow-lg hover:shadow-brand/25',
         ].join(' ')}
       >
-        {sendLabel}
-      </a>
+        {submitting ? '...' : sendLabel}
+      </button>
     </div>
-  );
-}
-
-function ResponseCta({ intent, waHref }: { intent: IntentId; waHref: string }) {
-  const { t } = useTranslation();
-  const def = findIntent(intent);
-  const urgent = def.severity === 'urgent';
-  return (
-    <a
-      href={waHref}
-      target="_blank"
-      rel="noreferrer"
-      className={[
-        'block w-full rounded-full px-6 py-3 text-center text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5',
-        urgent
-          ? 'bg-red-600 text-white hover:bg-red-700 hover:shadow-lg hover:shadow-red-600/30'
-          : 'bg-brand text-white hover:bg-brand-dark hover:shadow-lg hover:shadow-brand/25',
-      ].join(' ')}
-    >
-      {urgent ? t('receptionist.cta.urgent') : t('receptionist.cta.send')}
-    </a>
   );
 }
