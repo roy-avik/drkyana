@@ -21,9 +21,8 @@ function skipOnnxWasmAssets(): Plugin {
   };
 }
 
-// GH Pages serves this at https://roy-avik.github.io/drkyana/
 export default defineConfig({
-  base: '/drkyana/',
+  base: '/',
   plugins: [react(), tailwindcss(), skipOnnxWasmAssets()],
   build: {
     target: 'es2020',
