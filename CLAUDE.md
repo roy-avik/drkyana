@@ -6,7 +6,7 @@ Brand voice: calm, considered, modern. Site tagline is **"Modern dentistry. Cons
 
 ## What this is
 
-A Vite + React 19 + TypeScript + Tailwind v4 SPA. Anchor-scrolled marketing site (Home / About / Services / AI receptionist / Practice / Contact) — the receptionist is an inline section, not a separate route. Three-language i18n (English / Persian / Bengali) via runtime-fetched YAML files. Built to a static bundle and deployed to GitHub Pages by a GH Actions workflow.
+A Vite + React 19 + TypeScript + Tailwind v4 SPA. Anchor-scrolled marketing site (Home / About / Services / AI receptionist / Practice / Contact) — the receptionist is an inline section, not a separate route. Three-language i18n (English / Persian / Bengali) via runtime-fetched YAML files. Built to a static bundle and deployed to Cloudflare Pages (auto-deploy on push to `main`).
 
 **v1 audience scope:** the receptionist currently classifies messages in English and Bengali (Dr Kyana's clients). Farsi is kept in the i18n layer (marketing site translations + LangSwitcher entry) so we can light up FA receptionist intents later without re-plumbing locales — Persian patients today see the marketing site in Farsi and the receptionist UI in Farsi, but the intent examples are EN + BN only.
 
@@ -14,7 +14,7 @@ Repo layout:
 
 ```
 index.html                    # Vite entry — mounts <App> into #root.
-vite.config.ts                # base: "/drkyana/" for GH Pages.
+vite.config.ts                # base: "/" for Cloudflare Pages (drkyana.com).
 tsconfig*.json
 package.json
 
@@ -63,15 +63,15 @@ scripts/
   receptionist-webhook.gs     # Google Apps Script: doPost (intake persistence), doGet (chamber data), setupSheet (one-time init).
 
 .github/workflows/
-  deploy.yml                  # On push to main: lint locales, verify optimized assets,
-                              # typecheck, build, deploy to Pages.
+  deploy.yml                  # CI checks on push/PR: lint locales, verify optimized assets,
+                              # typecheck, build. Cloudflare Pages handles deploy.
   deploy-webhook.yml          # On webhook code change: clasp push + deploy to Apps Script.
 ```
 
 ## Architecture
 
-- **Hosting:** GitHub Pages on this repo, served from the `dist/` artifact built by `.github/workflows/deploy.yml`. URL: `https://roy-avik.github.io/drkyana/`.
-- **Base path:** `/drkyana/` everywhere. `vite.config.ts` sets `base: "/drkyana/"` and all runtime asset references use `import.meta.env.BASE_URL` (e.g. `${BASE_URL}assets/photo.jpg`, `${BASE_URL}locales/en.yaml`). If the repo is ever renamed, update one line in `vite.config.ts`.
+- **Hosting:** Cloudflare Pages with custom domain `drkyana.com`. Auto-builds and deploys on push to `main`. GitHub Actions (`.github/workflows/deploy.yml`) runs CI checks only (lint, typecheck, build).
+- **Base path:** `/` everywhere. `vite.config.ts` sets `base: "/"` and all runtime asset references use `import.meta.env.BASE_URL` (e.g. `${BASE_URL}assets/photo.jpg`, `${BASE_URL}locales/en.yaml`).
 - **Source of truth:**
   - Layout/style: `src/components/*.tsx` and `src/index.css` (Tailwind utilities + a few `@layer components` shortcuts: `.btn-primary`, `.btn-ghost`, `.card`, `.section-label`, `.container-page`).
   - Copy: `public/locales/{en,fa,bn}.yaml`. Components call `const { t } = useTranslation()` and then `t('section.key', 'optional fallback')`. The fallback is what shows during the brief moment between mount and the locale fetch resolving (for fa/bn sessions — en is what static HTML already says, so it's instant).
@@ -112,7 +112,7 @@ scripts/
 
 ```
 npm install                # once
-npm run dev                # vite dev server, http://localhost:5173/drkyana/
+npm run dev                # vite dev server, http://localhost:5173/
 npm run build              # production build to dist/
 npm run preview            # serve dist/ locally
 npm run typecheck          # tsc -b --noEmit
@@ -155,14 +155,18 @@ Idempotent — running it twice produces the same bytes.
 
 ## Deployment
 
-### Site (`.github/workflows/deploy.yml`)
+### Site — Cloudflare Pages (auto-deploy)
 
-On every push to `main`, the workflow:
+Cloudflare Pages is connected to `roy-avik/drkyana` on GitHub and auto-builds on push to `main`:
+- **Build command:** `npm run build`
+- **Build output directory:** `dist`
+- **Environment variables** (set in Cloudflare Pages dashboard): `VITE_SHEETS_WEBHOOK_URL`, `VITE_SHEETS_TOKEN`
+
+GitHub Actions (`.github/workflows/deploy.yml`) runs **CI checks only** on push and PRs:
 1. Lints locales (`python scripts/locales.py check`).
 2. Verifies optimized assets aren't stale (`python scripts/optimize_images.py --check`).
 3. Typechecks (`npm run typecheck`).
-4. Builds (`npm run build`) — injects `VITE_SHEETS_WEBHOOK_URL` and `VITE_SHEETS_TOKEN` from repo secrets.
-5. Uploads `dist/` and deploys to GitHub Pages.
+4. Builds (`npm run build`) — verifies the build succeeds but does not deploy.
 
 ### Apps Script CI (`.github/workflows/deploy-webhook.yml`)
 
@@ -185,14 +189,10 @@ When `scripts/receptionist-webhook.gs` or `scripts/appsscript.json` changes on `
 | `CLASP_CREDENTIALS` | Contents of `~/.clasprc.json` | Step 5 |
 | `APPS_SCRIPT_ID` | Script project ID | Step 7 |
 | `APPS_SCRIPT_DEPLOYMENT_ID` | Web app deployment ID | Step 9 |
-| `VITE_SHEETS_WEBHOOK_URL` | Web app deployment URL | Step 9 |
-| `VITE_SHEETS_TOKEN` | Same value as `WEBHOOK_TOKEN` script property | Step 8 |
 
-After this, every push that touches the webhook code auto-deploys to Apps Script. The site build injects the webhook URL and token at compile time. Both are absent in local dev — persistence and chamber fetch silently skip when the env vars are empty.
+The site's build-time secrets (`VITE_SHEETS_WEBHOOK_URL`, `VITE_SHEETS_TOKEN`) are set in the **Cloudflare Pages dashboard** (not GitHub repo secrets), since Cloudflare handles the production build.
 
-Pages re-publishes within ~30 seconds of the workflow finishing. If the workflow fails, the previous build stays live.
-
-Pages **must** be configured to "Build and deployment → Source: GitHub Actions" in repo Settings. (Old config was "Deploy from a branch" — flip it once.)
+After this, every push that touches the webhook code auto-deploys to Apps Script. The site build injects the webhook URL and token at compile time (via Cloudflare Pages environment variables). Both are absent in local dev — persistence and chamber fetch silently skip when the env vars are empty.
 
 ## Brand & content references
 
@@ -208,7 +208,7 @@ Pages **must** be configured to "Build and deployment → Source: GitHub Actions
 ## Workflow
 
 - **Delete merged PR branches.** After a PR merges, the assistant runs `git branch -D <name>` locally. The remote ref cannot be deleted from this harness — `git push origin --delete` is blocked with 403 by the proxy, and no MCP tool exposes the GitHub `DELETE /git/refs/...` endpoint. Either click "Delete branch" on the merged PR, or enable **Settings → General → "Automatically delete head branches"** on the repo.
-- **Always pull `main` before starting a new branch.** This repo is actively developed on both cloud & local environments, and the GH Pages deployment is tied to `main` — if your branch diverges too much, you risk merge conflicts or even build breakage when the deploy workflow runs. Pulling latest `main` before starting a new branch keeps you up to date with recent changes and reduces friction at merge time.
+- **Always pull `main` before starting a new branch.** This repo is actively developed on both cloud & local environments, and Cloudflare Pages auto-deploys from `main` — if your branch diverges too much, you risk merge conflicts or even build breakage when the deploy runs. Pulling latest `main` before starting a new branch keeps you up to date with recent changes and reduces friction at merge time.
 
 ## Out of scope (don't pull this in without asking)
 
@@ -218,12 +218,12 @@ Pages **must** be configured to "Build and deployment → Source: GitHub Actions
 - **Anthropic API integration** — discussed but not warranted yet. The on-device classifier covers the receptionist use case.
 - **Backend, database, auth, CMS** — the site remains a static SPA. Persistence is async POST to Google Sheets via Apps Script (the only data store). No server, no database, no login.
 - **PWA install / standalone shell.** Removed when the receptionist moved inline. The site is plain HTTPS, no service worker, no manifest. If we ever want offline support, vite-plugin-pwa fits cleanly back in.
-- **Google Workspace.** Free Google account suffices for Sheets + Apps Script + AppSheet free tier. Workspace ($15/mo) can be added later if drkyana.com domain is purchased (enables custom email, BAA for health data). Not needed now.
+- **Google Workspace.** Free Google account suffices for Sheets + Apps Script + AppSheet free tier. Workspace ($15/mo) can be added later for custom email on drkyana.com (enables BAA for health data). Not needed now.
 
 ## Deferred
 
 - **Farsi receptionist intents.** Today the multilingual MiniLM model embeds Farsi into the same vector space as English/Bengali so FA messages "kind of work" — but the canonical example phrases in `src/services/intents.ts` are EN + BN only. Add FA phrases per intent to lift accuracy when she onboards her first Iranian patients.
-- **Automated appointment confirmations.** When drkyana.com is purchased and email is set up, Apps Script can send confirmation emails after Dr Kyana marks an intake as "scheduled." Not possible until domain + email are live.
+- **Automated appointment confirmations.** When email is set up on drkyana.com (via Google Workspace), Apps Script can send confirmation emails after Dr Kyana marks an intake as "scheduled." Not possible until custom email is live.
 - **Web Worker for inference.** The classifier currently runs on the main thread. For long inputs / slower devices, move `pipeline` + `embed` into a Worker so the chat UI never jank-stalls.
 - **CDN-pinned wasm version.** `intentClassifier.ts` points `wasmPaths` at `@huggingface/transformers@3` on jsDelivr — pin a specific subversion before going live to avoid CDN drift breaking inference unannounced.
 
@@ -240,7 +240,7 @@ Rules to follow when editing `I18nProvider.tsx` or adding a new RTL language:
 ## Useful gotchas
 
 - The hero `<img>` has an `onError` fallback that hides the broken image and reveals a `👩‍⚕️` emoji circle. Keep both elements when editing.
-- Vite serves `public/` at the configured `base` path. References must use `${import.meta.env.BASE_URL}assets/...` (with the trailing slash already on BASE_URL) — don't hardcode `/drkyana/`.
+- Vite serves `public/` at the configured `base` path. References must use `${import.meta.env.BASE_URL}assets/...` (with the trailing slash already on BASE_URL) — don't hardcode paths.
 - The custom dropdown's listbox is positioned `right-0` by default and flips to `left-0` for RTL (Persian). If you add a fourth language with another script, double-check this still anchors sensibly.
 - Tailwind v4 `@theme` tokens become utilities automatically for colors. Font tokens (`--font-fa`, `--font-bn`) are referenced via `font-[var(--font-fa)]` arbitrary syntax in the LangSwitcher — keep that pattern if you add another scripted language.
-- **GitHub Pages source must be set to "GitHub Actions"** (repo Settings → Pages → Build and deployment → Source). If it's set to "Deploy from a branch", GH Pages serves the raw `index.html` (which has `src="/src/main.tsx"`) and the site goes blank. The deploy workflow uploads `dist/` as a Pages artifact — that only takes effect when the source is "GitHub Actions".
+- **Cloudflare Pages build settings** must stay in sync: build command `npm run build`, output directory `dist`. The `VITE_SHEETS_WEBHOOK_URL` and `VITE_SHEETS_TOKEN` environment variables are set in the Cloudflare dashboard, not in code. The Cloudflare project must remain connected to the GitHub repo — if disconnected, pushes won't trigger builds.
