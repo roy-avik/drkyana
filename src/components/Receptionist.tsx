@@ -2,8 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from '../i18n/useTranslation';
 import {
   classify,
+  isModelCached,
   isModelReady,
   loadClassifier,
+  requestPersistentStorage,
   type LoadProgress,
 } from '../services/intentClassifier';
 import { findIntent, type IntentId } from '../services/intents';
@@ -23,8 +25,10 @@ import { logIntake, type IntakeData } from '../services/receptionistLog';
 
 type Phase =
   | 'standby'
+  | 'confirm_download'
   | 'idle'
   | 'loading'
+  | 'load_failed'
   | 'classifying'
   | 'consent'
   | 'asking_slot'
@@ -32,6 +36,12 @@ type Phase =
   | 'done';
 
 type ChatMsg = { role: 'bot' | 'user'; text: string };
+
+function hasSaveData(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+  return conn?.saveData === true;
+}
 
 const CLINICAL_INTENTS = new Set<IntentId>([
   'book_appointment', 'urgent',
@@ -62,35 +72,87 @@ export function Receptionist() {
   // Triage
   const [triage, setTriage] = useState<TriageResult | null>(null);
 
+  // Cache + preload state
+  const [cached, setCached] = useState<boolean | null>(null);
+  const sectionRef = useRef<HTMLElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Preload model on visit (async, silent — no UI until user clicks the button)
+  // Probe cache once on mount so the standby UI can adapt its copy.
   useEffect(() => {
+    let alive = true;
+    isModelCached().then((hit) => {
+      if (alive) setCached(hit);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // Intersection-gated preload: only fetch the 120 MB model when the
+  // receptionist section comes into (or near) view. Skip preload entirely
+  // on data-saver connections — those visitors must opt in via the confirm
+  // step on click.
+  useEffect(() => {
+    if (hasSaveData()) return;
+    const el = sectionRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      // Fallback for old browsers — preload immediately.
+      kickPreload();
+      return;
+    }
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          kickPreload();
+          obs.disconnect();
+        }
+      },
+      { rootMargin: '600px' },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function kickPreload() {
+    void requestPersistentStorage();
     loadClassifier((p: LoadProgress) => {
       if (typeof p.progress === 'number') setLoadPct(p.progress);
-    }).catch(() => {
-      // Silent failure during preload — handled when user clicks start
-    });
-  }, []);
+    })
+      .then(() => setCached(true))
+      .catch(() => {
+        // Silent — surfaces when the user clicks the button.
+      });
+  }
 
   function onStartChat() {
     if (isModelReady()) {
       setMessages([{ role: 'bot', text: t('receptionist.greeting') }]);
       setPhase('idle');
-    } else {
-      setPhase('loading');
-      loadClassifier((p: LoadProgress) => {
-        if (typeof p.progress === 'number') setLoadPct(p.progress);
-      })
-        .then(() => {
-          setMessages([{ role: 'bot', text: t('receptionist.greeting') }]);
-          setPhase('idle');
-        })
-        .catch(() => {
-          setMessages([{ role: 'bot', text: t('receptionist.greeting') }]);
-          setPhase('idle');
-        });
+      return;
     }
+    // Data-saver users must explicitly confirm the 120 MB download.
+    if (hasSaveData() && !cached) {
+      setPhase('confirm_download');
+      return;
+    }
+    beginLoad();
+  }
+
+  function beginLoad() {
+    void requestPersistentStorage();
+    setPhase('loading');
+    loadClassifier((p: LoadProgress) => {
+      if (typeof p.progress === 'number') setLoadPct(p.progress);
+    })
+      .then(() => {
+        setCached(true);
+        setMessages([{ role: 'bot', text: t('receptionist.greeting') }]);
+        setPhase('idle');
+      })
+      .catch(() => {
+        setPhase('load_failed');
+      });
   }
 
   // Auto-scroll
@@ -112,16 +174,18 @@ export function Receptionist() {
     append({ role: 'user', text: trimmed });
     setDraft('');
     setRawPatientText(trimmed);
-    setPhase('loading');
 
-    try {
-      await loadClassifier((p: LoadProgress) => {
-        if (typeof p.progress === 'number') setLoadPct(p.progress);
-      });
-    } catch (err) {
-      console.error('classifier load failed', err);
-      finishWithFallback(trimmed);
-      return;
+    if (!isModelReady()) {
+      setPhase('loading');
+      try {
+        await loadClassifier((p: LoadProgress) => {
+          if (typeof p.progress === 'number') setLoadPct(p.progress);
+        });
+      } catch (err) {
+        console.error('classifier load failed', err);
+        finishWithFallback(trimmed);
+        return;
+      }
     }
 
     setPhase('classifying');
@@ -329,7 +393,7 @@ export function Receptionist() {
   // -----------------------------------------------------------------------
 
   return (
-    <section id="receptionist" className="py-16 md:py-24">
+    <section id="receptionist" ref={sectionRef} className="py-16 md:py-24">
       <div className="container-page">
         <div className="mx-auto max-w-2xl">
           <div className="text-center">
@@ -357,6 +421,40 @@ export function Receptionist() {
                 >
                   {t('receptionist.start_button')}
                 </button>
+                {cached === false && (
+                  <p className="max-w-sm text-center text-xs text-muted">
+                    {t('receptionist.first_time_hint')}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Data-saver confirm — explicit opt-in before 120 MB fetch */}
+            {phase === 'confirm_download' && (
+              <div className="flex flex-col items-center gap-4 px-6 py-10 md:py-14">
+                <p className="max-w-md text-center text-sm font-semibold text-ink">
+                  {t('receptionist.savedata.title')}
+                </p>
+                <p className="max-w-md text-center text-sm text-muted">
+                  {t('receptionist.savedata.message')}
+                </p>
+                <div className="flex flex-col items-stretch gap-2 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={beginLoad}
+                    className="btn-primary px-6 py-2.5"
+                  >
+                    {t('receptionist.savedata.confirm')}
+                  </button>
+                  <a
+                    href="https://wa.me/8801614369673"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-full border border-ink/10 px-6 py-2.5 text-center text-sm text-muted hover:text-ink"
+                  >
+                    {t('receptionist.savedata.cancel')}
+                  </a>
+                </div>
               </div>
             )}
 
@@ -380,8 +478,34 @@ export function Receptionist() {
               </div>
             )}
 
+            {/* Load failed — retry or escape */}
+            {phase === 'load_failed' && (
+              <div className="flex flex-col items-center gap-4 px-6 py-10 md:py-14">
+                <p className="max-w-md text-center text-sm text-ink">
+                  {t('receptionist.load_error.message')}
+                </p>
+                <div className="flex flex-col items-stretch gap-2 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={beginLoad}
+                    className="btn-primary px-6 py-2.5"
+                  >
+                    {t('receptionist.load_error.retry')}
+                  </button>
+                  <a
+                    href="https://wa.me/8801614369673"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-full border border-ink/10 px-6 py-2.5 text-center text-sm text-muted hover:text-ink"
+                  >
+                    {t('receptionist.load_error.skip')}
+                  </a>
+                </div>
+              </div>
+            )}
+
             {/* Active chat phases */}
-            {phase !== 'standby' && phase !== 'loading' && (
+            {phase !== 'standby' && phase !== 'loading' && phase !== 'confirm_download' && phase !== 'load_failed' && (
               <>
                 {/* Progress bar */}
                 {phase === 'asking_slot' && (
@@ -409,7 +533,7 @@ export function Receptionist() {
             )}
 
             {/* Input area */}
-            {phase !== 'standby' && phase !== 'loading' && (
+            {phase !== 'standby' && phase !== 'loading' && phase !== 'confirm_download' && phase !== 'load_failed' && (
             <div className="border-t border-ink/5 bg-surface-alt p-4 md:p-5">
               {phase === 'idle' && (
                 <ChatInput
@@ -480,7 +604,7 @@ export function Receptionist() {
             )}
           </div>
 
-          {phase !== 'standby' && (
+          {phase !== 'standby' && phase !== 'confirm_download' && phase !== 'load_failed' && (
             <p className="mt-4 text-center text-xs text-muted">{t('receptionist.privacy')}</p>
           )}
         </div>
