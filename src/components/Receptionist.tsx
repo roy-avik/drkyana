@@ -18,6 +18,24 @@ import {
 } from '../services/intakeSchema';
 import { assessTriage, triageColor, type TriageResult } from '../services/triage';
 import { logIntake, type IntakeData } from '../services/receptionistLog';
+import { ReceptionistGenerative } from './ReceptionistGenerative';
+
+// ---------------------------------------------------------------------------
+// Dispatcher — picks the experimental generative path (Gemma 3 270M, gated by
+// VITE_USE_GENERATIVE) or the default classifier path. On generative load
+// failure the patient can click "use standard chat", which sets the local
+// fallback flag and renders the classifier path instead.
+// ---------------------------------------------------------------------------
+
+const USE_GEN = import.meta.env.VITE_USE_GENERATIVE === 'true';
+
+export function Receptionist() {
+  const [generativeFailed, setGenerativeFailed] = useState(false);
+  if (USE_GEN && !generativeFailed) {
+    return <ReceptionistGenerative onFallback={() => setGenerativeFailed(true)} />;
+  }
+  return <ReceptionistClassifier />;
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -48,10 +66,10 @@ const CLINICAL_INTENTS = new Set<IntentId>([
 ]);
 
 // ---------------------------------------------------------------------------
-// Main component
+// Classifier path — embedding-based intent routing + structured intake.
 // ---------------------------------------------------------------------------
 
-export function Receptionist() {
+function ReceptionistClassifier() {
   const { t, lang } = useTranslation();
 
   // Core state

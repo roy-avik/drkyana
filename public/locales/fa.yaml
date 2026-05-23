@@ -120,3 +120,7 @@ receptionist.savedata.cancel: "مستقیماً به دکتر کیانا پیا�
 receptionist.load_error.message: "آماده‌سازی پذیرشگر هوش مصنوعی ممکن نشد. لطفاً اتصال خود را بررسی کنید."
 receptionist.load_error.retry: "دوباره تلاش کنید"
 receptionist.load_error.skip: "مستقیماً به دکتر کیانا پیام دهید"
+receptionist.gen_first_time_hint: "اولین بار؟ حدود ۲۷۰ مگابایت روی دستگاه شما بارگیری می‌شود — فقط یک بار."
+receptionist.gen_savedata_message: "هوش مصنوعی حدود ۲۷۰ مگابایت است. به‌هرحال بارگیری کنید، یا مستقیماً به دکتر کیانا پیام دهید؟"
+receptionist.gen_fallback_label: "از چت استاندارد استفاده کنید"
+receptionist.gen_error: "هنگام تولید پاسخ خطایی رخ داد. لطفاً دوباره تلاش کنید."
