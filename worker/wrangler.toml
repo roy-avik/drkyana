@@ -1,0 +1,7 @@
+name = "drkyana-models"
+main = "src/index.ts"
+compatibility_date = "2026-05-22"
+account_id = "b422dd4b2b479853ed1b0e0293120041"
+
+# Tail with `npx wrangler tail` from this directory.
+# Deploy with `npx wrangler deploy`.
