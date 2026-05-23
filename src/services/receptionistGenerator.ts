@@ -96,6 +96,11 @@ async function doBootstrap(
   const { pipeline, TextStreamer, env } = transformers;
   env.allowLocalModels = false;
   env.useBrowserCache = true;
+  // Optional edge-cached proxy. Same flag as the classifier path — when set,
+  // model files come through CF's global edge instead of huggingface.co.
+  const proxy = (import.meta.env.VITE_MODEL_PROXY_URL as string | undefined)?.trim();
+  if (proxy) env.remoteHost = proxy.replace(/\/$/, '');
+
 
   if (typeof navigator !== 'undefined' && !('gpu' in navigator)) {
     throw new Error('WebGPU is not available in this browser');
