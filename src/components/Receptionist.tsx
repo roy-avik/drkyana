@@ -404,10 +404,10 @@ export function Receptionist() {
             <p className="mt-4 text-muted md:text-lg">{t('receptionist.subtitle')}</p>
           </div>
 
-          <div className="mt-8 overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-ink/5">
+          <div className="mt-8 flex min-h-[22rem] flex-col overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-ink/5">
             {/* Standby — entry point */}
             {phase === 'standby' && (
-              <div className="flex flex-col items-center gap-5 px-6 py-10 md:py-14">
+              <div className="flex flex-1 flex-col items-center justify-center gap-5 px-6 py-10 md:py-14">
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand/8">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-7 w-7 text-brand">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
@@ -431,7 +431,7 @@ export function Receptionist() {
 
             {/* Data-saver confirm — explicit opt-in before 120 MB fetch */}
             {phase === 'confirm_download' && (
-              <div className="flex flex-col items-center gap-4 px-6 py-10 md:py-14">
+              <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-10 md:py-14">
                 <p className="max-w-md text-center text-sm font-semibold text-ink">
                   {t('receptionist.savedata.title')}
                 </p>
@@ -460,7 +460,7 @@ export function Receptionist() {
 
             {/* Loading — waiting for model download */}
             {phase === 'loading' && (
-              <div className="flex flex-col items-center gap-4 px-6 py-10 md:py-14">
+              <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-10 md:py-14">
                 <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-ink/10 border-t-brand" />
                 <p className="text-sm text-muted">
                   {loadPct !== null && loadPct > 0
@@ -480,7 +480,7 @@ export function Receptionist() {
 
             {/* Load failed — retry or escape */}
             {phase === 'load_failed' && (
-              <div className="flex flex-col items-center gap-4 px-6 py-10 md:py-14">
+              <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-10 md:py-14">
                 <p className="max-w-md text-center text-sm text-ink">
                   {t('receptionist.load_error.message')}
                 </p>
@@ -520,7 +520,7 @@ export function Receptionist() {
                 {/* Chat messages */}
                 <div
                   ref={scrollRef}
-                  className="flex max-h-[32rem] flex-col gap-3 overflow-y-auto p-5 md:p-6"
+                  className="flex max-h-[32rem] min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-5 md:p-6"
                 >
                   {messages.map((m, i) => (
                     <ChatBubble key={i} role={m.role} text={m.text} />

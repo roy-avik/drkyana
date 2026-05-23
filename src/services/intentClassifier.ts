@@ -15,7 +15,44 @@ export type ClassifyResult = {
   top: Array<{ intent: IntentId; score: number }>;
 };
 
-export type LoadProgress = { status: string; file?: string; progress?: number };
+export type LoadProgress = {
+  status: string;
+  file?: string;
+  progress?: number;
+  loaded?: number;
+  total?: number;
+};
+
+// Aggregates per-file byte counters from transformers.js into a single
+// monotonic overall percentage. Without this, the raw progress field cycles
+// 0→100 per file (config, tokenizer, weights, wasm) and visibly bounces in
+// the UI.
+function makeProgressAggregator(
+  onProgress?: (p: LoadProgress) => void,
+): (raw: LoadProgress) => void {
+  const bytesPerFile = new Map<string, { loaded: number; total: number }>();
+  let displayedMax = 0;
+  return (raw) => {
+    if (raw.file) {
+      const cur = bytesPerFile.get(raw.file) ?? { loaded: 0, total: 0 };
+      if (typeof raw.loaded === 'number') cur.loaded = raw.loaded;
+      if (typeof raw.total === 'number' && raw.total > 0) cur.total = raw.total;
+      if (raw.status === 'done' && cur.total > 0) cur.loaded = cur.total;
+      bytesPerFile.set(raw.file, cur);
+    }
+    let loaded = 0;
+    let total = 0;
+    for (const v of bytesPerFile.values()) {
+      loaded += v.loaded;
+      total += v.total;
+    }
+    const overall = total > 0 ? (loaded / total) * 100 : 0;
+    // Monotonic clamp — never let the displayed value go backwards even when
+    // a new file appears and momentarily dilutes the aggregate.
+    if (overall > displayedMax) displayedMax = overall;
+    onProgress?.({ ...raw, progress: displayedMax });
+  };
+}
 
 type EmbedFn = (text: string) => Promise<Float32Array>;
 
@@ -92,9 +129,10 @@ async function doBootstrap(
   const { pipeline, env } = await import('@huggingface/transformers');
   env.allowLocalModels = false;
   env.useBrowserCache = true;
+  const aggregate = makeProgressAggregator(onProgress);
   const pipe = await pipeline('feature-extraction', MODEL, {
     dtype: 'q8',
-    progress_callback: (p: LoadProgress) => onProgress?.(p),
+    progress_callback: (p: LoadProgress) => aggregate(p),
   });
   const embed: EmbedFn = async (text: string) => {
     const out = await pipe(text, { pooling: 'mean', normalize: true });
