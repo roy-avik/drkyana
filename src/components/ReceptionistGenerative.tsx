@@ -145,18 +145,14 @@ export function ReceptionistGenerative({ onFallback }: { onFallback: () => void 
         });
       });
       setPhase('chat');
-    } catch {
-      setMessages((prev) => {
-        const updated = [...prev];
-        const last = updated[updated.length - 1];
-        if (last && last.role === 'bot' && last.text === '') {
-          updated[updated.length - 1] = { ...last, text: t('receptionist.gen_error') };
-        }
-        return updated;
-      });
-      setPhase('chat');
+    } catch (err) {
+      console.error('[ReceptionistGenerative] inference failed', err);
+      // WebGPU shader compile failures (Firefox in particular) only surface
+      // at first inference, not at load. Drop the patient into the classifier
+      // instead of leaving them stuck on a generic error.
+      onFallback();
     }
-  }, [draft, messages, phase, t]);
+  }, [draft, messages, phase, t, onFallback]);
 
   async function submitConversation() {
     setSubmitError(false);
