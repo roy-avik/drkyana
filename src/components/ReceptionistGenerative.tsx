@@ -28,6 +28,28 @@ function hasSaveData(): boolean {
   return conn?.saveData === true;
 }
 
+// Pulls the patient-facing portion out of the model's structured reply.
+// Expected shape (see receptionistPrompt.ts):
+//   INTENT: <id>
+//   SAY: <text to show patient>
+// During streaming we may have a partial buffer ending mid-token, so:
+//   - If "SAY:" appears, return everything after it (trimmed).
+//   - If only "INTENT:" appears so far, return "…" as a placeholder.
+//   - If the model freestyles (no markers), return the buffer as-is.
+function extractSayLine(raw: string): string {
+  const sayIdx = raw.search(/\bSAY:\s*/i);
+  if (sayIdx >= 0) {
+    return raw.slice(sayIdx).replace(/^\s*SAY:\s*/i, '').trim();
+  }
+  if (/\bINTENT:\s*/i.test(raw)) return '…';
+  return raw.trim();
+}
+
+function extractIntent(raw: string): string | null {
+  const m = raw.match(/\bINTENT:\s*([A-Za-z_]+)/i);
+  return m ? m[1].toLowerCase() : null;
+}
+
 export function ReceptionistGenerative({ onFallback }: { onFallback: () => void }) {
   const { t, lang } = useTranslation();
 
@@ -133,17 +155,30 @@ export function ReceptionistGenerative({ onFallback }: { onFallback: () => void 
         content: m.text,
       }));
 
+    // The system prompt asks Gemma to reply with two lines:
+    //   INTENT: <id>
+    //   SAY: <patient-facing text>
+    // We accumulate raw tokens in `rawBuffer` and surface only the SAY
+    // portion to the bubble. If the model deviates from the format we
+    // fall back to showing whatever it produced verbatim.
+    let rawBuffer = '';
     try {
       await generateReply(turns, (token: string) => {
+        rawBuffer += token;
+        const visible = extractSayLine(rawBuffer);
         setMessages((prev) => {
           const updated = [...prev];
           const last = updated[updated.length - 1];
           if (last && last.role === 'bot') {
-            updated[updated.length - 1] = { ...last, text: last.text + token };
+            updated[updated.length - 1] = { ...last, text: visible };
           }
           return updated;
         });
       });
+      const parsedIntent = extractIntent(rawBuffer);
+      if (parsedIntent) {
+        console.log('[ReceptionistGenerative] intent:', parsedIntent);
+      }
       setPhase('chat');
     } catch (err) {
       console.error('[ReceptionistGenerative] inference failed', err);
