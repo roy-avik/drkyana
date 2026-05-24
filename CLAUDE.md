@@ -222,6 +222,7 @@ After this, every push that touches the webhook code auto-deploys to Apps Script
 
 ## Deferred
 
+- **Anthropic-backed clinical receptionist agent.** Approved direction as of 2026-05-24, not started. Full plan in [`RECEPTIONIST-AGENT-PLAN.md`](RECEPTIONIST-AGENT-PLAN.md) — covers Worker `/chat` route, D1 schema, tool definitions, rate limiting, validation, rollout. Reuses the existing `drkyana-models` Worker; classifier path stays as offline fallback. Picks up where the Gemma on-device experiments left off (proven to fail on quality).
 - **Farsi receptionist intents.** Today the multilingual MiniLM model embeds Farsi into the same vector space as English/Bengali so FA messages "kind of work" — but the canonical example phrases in `src/services/intents.ts` are EN + BN only. Add FA phrases per intent to lift accuracy when she onboards her first Iranian patients.
 - **Automated appointment confirmations.** When email is set up on drkyana.com (via Google Workspace), Apps Script can send confirmation emails after Dr Kyana marks an intake as "scheduled." Not possible until custom email is live.
 - **Web Worker for inference.** The classifier currently runs on the main thread. For long inputs / slower devices, move `pipeline` + `embed` into a Worker so the chat UI never jank-stalls.
