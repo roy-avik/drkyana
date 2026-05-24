@@ -129,6 +129,11 @@ async function doBootstrap(
   const { pipeline, env } = await import('@huggingface/transformers');
   env.allowLocalModels = false;
   env.useBrowserCache = true;
+  // Optional edge-cached proxy. When VITE_MODEL_PROXY_URL is set, transformers.js
+  // fetches model files through CF's global edge instead of huggingface.co
+  // directly. Unset → unchanged behavior (default huggingface.co host).
+  const proxy = (import.meta.env.VITE_MODEL_PROXY_URL as string | undefined)?.trim();
+  if (proxy) env.remoteHost = proxy.replace(/\/$/, '');
   const aggregate = makeProgressAggregator(onProgress);
   const pipe = await pipeline('feature-extraction', MODEL, {
     dtype: 'q8',
