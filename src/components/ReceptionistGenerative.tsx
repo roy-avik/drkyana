@@ -32,14 +32,21 @@ function hasSaveData(): boolean {
 // Expected shape (see receptionistPrompt.ts):
 //   INTENT: <id>
 //   SAY: <text to show patient>
-// During streaming we may have a partial buffer ending mid-token, so:
-//   - If "SAY:" appears, return everything after it (trimmed).
+// During streaming we may have a partial buffer ending mid-token, and 270M
+// occasionally hallucinates extra example pairs after the first reply, so:
+//   - If "SAY:" appears, return everything after it up to the next INTENT:
+//     or Patient: marker (whichever comes first), trimmed.
 //   - If only "INTENT:" appears so far, return "…" as a placeholder.
-//   - If the model freestyles (no markers), return the buffer as-is.
+//   - If the model freestyles with no markers at all, return the buffer.
 function extractSayLine(raw: string): string {
   const sayIdx = raw.search(/\bSAY:\s*/i);
   if (sayIdx >= 0) {
-    return raw.slice(sayIdx).replace(/^\s*SAY:\s*/i, '').trim();
+    let portion = raw.slice(sayIdx).replace(/^\s*SAY:\s*/i, '');
+    // Truncate at any continuation marker the model might emit when it
+    // tries to hallucinate further example pairs.
+    const stopAt = portion.search(/\n\s*(?:\*?\s*\*?\*?(?:Re:\s*)?)?(?:INTENT:|Patient:)/i);
+    if (stopAt >= 0) portion = portion.slice(0, stopAt);
+    return portion.trim();
   }
   if (/\bINTENT:\s*/i.test(raw)) return '…';
   return raw.trim();

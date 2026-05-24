@@ -6,7 +6,7 @@
 // model. Out-of-the-box replies are short, sometimes incoherent, and the
 // "never invent facts" constraint will occasionally leak. See PR notes.
 
-import { SYSTEM_PROMPT } from './receptionistPrompt';
+import { FEWSHOT_TURNS, SYSTEM_PROMPT } from './receptionistPrompt';
 
 const MODEL = 'onnx-community/gemma-3-270m-it-ONNX';
 // Gemma 3 270M ONNX builds use GatherBlockQuantized embeddings, which only
@@ -15,7 +15,10 @@ const MODEL = 'onnx-community/gemma-3-270m-it-ONNX';
 // offers a one-click switch to the classifier path.
 const DTYPE = 'q4f16'; // ~273 MB; WebGPU-only path needs this
 const DEVICE = 'webgpu' as const;
-const MAX_NEW_TOKENS = 240;
+// A well-formed reply is two short lines (INTENT + SAY). 80 tokens is
+// roughly 60 words — plenty of room for the structured output but not
+// enough for the model to ramble into hallucinated extra examples.
+const MAX_NEW_TOKENS = 80;
 const RETRY_DELAYS_MS = [1000, 3000, 9000];
 
 export type GenProgress = { status: string; file?: string; progress?: number };
@@ -117,8 +120,13 @@ async function doBootstrap(
     messages: ChatTurn[],
     onToken: (text: string) => void,
   ): Promise<string> => {
+    // System prompt holds the task definition + verified facts. Few-shot
+    // exemplars are folded in as real user/assistant turn pairs — 270M
+    // anchors on chat-template turns much more reliably than on text
+    // embedded in the system message (which it tends to continue).
     const fullMessages = [
       { role: 'system' as const, content: SYSTEM_PROMPT },
+      ...FEWSHOT_TURNS,
       ...messages,
     ];
 
