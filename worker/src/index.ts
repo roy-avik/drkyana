@@ -1,15 +1,23 @@
-// Edge-caching proxy for the on-device receptionist models.
+// R2-backed CDN for the on-device receptionist models.
 //
-// transformers.js v4 fetches model files from huggingface.co — for patients
-// in Dhaka/Iran this lands on HF's US-East-backed CDN with ~150-300 ms RTT
-// and the presigned URLs expire in an hour (the source of our retry path).
+// R2 is the source of truth. On every GET we try R2 first; on a miss we
+// pull the file from huggingface.co exactly once, stream it back to the
+// requesting client AND into R2 in parallel, and from that point on every
+// subsequent request — anywhere in the world — serves directly from R2
+// with CF's edge cache in front for free.
 //
-// This Worker proxies any path through to huggingface.co and lets Cloudflare's
-// global edge cache do the rest. First request from each colo eats the
-// upstream latency; everything after that is local.
-//
-// The classifier and generative services set `env.remoteHost` to this Worker's
-// URL, so the rest of the transformers.js fetch pipeline is unchanged.
+// Why this beats the proxy-through-HF approach: HF presigned URLs expire in
+// an hour, the response gets cached at the edge but the edge can evict, and
+// we depend on HF's uptime. With R2 as origin we own the data, the URLs
+// never expire, and the Worker becomes ~80 lines that don't need updating
+// when HF changes anything.
+
+interface Env {
+  MODELS: R2Bucket;
+}
+
+const UPSTREAM = 'https://huggingface.co';
+const CACHE_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -19,11 +27,8 @@ const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Max-Age': '86400',
 };
 
-const UPSTREAM = 'https://huggingface.co';
-const CACHE_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
-
 export default {
-  async fetch(request: Request): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: CORS_HEADERS });
     }
@@ -32,31 +37,127 @@ export default {
     }
 
     const url = new URL(request.url);
-    const upstreamUrl = `${UPSTREAM}${url.pathname}${url.search}`;
+    // R2 key mirrors the HF path. e.g.
+    //   /Xenova/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/config.json
+    // becomes
+    //   Xenova/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/config.json
+    const key = url.pathname.replace(/^\/+/, '');
+    if (!key || key.endsWith('/')) {
+      return new Response('Not Found', { status: 404, headers: CORS_HEADERS });
+    }
 
-    const forwardHeaders: HeadersInit = {};
-    const range = request.headers.get('range');
-    if (range) forwardHeaders['Range'] = range;
+    const range = parseRangeHeader(request.headers.get('range'));
 
-    const upstream = await fetch(upstreamUrl, {
-      method: request.method,
-      headers: forwardHeaders,
-      // Tell Cloudflare's edge to cache aggressively — these are versioned
-      // immutable model files for a given (model, revision) pair.
-      cf: {
-        cacheTtl: CACHE_TTL_SECONDS,
-        cacheEverything: true,
-      },
-    });
+    // 1) Try R2 first.
+    const object = await env.MODELS.get(key, range ? { range } : undefined);
+    if (object) {
+      return r2ResponseFor(object, request, range);
+    }
 
-    const headers = new Headers(upstream.headers);
-    for (const [k, v] of Object.entries(CORS_HEADERS)) headers.set(k, v);
-    headers.set('Cache-Control', `public, max-age=${CACHE_TTL_SECONDS}, immutable`);
-
-    return new Response(upstream.body, {
-      status: upstream.status,
-      statusText: upstream.statusText,
-      headers,
-    });
+    // 2) R2 miss — pull from HuggingFace once, tee body into the response
+    //    and into R2 in parallel.
+    return await backfillFromHF(env, ctx, key, url.search, request);
   },
 };
+
+async function backfillFromHF(
+  env: Env,
+  ctx: ExecutionContext,
+  key: string,
+  search: string,
+  request: Request,
+): Promise<Response> {
+  const upstreamUrl = `${UPSTREAM}/${key}${search}`;
+
+  // Important: do NOT forward the client's Range header on the backfill
+  // fetch — we want the *whole* file so R2 has the complete object. Once
+  // R2 is populated, subsequent range requests are served from R2 directly.
+  const upstream = await fetch(upstreamUrl, {
+    method: 'GET',
+    redirect: 'follow',
+  });
+
+  if (!upstream.ok || !upstream.body) {
+    return new Response(`Upstream fetch failed (${upstream.status})`, {
+      status: upstream.status,
+      headers: CORS_HEADERS,
+    });
+  }
+
+  // Split the body — one half to the client, the other into R2 via waitUntil.
+  const [toR2, toClient] = upstream.body.tee();
+
+  const contentType = upstream.headers.get('content-type') ?? 'application/octet-stream';
+  const contentLengthHeader = upstream.headers.get('content-length');
+  const contentLength = contentLengthHeader ? Number(contentLengthHeader) : undefined;
+
+  ctx.waitUntil(
+    env.MODELS.put(key, toR2, {
+      httpMetadata: { contentType },
+    }).catch((err) => {
+      console.error('R2 backfill failed for', key, err);
+    }),
+  );
+
+  const headers = new Headers();
+  for (const [k, v] of Object.entries(CORS_HEADERS)) headers.set(k, v);
+  headers.set('Content-Type', contentType);
+  if (contentLength !== undefined) headers.set('Content-Length', String(contentLength));
+  headers.set('Cache-Control', `public, max-age=${CACHE_TTL_SECONDS}, immutable`);
+  headers.set('X-Source', 'huggingface-backfill');
+  headers.set('Accept-Ranges', 'bytes');
+
+  // For the very first request we always stream the full file, even if the
+  // client asked for a Range — the next request can hit R2 with its Range.
+  return new Response(request.method === 'HEAD' ? null : toClient, {
+    status: 200,
+    headers,
+  });
+}
+
+function r2ResponseFor(
+  object: R2ObjectBody,
+  request: Request,
+  range: R2Range | undefined,
+): Response {
+  const headers = new Headers();
+  object.writeHttpMetadata(headers);
+  for (const [k, v] of Object.entries(CORS_HEADERS)) headers.set(k, v);
+  headers.set('Cache-Control', `public, max-age=${CACHE_TTL_SECONDS}, immutable`);
+  headers.set('ETag', object.httpEtag);
+  headers.set('Accept-Ranges', 'bytes');
+  headers.set('X-Source', 'r2');
+
+  const isHead = request.method === 'HEAD';
+
+  if (range && 'offset' in range && 'length' in range) {
+    const start = range.offset ?? 0;
+    const end = start + (range.length ?? 0) - 1;
+    headers.set('Content-Range', `bytes ${start}-${end}/${object.size}`);
+    headers.set('Content-Length', String(range.length ?? 0));
+    return new Response(isHead ? null : object.body, { status: 206, headers });
+  }
+
+  headers.set('Content-Length', String(object.size));
+  return new Response(isHead ? null : object.body, { status: 200, headers });
+}
+
+// Parses a single-range "bytes=START-END" header into an R2Range. Returns
+// undefined for missing/multi-range/malformed headers — those fall through
+// to a full-object fetch.
+function parseRangeHeader(header: string | null): R2Range | undefined {
+  if (!header) return undefined;
+  const match = /^bytes=(\d*)-(\d*)$/.exec(header.trim());
+  if (!match) return undefined;
+  const [, startStr, endStr] = match;
+  if (startStr === '' && endStr === '') return undefined;
+  if (startStr === '') {
+    // suffix length, e.g. "bytes=-500"
+    return { suffix: Number(endStr) };
+  }
+  const start = Number(startStr);
+  if (endStr === '') {
+    return { offset: start };
+  }
+  return { offset: start, length: Number(endStr) - start + 1 };
+}

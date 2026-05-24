@@ -3,5 +3,12 @@ main = "src/index.ts"
 compatibility_date = "2026-05-22"
 account_id = "b422dd4b2b479853ed1b0e0293120041"
 
+# R2 binding — the bucket is the source of truth. On a cache miss the Worker
+# pulls the file from huggingface.co once and writes it here; everything after
+# is served straight from R2 with CF's edge cache in front.
+[[r2_buckets]]
+binding = "MODELS"
+bucket_name = "drkyana-models"
+
 # Tail with `npx wrangler tail` from this directory.
 # Deploy with `npx wrangler deploy`.
