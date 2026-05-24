@@ -16,6 +16,14 @@ bucket_name = "drkyana-models"
 [triggers]
 crons = ["0 0 * * *"]
 
+# Workers Observability — captures invocation logs + a per-request timeline
+# in the dashboard. Free for our traffic level; head_sampling_rate=1 means
+# every invocation is captured (drop to e.g. 0.1 if we ever get noisy).
+# View in dashboard: Workers → drkyana-models → Logs.
+[observability]
+enabled = true
+head_sampling_rate = 1
+
 # Tail with `npx wrangler tail` from this directory.
 # Deploy with `npx wrangler deploy`.
 # Manually trigger the cron once with:
