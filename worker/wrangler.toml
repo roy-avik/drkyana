@@ -10,5 +10,16 @@ account_id = "b422dd4b2b479853ed1b0e0293120041"
 binding = "MODELS"
 bucket_name = "drkyana-models"
 
+# Daily cron at 00:00 UTC. Walks MIRROR_MANIFEST in worker/src/index.ts and
+# ensures every file exists in the bucket — first run after deploy pulls all
+# model files; later runs are no-ops unless we add a new model.
+[triggers]
+crons = ["0 0 * * *"]
+
 # Tail with `npx wrangler tail` from this directory.
 # Deploy with `npx wrangler deploy`.
+# Manually trigger the cron once with:
+#   npx wrangler dev --test-scheduled
+# or in prod:
+#   curl "https://drkyana-models.roy-ch-avik.workers.dev/__scheduled" \
+#        -H "Cron-Trigger: true"  (only with the dev test endpoint)

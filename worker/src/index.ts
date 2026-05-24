@@ -27,6 +27,27 @@ const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Max-Age': '86400',
 };
 
+// Files the cron job ensures exist in R2. Keys mirror the HF resolve paths.
+// Add to this list whenever we adopt a new on-device model — the daily cron
+// will pull it once and patients never pay the cold-start HF latency.
+const MIRROR_MANIFEST: readonly string[] = [
+  // Classifier — Xenova/paraphrase-multilingual-MiniLM-L12-v2 (q8)
+  'Xenova/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/config.json',
+  'Xenova/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/tokenizer.json',
+  'Xenova/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/tokenizer_config.json',
+  'Xenova/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/special_tokens_map.json',
+  'Xenova/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/onnx/model_quantized.onnx',
+
+  // Generative experiment — onnx-community/gemma-3-270m-it-ONNX (q4f16)
+  'onnx-community/gemma-3-270m-it-ONNX/resolve/main/config.json',
+  'onnx-community/gemma-3-270m-it-ONNX/resolve/main/tokenizer.json',
+  'onnx-community/gemma-3-270m-it-ONNX/resolve/main/tokenizer_config.json',
+  'onnx-community/gemma-3-270m-it-ONNX/resolve/main/special_tokens_map.json',
+  'onnx-community/gemma-3-270m-it-ONNX/resolve/main/generation_config.json',
+  'onnx-community/gemma-3-270m-it-ONNX/resolve/main/onnx/model_q4f16.onnx',
+  'onnx-community/gemma-3-270m-it-ONNX/resolve/main/onnx/model_q4f16.onnx_data',
+];
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     if (request.method === 'OPTIONS') {
@@ -58,7 +79,50 @@ export default {
     //    and into R2 in parallel.
     return await backfillFromHF(env, ctx, key, url.search, request);
   },
+
+  // Daily cron — ensures every file in MIRROR_MANIFEST exists in R2. New
+  // files get pulled once from HuggingFace; existing files are left alone.
+  // Idempotent: re-running is a no-op once everything is mirrored.
+  async scheduled(
+    _controller: ScheduledController,
+    env: Env,
+    ctx: ExecutionContext,
+  ): Promise<void> {
+    ctx.waitUntil(mirrorAll(env));
+  },
 };
+
+async function mirrorAll(env: Env): Promise<void> {
+  let pulled = 0;
+  let skipped = 0;
+  let failed = 0;
+  for (const key of MIRROR_MANIFEST) {
+    try {
+      const existing = await env.MODELS.head(key);
+      if (existing) {
+        skipped++;
+        continue;
+      }
+      const upstream = await fetch(`${UPSTREAM}/${key}`, { redirect: 'follow' });
+      if (!upstream.ok || !upstream.body) {
+        console.error(`[cron] upstream ${upstream.status} for ${key}`);
+        failed++;
+        continue;
+      }
+      await env.MODELS.put(key, upstream.body, {
+        httpMetadata: {
+          contentType: upstream.headers.get('content-type') ?? 'application/octet-stream',
+        },
+      });
+      pulled++;
+      console.log(`[cron] mirrored ${key}`);
+    } catch (err) {
+      console.error(`[cron] failed for ${key}:`, err);
+      failed++;
+    }
+  }
+  console.log(`[cron] done: pulled=${pulled} skipped=${skipped} failed=${failed}`);
+}
 
 async function backfillFromHF(
   env: Env,
