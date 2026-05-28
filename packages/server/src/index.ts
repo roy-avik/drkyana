@@ -15,5 +15,6 @@
 export * from "./bindings";
 export * from "./context";
 export * from "./tools";
+export * from "./models";
 export * from "./agents";
 export * from "./jobs";

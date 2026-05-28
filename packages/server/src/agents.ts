@@ -1,8 +1,16 @@
 /**
  * Agent factory contract. Three agents share this shape; Phase 1 implements
- * `runAgent`/`streamAgent` over AI SDK 6 (`Agent` / `streamText` / `generateText`).
+ * `runAgent`/`streamAgent` over AI SDK 6 (`streamText` / `generateText`).
  */
-import type { ToolRegistry } from "./tools";
+import {
+  streamText,
+  generateText,
+  stepCountIs,
+  type ModelMessage,
+  type PrepareStepFunction,
+} from "ai";
+import { toAiSdkTools, type ToolRegistry } from "./tools";
+import { modelFor } from "./models";
 import type { AgentContext } from "./context";
 
 /** Logical model tiers — mapped to concrete Claude model IDs in Phase 1 config. */
@@ -24,22 +32,63 @@ export interface AgentSpec {
 }
 
 /**
- * Phase 1 signatures (implemented over AI SDK 6):
- *
- *   // interactive (patient + admin chat) — returns a UI message stream Response
- *   export function streamAgent(spec: AgentSpec, ctx: AgentContext, history: unknown[]): Promise<Response>;
- *
- *   // non-streamed (radiology subagent inside a background job) — returns final result
- *   export function runAgent(spec: AgentSpec, ctx: AgentContext, history: unknown[]): Promise<{ text: string }>;
+ * Build the AI SDK `prepareStep` callback from a spec's optional `escalate`.
+ * On each step we consult `escalate(stepIndex, lastToolName)`; if it returns a
+ * tier we swap the model for that step, otherwise the default tier is kept.
  */
-export declare function streamAgent(
+function buildPrepareStep(
   spec: AgentSpec,
   ctx: AgentContext,
-  history: unknown[],
-): Promise<Response>;
+): PrepareStepFunction | undefined {
+  if (!spec.escalate) return undefined;
+  const escalate = spec.escalate.bind(spec);
+  return ({ stepNumber, steps }) => {
+    const lastStep = steps[steps.length - 1];
+    const lastToolName = lastStep?.toolCalls?.[lastStep.toolCalls.length - 1]?.toolName;
+    const tier = escalate(stepNumber, lastToolName);
+    if (!tier) return {};
+    return { model: modelFor(ctx.env, tier) };
+  };
+}
 
-export declare function runAgent(
+/**
+ * Interactive agent (patient + admin chat) — returns a UI message stream
+ * Response the client consumes via the AI SDK chat transport.
+ */
+export async function streamAgent(
   spec: AgentSpec,
   ctx: AgentContext,
   history: unknown[],
-): Promise<{ text: string }>;
+): Promise<Response> {
+  const result = streamText({
+    model: modelFor(ctx.env, spec.defaultTier),
+    system: spec.system,
+    messages: history as ModelMessage[],
+    tools: toAiSdkTools(spec.tools, ctx),
+    stopWhen: stepCountIs(spec.maxSteps),
+    prepareStep: buildPrepareStep(spec, ctx),
+    abortSignal: ctx.abortSignal,
+  });
+  return result.toUIMessageStreamResponse();
+}
+
+/**
+ * Non-streamed agent (e.g. a radiology subagent inside a background job) —
+ * runs the full tool loop and returns the final text.
+ */
+export async function runAgent(
+  spec: AgentSpec,
+  ctx: AgentContext,
+  history: unknown[],
+): Promise<{ text: string }> {
+  const { text } = await generateText({
+    model: modelFor(ctx.env, spec.defaultTier),
+    system: spec.system,
+    messages: history as ModelMessage[],
+    tools: toAiSdkTools(spec.tools, ctx),
+    stopWhen: stepCountIs(spec.maxSteps),
+    prepareStep: buildPrepareStep(spec, ctx),
+    abortSignal: ctx.abortSignal,
+  });
+  return { text };
+}
