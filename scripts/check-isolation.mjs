@@ -27,6 +27,7 @@ const SERVER_ALLOW = [
   /packages[\\/]server[\\/]/,
   /apps[\\/]admin[\\/]app[\\/]api[\\/]/, // Next.js route handlers
   /apps[\\/]admin[\\/]server[\\/]/,
+  /^functions[\\/]/, // Cloudflare Pages Functions (patient server endpoints)
   /\.server\.(ts|tsx|js|mjs)$/,
   /route\.(ts|js)$/, // Next.js route handlers
 ];

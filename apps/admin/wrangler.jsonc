@@ -1,0 +1,44 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "drkyana-admin",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-05-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": { "enabled": true },
+
+  // Provision with your CF account, then paste the IDs:
+  //   npx wrangler d1 create drkyana
+  //   npx wrangler kv namespace create drkyana-kv
+  //   npx wrangler vectorize create drkyana-kb --dimensions=1024 --metric=cosine
+  //   npx wrangler r2 bucket create drkyana-media
+  "d1_databases": [
+    { "binding": "DB", "database_name": "drkyana", "database_id": "REPLACE_ME" }
+  ],
+  "kv_namespaces": [
+    { "binding": "KV", "id": "REPLACE_ME" }
+  ],
+  "vectorize": [
+    { "binding": "VECTORIZE", "index_name": "drkyana-kb" }
+  ],
+  "r2_buckets": [
+    { "binding": "R2", "bucket_name": "drkyana-media" }
+  ],
+  // Cloudflare Email Service — sends as receptionist@drkyana.com (cf-bounce subdomain).
+  "send_email": [
+    { "name": "EMAIL", "remote": true }
+  ],
+  "vars": {
+    "RECEPTIONIST_FROM": "receptionist@drkyana.com",
+    "DR_KYANA_NOTIFY_EMAIL": "kyanalotfi96@gmail.com"
+  },
+  // Scheduled reminders/follow-ups (UTC). 03:00 UTC = 09:00 Dhaka.
+  "triggers": { "crons": ["0 3 * * *"] }
+
+  // Secrets (never commit): set with `wrangler secret put`:
+  //   ANTHROPIC_API_KEY, PATIENT_AGENT_TOKEN, IP_HASH_SALT
+  // Admin auth is enforced by Cloudflare Access in front of this Worker.
+}

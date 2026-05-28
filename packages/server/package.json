@@ -8,7 +8,13 @@
   },
   "types": "./src/index.ts",
   "dependencies": {
-    "@drkyana/types": "*"
+    "@drkyana/types": "*",
+    "ai": "^6.0.192",
+    "@ai-sdk/anthropic": "^3.0.81",
+    "zod": "^4.1.13"
   },
-  "comment": "SERVER-ONLY. Never import from a client bundle. Phase 1 adds: ai@^6, @ai-sdk/anthropic, zod, @cloudflare/workers-types. Until then, bindings use the minimal placeholder types in src/bindings.ts."
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260101.0"
+  },
+  "comment": "SERVER-ONLY. Never import from a client bundle (enforced by scripts/check-isolation.mjs)."
 }
