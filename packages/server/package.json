@@ -1,0 +1,14 @@
+{
+  "name": "@drkyana/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@drkyana/types": "*"
+  },
+  "comment": "SERVER-ONLY. Never import from a client bundle. Phase 1 adds: ai@^6, @ai-sdk/anthropic, zod, @cloudflare/workers-types. Until then, bindings use the minimal placeholder types in src/bindings.ts."
+}
