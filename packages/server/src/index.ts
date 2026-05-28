@@ -18,3 +18,7 @@ export * from "./tools";
 export * from "./models";
 export * from "./agents";
 export * from "./jobs";
+
+// Concrete patient agent + toolset (Phase 1A). Server-only.
+export { patientAgentSpec } from "./agents/patient";
+export { patientTools } from "./tools/patient";

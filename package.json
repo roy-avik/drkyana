@@ -19,7 +19,8 @@
     "check:isolation": "node scripts/check-isolation.mjs"
   },
   "dependencies": {
-    "@huggingface/transformers": "^4.2.0",
+    "@ai-sdk/react": "^3.0.194",
+    "@drkyana/types": "*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
