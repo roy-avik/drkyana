@@ -195,11 +195,27 @@ export const submitIntakeTool = defineTool({
     }
 
     // Bind this patient session to the resolved record (least-privilege scope).
+    const sessionId =
+      ctx.caller.kind === "patient" ? ctx.caller.sessionId : null;
     if (ctx.caller.kind === "patient") {
       ctx.caller.patientId = patientId;
     }
 
-    // --- Insert intake linked to the patient ---
+    // Link the originating conversation → patient (best-effort, never throws).
+    // The session row exists for patient callers; if the UPDATE fails (e.g.
+    // session not yet persisted) we still proceed with the submission.
+    if (sessionId) {
+      try {
+        await db
+          .prepare("UPDATE sessions SET patient_id = ?, updated_at = ? WHERE id = ?")
+          .bind(patientId, now, sessionId)
+          .run();
+      } catch {
+        // best-effort linkage; do not fail the patient's submission.
+      }
+    }
+
+    // --- Insert intake linked to the patient (+ originating session) ---
     const intakeId = crypto.randomUUID();
     await db
       .prepare(
@@ -207,8 +223,8 @@ export const submitIntakeTool = defineTool({
           "affected_area, symptoms, duration, severity, triggers, " +
           "conditions, allergies, medications, last_dental_visit, anxiety, " +
           "preferred_area, preferred_days, time_of_day, urgency, payment, " +
-          "triage_level, triage_action, status, raw_message, created_at, updated_at) " +
-          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?)",
+          "triage_level, triage_action, status, raw_message, session_id, created_at, updated_at) " +
+          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?, ?)",
       )
       .bind(
         intakeId,
@@ -236,6 +252,7 @@ export const submitIntakeTool = defineTool({
         triage.level,
         triage.action,
         args.rawMessage ?? null,
+        sessionId,
         now,
         now,
       )

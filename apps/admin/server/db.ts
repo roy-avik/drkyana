@@ -11,6 +11,11 @@ import type {
   PatientRow,
   PatientMemory,
   KbDocRow,
+  AppointmentRow,
+  AppointmentStatus,
+  AppointmentEventRow,
+  AppointmentEventType,
+  AppointmentEventDetail,
 } from "@drkyana/types";
 
 /**
@@ -80,6 +85,7 @@ interface RawIntake {
   triage_action: string | null;
   status: string;
   raw_message: string | null;
+  session_id: string | null;
   created_at: number;
   updated_at: number;
 }
@@ -112,6 +118,7 @@ function mapIntake(r: RawIntake): IntakeRow {
     triage_action: (r.triage_action as IntakeRow["triage_action"]) ?? null,
     status: (r.status as IntakeStatus) ?? "new",
     raw_message: r.raw_message,
+    session_id: r.session_id ?? null,
     created_at: r.created_at,
     updated_at: r.updated_at,
   };
@@ -478,4 +485,293 @@ export async function listKbDocs(): Promise<KbDocRow[]> {
     .prepare(`SELECT * FROM kb_docs ORDER BY updated_at DESC LIMIT 200`)
     .all<RawKbDoc>();
   return results.map(mapKbDoc);
+}
+
+// ---------------------------------------------------------------------------
+// Appointments — the GRANTED visit (distinct from the intake's REQUESTED
+// logistics). CRUD + an append-only appointment_events audit trail.
+// ---------------------------------------------------------------------------
+
+const VALID_APPT_STATUS = new Set<AppointmentStatus>([
+  "proposed",
+  "confirmed",
+  "completed",
+  "cancelled",
+  "no_show",
+]);
+
+interface RawAppointment {
+  id: string;
+  patient_id: string;
+  intake_id: string | null;
+  chamber_id: string | null;
+  scheduled_at: number;
+  duration_min: number;
+  status: string;
+  note: string | null;
+  created_at: number;
+  updated_at: number;
+}
+
+function mapAppointment(r: RawAppointment): AppointmentRow {
+  return {
+    id: r.id,
+    patient_id: r.patient_id,
+    intake_id: r.intake_id,
+    chamber_id: r.chamber_id,
+    scheduled_at: r.scheduled_at,
+    duration_min: r.duration_min ?? 30,
+    status: (r.status as AppointmentStatus) ?? "proposed",
+    note: r.note,
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+  };
+}
+
+interface RawApptEvent {
+  id: string;
+  appointment_id: string;
+  type: string;
+  detail: string | null;
+  actor: string | null;
+  at: number;
+}
+
+function mapApptEvent(r: RawApptEvent): AppointmentEventRow {
+  return {
+    id: r.id,
+    appointment_id: r.appointment_id,
+    type: r.type as AppointmentEventType,
+    detail: parseJson<AppointmentEventDetail>(r.detail, {}),
+    actor: r.actor,
+    at: r.at,
+  };
+}
+
+async function recordApptEvent(args: {
+  appointmentId: string;
+  type: AppointmentEventType;
+  detail?: AppointmentEventDetail;
+  actor: string | null;
+}): Promise<void> {
+  await db()
+    .prepare(
+      `INSERT INTO appointment_events (id, appointment_id, type, detail, actor, at)
+       VALUES (?, ?, ?, ?, ?, unixepoch())`,
+    )
+    .bind(
+      genId("evt"),
+      args.appointmentId,
+      args.type,
+      args.detail ? JSON.stringify(args.detail) : null,
+      args.actor ?? null,
+    )
+    .run();
+}
+
+export interface AppointmentFilter {
+  patientId?: string;
+  intakeId?: string;
+  status?: AppointmentStatus;
+}
+
+export async function listAppointments(
+  filter: AppointmentFilter = {},
+): Promise<AppointmentRow[]> {
+  const where: string[] = [];
+  const binds: unknown[] = [];
+  if (filter.patientId) {
+    where.push("patient_id = ?");
+    binds.push(filter.patientId);
+  }
+  if (filter.intakeId) {
+    where.push("intake_id = ?");
+    binds.push(filter.intakeId);
+  }
+  if (filter.status && VALID_APPT_STATUS.has(filter.status)) {
+    where.push("status = ?");
+    binds.push(filter.status);
+  }
+  const sql =
+    `SELECT * FROM appointments` +
+    (where.length ? ` WHERE ${where.join(" AND ")}` : "") +
+    ` ORDER BY scheduled_at DESC LIMIT 200`;
+  const { results } = await db().prepare(sql).bind(...binds).all<RawAppointment>();
+  return results.map(mapAppointment);
+}
+
+export async function getAppointment(id: string): Promise<AppointmentRow | null> {
+  const row = await db()
+    .prepare(`SELECT * FROM appointments WHERE id = ?`)
+    .bind(id)
+    .first<RawAppointment>();
+  return row ? mapAppointment(row) : null;
+}
+
+export async function getAppointmentEvents(
+  appointmentId: string,
+): Promise<AppointmentEventRow[]> {
+  const { results } = await db()
+    .prepare(
+      `SELECT * FROM appointment_events WHERE appointment_id = ? ORDER BY at ASC`,
+    )
+    .bind(appointmentId)
+    .all<RawApptEvent>();
+  return results.map(mapApptEvent);
+}
+
+export interface AppointmentInput {
+  patientId: string;
+  intakeId?: string | null;
+  chamberId?: string | null;
+  scheduledAt: number;
+  durationMin?: number;
+  note?: string | null;
+}
+
+export async function createAppointment(
+  input: AppointmentInput,
+  actor: string | null,
+): Promise<AppointmentRow> {
+  const id = genId("appt");
+  await db()
+    .prepare(
+      `INSERT INTO appointments (id, patient_id, intake_id, chamber_id, scheduled_at, duration_min, status, note)
+       VALUES (?, ?, ?, ?, ?, ?, 'proposed', ?)`,
+    )
+    .bind(
+      id,
+      input.patientId,
+      input.intakeId ?? null,
+      input.chamberId ?? null,
+      input.scheduledAt,
+      input.durationMin ?? 30,
+      input.note ?? null,
+    )
+    .run();
+  await recordApptEvent({
+    appointmentId: id,
+    type: "created",
+    detail: { nextSlot: input.scheduledAt, nextStatus: "proposed" },
+    actor,
+  });
+  return (await getAppointment(id))!;
+}
+
+export async function rescheduleAppointment(
+  id: string,
+  scheduledAt: number,
+  actor: string | null,
+  reason?: string,
+): Promise<AppointmentRow | null> {
+  const current = await getAppointment(id);
+  if (!current) return null;
+  await db()
+    .prepare(
+      `UPDATE appointments SET scheduled_at = ?, updated_at = unixepoch() WHERE id = ?`,
+    )
+    .bind(scheduledAt, id)
+    .run();
+  await recordApptEvent({
+    appointmentId: id,
+    type: "rescheduled",
+    detail: { prevSlot: current.scheduled_at, nextSlot: scheduledAt, reason },
+    actor,
+  });
+  return getAppointment(id);
+}
+
+export async function setAppointmentStatus(
+  id: string,
+  status: AppointmentStatus,
+  actor: string | null,
+  reason?: string,
+): Promise<AppointmentRow | null> {
+  if (!VALID_APPT_STATUS.has(status)) throw new Error(`invalid status: ${status}`);
+  const current = await getAppointment(id);
+  if (!current) return null;
+  await db()
+    .prepare(`UPDATE appointments SET status = ?, updated_at = unixepoch() WHERE id = ?`)
+    .bind(status, id)
+    .run();
+  await recordApptEvent({
+    appointmentId: id,
+    type: status as AppointmentEventType,
+    detail: { prevStatus: current.status, nextStatus: status, reason },
+    actor,
+  });
+  return getAppointment(id);
+}
+
+// ---------------------------------------------------------------------------
+// Transcripts — patient chat history (sessions linked to the patient).
+// ---------------------------------------------------------------------------
+
+export interface TranscriptSummary {
+  sessionId: string;
+  created_at: number;
+  updated_at: number;
+  message_count: number;
+  summary: string | null;
+}
+
+export interface TranscriptTurn {
+  role: string;
+  text: string;
+}
+
+function messageCount(raw: unknown): number {
+  const parsed = parseJson<unknown[]>(typeof raw === "string" ? raw : "[]", []);
+  return Array.isArray(parsed) ? parsed.length : 0;
+}
+
+export async function listPatientTranscripts(
+  patientId: string,
+): Promise<TranscriptSummary[]> {
+  const { results } = await db()
+    .prepare(
+      `SELECT id, messages, summary, created_at, updated_at FROM sessions
+       WHERE patient_id = ? ORDER BY updated_at DESC LIMIT 50`,
+    )
+    .bind(patientId)
+    .all<{ id: string; messages: string; summary: string | null; created_at: number; updated_at: number }>();
+  return results.map((r) => ({
+    sessionId: r.id,
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+    message_count: messageCount(r.messages),
+    summary: r.summary,
+  }));
+}
+
+export async function getTranscript(
+  sessionId: string,
+): Promise<{ sessionId: string; created_at: number; turns: TranscriptTurn[] } | null> {
+  const row = await db()
+    .prepare(`SELECT id, messages, created_at FROM sessions WHERE id = ?`)
+    .bind(sessionId)
+    .first<{ id: string; messages: string; created_at: number }>();
+  if (!row) return null;
+  const parsed = parseJson<Record<string, unknown>[]>(row.messages, []);
+  const turns: TranscriptTurn[] = (Array.isArray(parsed) ? parsed : [])
+    .map((m) => {
+      const parts = (m as { parts?: unknown }).parts;
+      let text = "";
+      if (Array.isArray(parts)) {
+        text = parts
+          .filter(
+            (p): p is { type: string; text: string } =>
+              !!p &&
+              (p as { type?: string }).type === "text" &&
+              typeof (p as { text?: unknown }).text === "string",
+          )
+          .map((p) => p.text)
+          .join("");
+      } else if (typeof (m as { content?: unknown }).content === "string") {
+        text = (m as { content: string }).content;
+      }
+      return { role: String((m as { role?: unknown }).role ?? "unknown"), text };
+    })
+    .filter((t) => t.text !== "");
+  return { sessionId: row.id, created_at: row.created_at, turns };
 }
