@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import {
+  DefaultChatTransport,
+  lastAssistantMessageIsCompleteWithApprovalResponses,
+} from "ai";
 
 /**
  * Admin agent chat. Streams from /api/agent/admin via useChat.
@@ -182,6 +185,10 @@ export default function AgentChat() {
 
   const { messages, sendMessage, status, error, addToolApprovalResponse } = useChat({
     transport: new DefaultChatTransport({ api: "/api/agent/admin" }),
+    // After an Approve/Deny is recorded, auto-send the updated history back so
+    // the server resumes the agent and actually executes the approved tool
+    // (the DB write). Without this the approval is recorded client-side only.
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
     onError: (err) => {
       if (/501|not_implemented|not implemented/i.test(err.message)) setOffline(true);
     },
