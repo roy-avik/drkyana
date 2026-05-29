@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAdminIdentity } from "@/server/page-auth";
-import { getIntake, getPatient } from "@/server/db";
+import { getIntake, getPatient, listChambers } from "@/server/db";
 import StatusControl from "../../components/StatusControl";
+import AppointmentsPanel from "../../components/AppointmentsPanel";
+import TranscriptPanel from "../../components/TranscriptPanel";
 import NotAuthorized from "../../components/NotAuthorized";
 import { fmtDate, TRIAGE_CLASS } from "../../lib/format";
 
@@ -46,6 +48,11 @@ export default async function IntakeDetail({
   const intake = await getIntake(id);
   if (!intake) notFound();
   const patient = intake.patient_id ? await getPatient(intake.patient_id) : null;
+  const chambers = (await listChambers(false)).map((c) => ({
+    id: c.id,
+    name: c.name,
+    area: c.area,
+  }));
 
   return (
     <div className="space-y-4">
@@ -104,8 +111,11 @@ export default async function IntakeDetail({
         </dl>
       </section>
 
-      <section className="card">
-        <h2 className="mb-3 text-sm font-semibold">Logistics</h2>
+      <section className="card border-amber-200 bg-amber-50/40">
+        <h2 className="mb-1 text-sm font-semibold">Requested appointment</h2>
+        <p className="mb-3 text-xs text-muted">
+          What the patient <strong>sought</strong> at intake — not yet granted.
+        </p>
         <dl className="grid grid-cols-2 gap-3">
           <Field label="Preferred area" value={intake.preferred_area} />
           <Field label="Preferred days" value={intake.preferred_days} />
@@ -117,6 +127,19 @@ export default async function IntakeDetail({
           Created {fmtDate(intake.created_at)} · Updated {fmtDate(intake.updated_at)}
         </p>
       </section>
+
+      {intake.patient_id && (
+        <AppointmentsPanel
+          patientId={intake.patient_id}
+          intakeId={intake.id}
+          chambers={chambers}
+        />
+      )}
+
+      <TranscriptPanel
+        patientId={intake.patient_id ?? null}
+        originatingSessionId={intake.session_id ?? null}
+      />
 
       {patient && (
         <section className="card border-accent/30 bg-accent/5">

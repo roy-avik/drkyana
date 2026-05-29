@@ -29,6 +29,13 @@ import { updatePatientMemoryTool } from "./update_patient_memory";
 import { sendReceptionistEmailTool } from "./send_receptionist_email";
 import { startRadiologyAnalysisTool } from "./start_radiology_analysis";
 import { compilePdfTool } from "./compile_pdf";
+import { createAppointmentTool } from "./create_appointment";
+import { getAppointmentTool } from "./get_appointment";
+import { listAppointmentsTool } from "./list_appointments";
+import { rescheduleAppointmentTool } from "./reschedule_appointment";
+import { setAppointmentStatusTool } from "./set_appointment_status";
+import { listPatientTranscriptsTool } from "./list_patient_transcripts";
+import { getTranscriptTool } from "./get_transcript";
 
 export { listIntakesTool } from "./list_intakes";
 export { getIntakeTool } from "./get_intake";
@@ -45,6 +52,13 @@ export { updatePatientMemoryTool } from "./update_patient_memory";
 export { sendReceptionistEmailTool } from "./send_receptionist_email";
 export { startRadiologyAnalysisTool } from "./start_radiology_analysis";
 export { compilePdfTool } from "./compile_pdf";
+export { createAppointmentTool } from "./create_appointment";
+export { getAppointmentTool } from "./get_appointment";
+export { listAppointmentsTool } from "./list_appointments";
+export { rescheduleAppointmentTool } from "./reschedule_appointment";
+export { setAppointmentStatusTool } from "./set_appointment_status";
+export { listPatientTranscriptsTool } from "./list_patient_transcripts";
+export { getTranscriptTool } from "./get_transcript";
 
 /** Registry keyed by the tool name the model sees. */
 export const adminTools: ToolRegistry = {
@@ -68,4 +82,14 @@ export const adminTools: ToolRegistry = {
   // background dispatch (return a jobId fast)
   start_radiology_analysis: startRadiologyAnalysisTool,
   compile_pdf: compilePdfTool,
+  // scheduling reads
+  list_appointments: listAppointmentsTool,
+  get_appointment: getAppointmentTool,
+  // scheduling writes (needsApproval)
+  create_appointment: createAppointmentTool,
+  reschedule_appointment: rescheduleAppointmentTool,
+  set_appointment_status: setAppointmentStatusTool,
+  // transcripts (read)
+  list_patient_transcripts: listPatientTranscriptsTool,
+  get_transcript: getTranscriptTool,
 };
