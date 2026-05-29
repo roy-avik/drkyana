@@ -41,6 +41,11 @@ index_name = "drkyana-kb"
 binding = "R2"
 bucket_name = "drkyana-media"
 
+# Workers AI — embeddings for kb_search (@cf/baai/bge-m3, 1024-dim → matches the
+# drkyana-kb Vectorize index). Enable Workers AI on the account in the dashboard.
+[ai]
+binding = "AI"
+
 # Cloudflare Email Service — sends as receptionist@drkyana.com.
 # Onboard the domain in dash > Email Service > Email Sending (adds SPF/DKIM on
 # cf-bounce.drkyana.com). Root-domain MX stays with GoDaddy — no conflict.

@@ -27,6 +27,10 @@
   "r2_buckets": [
     { "binding": "R2", "bucket_name": "drkyana-media" }
   ],
+  // Workers AI — embeddings for kb_search (@cf/baai/bge-m3, 1024-dim → matches
+  // the drkyana-kb Vectorize index). No id to paste; enable Workers AI on the
+  // account in the CF dashboard.
+  "ai": { "binding": "AI" },
   // Cloudflare Email Service — sends as receptionist@drkyana.com (cf-bounce subdomain).
   "send_email": [
     { "name": "EMAIL", "remote": true }
