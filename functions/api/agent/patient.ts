@@ -50,24 +50,6 @@ function json(body: unknown, status: number): Response {
   });
 }
 
-/** Constant-time-ish token compare. */
-function tokenMatches(provided: string | null, expected: string): boolean {
-  if (!provided || !expected) return false;
-  if (provided.length !== expected.length) return false;
-  let diff = 0;
-  for (let i = 0; i < provided.length; i++)
-    diff |= provided.charCodeAt(i) ^ expected.charCodeAt(i);
-  return diff === 0;
-}
-
-function extractToken(req: Request): string | null {
-  const header = req.headers.get("x-patient-agent-token");
-  if (header) return header;
-  const auth = req.headers.get("authorization");
-  if (auth?.toLowerCase().startsWith("bearer ")) return auth.slice(7).trim();
-  return null;
-}
-
 async function hashIp(ip: string, salt: string): Promise<string> {
   const data = new TextEncoder().encode(`${salt}:${ip}`);
   const digest = await crypto.subtle.digest("SHA-256", data);
@@ -145,13 +127,10 @@ function mergeById(stored: UIMessage[], incoming: UIMessage[]): UIMessage[] {
 export const onRequestPost = async (ctx: PagesContext): Promise<Response> => {
   const { request, env } = ctx;
 
-  // --- Auth ---
-  if (!env.PATIENT_AGENT_TOKEN) {
-    return json({ error: "server_misconfigured" }, 500);
-  }
-  if (!tokenMatches(extractToken(request), env.PATIENT_AGENT_TOKEN)) {
-    return json({ error: "unauthorized" }, 401);
-  }
+  // Public endpoint: the previous token gate was a client-bundled token (shipped
+  // in the browser), so it offered no real protection. Abuse is controlled by the
+  // per-IP KV rate limit below; add Cloudflare Turnstile if stronger protection
+  // is needed later.
 
   // --- Rate limit (per hashed IP) ---
   const ip =
