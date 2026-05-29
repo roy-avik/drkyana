@@ -74,7 +74,7 @@ export default function AppointmentsPanel({
     const scheduledAt = toUnix(slot);
     if (!scheduledAt) return;
     setBusy(true);
-    await fetch("/api/appointments", {
+    const res = await fetch("/api/appointments", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -86,21 +86,31 @@ export default function AppointmentsPanel({
         note: note || null,
       }),
     });
+    const data = (await res.json().catch(() => ({}))) as { appointment?: AppointmentRow };
     setSlot("");
     setNote("");
     setBusy(false);
-    await load();
+    // Use the returned row directly — refetching immediately can miss the write
+    // on a D1 read replica.
+    if (data.appointment) setAppts((prev) => [data.appointment!, ...prev]);
+    else await load();
   }
 
   async function patch(id: string, body: Record<string, unknown>) {
     setBusy(true);
-    await fetch(`/api/appointments/${id}`, {
+    const res = await fetch(`/api/appointments/${id}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
     });
+    const data = (await res.json().catch(() => ({}))) as { appointment?: AppointmentRow };
     setBusy(false);
-    await load();
+    if (data.appointment) {
+      const updated = data.appointment;
+      setAppts((prev) => prev.map((a) => (a.id === id ? updated : a)));
+    } else {
+      await load();
+    }
   }
 
   async function setStatus(id: string, status: AppointmentStatus) {
