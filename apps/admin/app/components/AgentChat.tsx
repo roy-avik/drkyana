@@ -7,6 +7,7 @@ import {
   lastAssistantMessageIsCompleteWithApprovalResponses,
   type UIMessage,
 } from "ai";
+import { renderMarkdown } from "../lib/markdown";
 
 /**
  * Admin agent chat. Streams from /api/agent/admin via useChat.
@@ -162,7 +163,10 @@ function ToolPart({
         <div className="my-1 text-xs text-muted">
           ✓ {labelFor(name)}
           {md && (
-            <pre className="mt-1 whitespace-pre-wrap rounded bg-surface-alt p-2 text-ink">{md}</pre>
+            <div
+              className="prose-draft mt-1 rounded bg-surface-alt p-2 text-ink"
+              dangerouslySetInnerHTML={{ __html: renderMarkdown(md) }}
+            />
           )}
         </div>
       );
@@ -240,9 +244,18 @@ function ChatThread({
               {m.parts.map((part, i) => {
                 const p = part as unknown as ToolPartLike;
                 if (p.type === "text") {
-                  return (
+                  const text = (part as unknown as { text: string }).text;
+                  // Assistant text is markdown (tables, lists, bold); patient/user
+                  // text is shown verbatim.
+                  return m.role === "assistant" ? (
+                    <div
+                      key={i}
+                      className="prose-draft"
+                      dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }}
+                    />
+                  ) : (
                     <span key={i} className="whitespace-pre-wrap">
-                      {(part as unknown as { text: string }).text}
+                      {text}
                     </span>
                   );
                 }
