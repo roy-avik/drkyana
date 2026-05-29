@@ -10,6 +10,7 @@ import type {
   DraftCitation,
   PatientRow,
   PatientMemory,
+  KbDocRow,
 } from "@drkyana/types";
 
 /**
@@ -441,4 +442,40 @@ export async function updateDraftStatus(
     .bind(status, id)
     .run();
   return getDraft(id);
+}
+
+// ---------------------------------------------------------------------------
+// KB docs — registry listing (read-only here; ingest/delete go through
+// @drkyana/server's ingestDoc/deleteDoc, which also touch Vectorize).
+// ---------------------------------------------------------------------------
+
+interface RawKbDoc {
+  id: string;
+  title: string;
+  source: string | null;
+  namespace: string;
+  chunk_count: number;
+  curated: number;
+  created_at: number;
+  updated_at: number;
+}
+
+function mapKbDoc(r: RawKbDoc): KbDocRow {
+  return {
+    id: r.id,
+    title: r.title,
+    source: r.source,
+    namespace: r.namespace,
+    chunk_count: r.chunk_count ?? 0,
+    curated: r.curated === 1,
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+  };
+}
+
+export async function listKbDocs(): Promise<KbDocRow[]> {
+  const { results } = await db()
+    .prepare(`SELECT * FROM kb_docs ORDER BY updated_at DESC LIMIT 200`)
+    .all<RawKbDoc>();
+  return results.map(mapKbDoc);
 }

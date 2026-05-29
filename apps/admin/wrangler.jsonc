@@ -40,6 +40,14 @@
     "DR_KYANA_NOTIFY_EMAIL": "kyanalotfi96@gmail.com"
   },
   // Scheduled reminders/follow-ups (UTC). 03:00 UTC = 09:00 Dhaka.
+  // NOTE: the OpenNext-generated worker (.open-next/worker.js) exports only a
+  // `fetch` handler — there is no supported way to add a `scheduled()` export to
+  // it, so this cron has nothing to invoke today. The reminder LOGIC is complete
+  // (packages/server/src/scheduled/reminders.ts) and reachable via the Access-
+  // gated POST /api/cron/reminders route. To fire it on schedule, run a tiny
+  // separate Worker that exports `scheduled()` → runReminders(env) over the same
+  // D1/EMAIL bindings, or have an external scheduler POST the route. See that
+  // route handler's comment for details.
   "triggers": { "crons": ["0 3 * * *"] }
 
   // Secrets (never commit): set with `wrangler secret put`:

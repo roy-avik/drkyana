@@ -22,6 +22,7 @@ import type {
 import { defineTool } from "../../tools";
 import type { AgentContext } from "../../context";
 import { assessTriage } from "./run_triage";
+import { sendEmail } from "../../email";
 
 const genderEnum = z.enum(["female", "male", "other", "unspecified"]);
 
@@ -239,6 +240,46 @@ export const submitIntakeTool = defineTool({
         now,
       )
       .run();
+
+    // --- Urgent notification (best-effort, non-blocking) ---
+    // RED/ORANGE triage → email Dr Kyana so she sees it immediately. Wrapped in
+    // try/catch and scheduled via waitUntil so a mail failure NEVER fails the
+    // patient's submission. Requires the patient project to also bind EMAIL +
+    // RECEPTIONIST_FROM/DR_KYANA_NOTIFY_EMAIL (see provisioning note).
+    if (triage.level === "RED" || triage.level === "ORANGE") {
+      const complaint = (args.affectedArea ?? args.rawMessage ?? "")
+        .trim()
+        .slice(0, 280);
+      const body = [
+        `Urgent intake (${triage.level}).`,
+        ``,
+        `Patient: ${args.name ?? "Unknown"}`,
+        `Phone: ${phone}`,
+        `Triage: ${triage.level} (${triage.action})`,
+        `Severity: ${args.severity ?? "n/a"}/10`,
+        complaint ? `Complaint: ${complaint}` : ``,
+        ``,
+        `Intake id: ${intakeId}`,
+      ]
+        .filter(Boolean)
+        .join("\n");
+      const notify = ctx.env.DR_KYANA_NOTIFY_EMAIL;
+      ctx.waitUntil(
+        (async () => {
+          try {
+            if (notify) {
+              await sendEmail(ctx.env, {
+                to: notify,
+                subject: `Urgent (${triage.level}) intake — ${args.name ?? phone}`,
+                body,
+              });
+            }
+          } catch {
+            // Best-effort only: swallow so the submission stays successful.
+          }
+        })(),
+      );
+    }
 
     return {
       ok: true,

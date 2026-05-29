@@ -22,3 +22,29 @@ export async function embedQuery(env: Env, text: string): Promise<number[]> {
   }
   return vec;
 }
+
+/**
+ * Embed a batch of strings (KB ingestion). bge-m3 accepts a string[] and returns
+ * one vector per input in `data`. We chunk into small batches so a large doc
+ * doesn't exceed the model's per-call input limit. Order is preserved.
+ */
+export async function embedTexts(env: Env, texts: string[]): Promise<number[][]> {
+  if (texts.length === 0) return [];
+  const BATCH = 16;
+  const out: number[][] = [];
+  for (let i = 0; i < texts.length; i += BATCH) {
+    const slice = texts.slice(i, i + BATCH);
+    const res = await env.AI.run(EMBEDDING_MODEL, { text: slice });
+    const vecs = res?.data;
+    if (!Array.isArray(vecs) || vecs.length !== slice.length) {
+      throw new Error("embedding failed: unexpected batch shape from Workers AI");
+    }
+    for (const v of vecs) {
+      if (!Array.isArray(v)) {
+        throw new Error("embedding failed: non-vector row in batch response");
+      }
+      out.push(v);
+    }
+  }
+  return out;
+}

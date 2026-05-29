@@ -23,8 +23,28 @@ export * from "./jobs";
 export { patientAgentSpec } from "./agents/patient";
 export { patientTools } from "./tools/patient";
 
-// Embeddings (Workers AI) for KB retrieval. Server-only.
-export { embedQuery, EMBEDDING_MODEL, EMBEDDING_DIM } from "./embeddings";
+// Embeddings (Workers AI) for KB retrieval + ingestion. Server-only.
+export { embedQuery, embedTexts, EMBEDDING_MODEL, EMBEDDING_DIM } from "./embeddings";
+
+// Email helper (Cloudflare Email Service `send_email` binding). Server-only.
+export { sendEmail, buildRawEmail, type SendEmailArgs } from "./email";
+
+// KB ingestion (human-curated: chunk → embed → Vectorize upsert → kb_docs). Server-only.
+export {
+  ingestDoc,
+  deleteDoc,
+  chunkText,
+  type IngestDocInput,
+  type IngestResult,
+} from "./kb/ingest";
+
+// Scheduled reminder pass (cron-driven email digest). Server-only.
+export {
+  runReminders,
+  selectReminders,
+  type ReminderItem,
+  type ReminderRunResult,
+} from "./scheduled/reminders";
 
 // Concrete admin agent + toolset (Phase 1C). Server-only.
 export { adminAgentSpec } from "./agents/admin";
