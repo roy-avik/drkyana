@@ -37,6 +37,22 @@ export type DraftStatus = "draft" | "approved" | "sent";
 
 export type SessionKind = "patient" | "admin";
 
+export type AppointmentStatus =
+  | "proposed"
+  | "confirmed"
+  | "completed"
+  | "cancelled"
+  | "no_show";
+
+/** Lifecycle events recorded on appointment_events (reschedule/cancel history). */
+export type AppointmentEventType =
+  | "created"
+  | "rescheduled"
+  | "confirmed"
+  | "cancelled"
+  | "completed"
+  | "no_show";
+
 // ---------------------------------------------------------------------------
 // Patient longitudinal record
 // ---------------------------------------------------------------------------
@@ -102,8 +118,45 @@ export interface IntakeRow {
   triage_action?: TriageAction | null;
   status: IntakeStatus;
   raw_message?: string | null;
+  /** Originating conversation (sessions.id). Set at submit time. */
+  session_id?: string | null;
   created_at: number;
   updated_at: number;
+}
+
+// ---------------------------------------------------------------------------
+// Appointments — what was GRANTED (vs. the intake logistics, what was sought)
+// ---------------------------------------------------------------------------
+
+export interface AppointmentRow {
+  id: string;
+  patient_id: string;
+  intake_id?: string | null;
+  chamber_id?: string | null;
+  scheduled_at: number; // unix epoch seconds
+  duration_min: number;
+  status: AppointmentStatus;
+  note?: string | null;
+  created_at: number;
+  updated_at: number;
+}
+
+/** Parsed `detail` JSON of an appointment event. */
+export interface AppointmentEventDetail {
+  prevSlot?: number | null;
+  nextSlot?: number | null;
+  prevStatus?: AppointmentStatus | null;
+  nextStatus?: AppointmentStatus | null;
+  reason?: string | null;
+}
+
+export interface AppointmentEventRow {
+  id: string;
+  appointment_id: string;
+  type: AppointmentEventType;
+  detail: AppointmentEventDetail; // parsed from TEXT(JSON)
+  actor?: string | null;
+  at: number;
 }
 
 // ---------------------------------------------------------------------------
