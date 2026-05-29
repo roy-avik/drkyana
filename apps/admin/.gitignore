@@ -4,3 +4,8 @@
 next-env.d.ts
 cloudflare-env.d.ts
 *.tsbuildinfo
+
+# Serwist-generated service worker artifacts (built by `next build`)
+public/sw.js
+public/sw.js.map
+public/swe-worker-*.js

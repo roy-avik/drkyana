@@ -1,0 +1,180 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
+import type { IntakeRow, IntakeStatus, TriageLevel } from "@drkyana/types";
+import { fmtDateShort, TRIAGE_CLASS, STATUS_LABEL, STATUS_ORDER } from "../lib/format";
+
+const TRIAGE_LEVELS: TriageLevel[] = ["RED", "ORANGE", "YELLOW", "GREEN"];
+const DATE_RANGES = [
+  { label: "All", days: 0 },
+  { label: "Today", days: 1 },
+  { label: "7 days", days: 7 },
+  { label: "30 days", days: 30 },
+];
+
+export default function IntakeQueue() {
+  const [intakes, setIntakes] = useState<IntakeRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [status, setStatus] = useState<IntakeStatus | "">("");
+  const [triage, setTriage] = useState<Set<TriageLevel>>(new Set());
+  const [days, setDays] = useState(0);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const params = new URLSearchParams();
+    if (status) params.set("status", status);
+    if (triage.size) params.set("triage", [...triage].join(","));
+    if (days > 0) {
+      const since = Math.floor(Date.now() / 1000) - days * 86400;
+      params.set("since", String(since));
+    }
+    try {
+      const res = await fetch(`/api/intakes?${params.toString()}`, {
+        cache: "no-store",
+      });
+      if (res.status === 401) {
+        setError("Not authorized. Sign in via Cloudflare Access.");
+        setIntakes([]);
+        return;
+      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = (await res.json()) as { intakes: IntakeRow[] };
+      setIntakes(data.intakes ?? []);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }, [status, triage, days]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const toggleTriage = (t: TriageLevel) => {
+    setTriage((prev) => {
+      const next = new Set(prev);
+      next.has(t) ? next.delete(t) : next.add(t);
+      return next;
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-semibold">Intake queue</h1>
+        <button onClick={() => void load()} className="btn-ghost" disabled={loading}>
+          {loading ? "Loading…" : "Refresh"}
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="card space-y-3">
+        <div>
+          <span className="field-label">Status</span>
+          <div className="flex flex-wrap gap-1.5">
+            <FilterPill active={status === ""} onClick={() => setStatus("")}>
+              All
+            </FilterPill>
+            {STATUS_ORDER.map((s) => (
+              <FilterPill key={s} active={status === s} onClick={() => setStatus(s)}>
+                {STATUS_LABEL[s]}
+              </FilterPill>
+            ))}
+          </div>
+        </div>
+        <div>
+          <span className="field-label">Triage</span>
+          <div className="flex flex-wrap gap-1.5">
+            {TRIAGE_LEVELS.map((t) => (
+              <FilterPill key={t} active={triage.has(t)} onClick={() => toggleTriage(t)}>
+                {t}
+              </FilterPill>
+            ))}
+          </div>
+        </div>
+        <div>
+          <span className="field-label">Date range</span>
+          <div className="flex flex-wrap gap-1.5">
+            {DATE_RANGES.map((r) => (
+              <FilterPill key={r.label} active={days === r.days} onClick={() => setDays(r.days)}>
+                {r.label}
+              </FilterPill>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {error && (
+        <div className="card border-red/30 bg-red/5 text-sm text-red">{error}</div>
+      )}
+
+      {!error && !loading && intakes.length === 0 && (
+        <div className="card text-center text-sm text-muted">No intakes match.</div>
+      )}
+
+      <ul className="space-y-2">
+        {intakes.map((i) => (
+          <li key={i.id}>
+            <Link
+              href={`/intakes/${i.id}`}
+              className={`card block transition-colors hover:border-accent/40 ${
+                i.triage_level === "RED" || i.triage_level === "ORANGE"
+                  ? "border-l-4 border-l-red"
+                  : ""
+              }`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-medium">{i.name || "Unknown"}</span>
+                    {i.triage_level && (
+                      <span className={`chip ${TRIAGE_CLASS[i.triage_level]}`}>
+                        {i.triage_level}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-0.5 truncate text-sm text-muted">
+                    {i.affected_area ? `${i.affected_area} — ` : ""}
+                    {i.symptoms || i.raw_message || "No complaint recorded"}
+                  </p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <span className="chip bg-ink/5 text-muted">{STATUS_LABEL[i.status]}</span>
+                  <p className="mt-1 text-xs text-muted">{fmtDateShort(i.created_at)}</p>
+                </div>
+              </div>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function FilterPill({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`chip border transition-colors ${
+        active
+          ? "border-brand bg-brand text-white"
+          : "border-ink/15 bg-white text-muted hover:border-accent/40"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
