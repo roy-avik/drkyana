@@ -744,6 +744,62 @@ export async function listPatientTranscripts(
   }));
 }
 
+// ---------------------------------------------------------------------------
+// Admin assistant sessions — persist/restore the admin chat + list past
+// conversations (kind='admin'), so the chat survives navigation and has history.
+// ---------------------------------------------------------------------------
+
+export interface AdminSessionSummary {
+  sessionId: string;
+  updated_at: number;
+  snippet: string;
+}
+
+function firstUserSnippet(raw: unknown): string {
+  const msgs = parseJson<Record<string, unknown>[]>(typeof raw === "string" ? raw : "[]", []);
+  for (const m of Array.isArray(msgs) ? msgs : []) {
+    if ((m as { role?: unknown }).role !== "user") continue;
+    const parts = (m as { parts?: unknown }).parts;
+    if (Array.isArray(parts)) {
+      const text = parts
+        .filter(
+          (p): p is { type: string; text: string } =>
+            !!p && (p as { type?: string }).type === "text" &&
+            typeof (p as { text?: unknown }).text === "string",
+        )
+        .map((p) => p.text)
+        .join("");
+      if (text) return text.slice(0, 80);
+    }
+  }
+  return "(no messages)";
+}
+
+export async function listAdminSessions(): Promise<AdminSessionSummary[]> {
+  const { results } = await db()
+    .prepare(
+      `SELECT id, messages, updated_at FROM sessions WHERE kind = 'admin'
+       ORDER BY updated_at DESC LIMIT 30`,
+    )
+    .all<{ id: string; messages: string; updated_at: number }>();
+  return results.map((r) => ({
+    sessionId: r.id,
+    updated_at: r.updated_at,
+    snippet: firstUserSnippet(r.messages),
+  }));
+}
+
+/** Raw stored UIMessage[] for an admin session, to seed useChat on restore. */
+export async function getAdminSessionMessages(sessionId: string): Promise<unknown[]> {
+  const row = await db()
+    .prepare(`SELECT messages FROM sessions WHERE id = ? AND kind = 'admin'`)
+    .bind(sessionId)
+    .first<{ messages: string }>();
+  if (!row) return [];
+  const parsed = parseJson<unknown[]>(row.messages, []);
+  return Array.isArray(parsed) ? parsed : [];
+}
+
 export async function getTranscript(
   sessionId: string,
 ): Promise<{ sessionId: string; created_at: number; turns: TranscriptTurn[] } | null> {

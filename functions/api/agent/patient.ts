@@ -167,11 +167,11 @@ export const onRequestPost = async (ctx: PagesContext): Promise<Response> => {
     waitUntil: (p) => ctx.waitUntil(p),
   };
 
-  // Persist the request-side history now; the assistant turn is captured on the
-  // next request (useChat re-sends the full message list each turn).
-  ctx.waitUntil(
-    saveSessionMessages(env as Env, sessionId, merged, locale, ipHash),
-  );
+  // Persist the session row BEFORE streaming (awaited, not waitUntil): tools
+  // like submit_intake link this session to the resolved patient with an
+  // in-stream UPDATE, which would no-op if the row didn't exist yet. waitUntil
+  // runs after the response — too late for that UPDATE.
+  await saveSessionMessages(env as Env, sessionId, merged, locale, ipHash);
 
   // --- Run the patient agent → UI message stream Response ---
   // convertToModelMessages is async in AI SDK 6 — must await, else a Promise is

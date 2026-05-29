@@ -1,20 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import {
   DefaultChatTransport,
   lastAssistantMessageIsCompleteWithApprovalResponses,
+  type UIMessage,
 } from "ai";
 
 /**
  * Admin agent chat. Streams from /api/agent/admin via useChat.
  *
- * Generative UI: write/external tools are approval-gated server-side, so the
- * agent's proposed actions arrive as `approval-requested` tool parts. We render
- * those as interactive confirmation FORMS (not text) and respond with
- * addToolApprovalResponse — "the assistant spews a form; Dr Kyana confirms."
+ * Persistence: a stable session id (localStorage) survives navigation; the
+ * conversation is restored from D1 on load, and past conversations are listed
+ * so Dr Kyana can switch back. Generative UI: approval-gated tool calls render
+ * as confirmation FORMS (see ApprovalCard) answered via addToolApprovalResponse.
  */
+
+const SID_KEY = "drkyana.admin.sid";
 
 const TOOL_LABEL: Record<string, string> = {
   create_appointment: "Create appointment",
@@ -36,14 +39,11 @@ const TS_KEYS = new Set(["scheduledAt", "scheduled_at", "at", "since", "until"])
 
 function fmtValue(key: string, v: unknown): string {
   if (v === null || v === undefined) return "—";
-  if (TS_KEYS.has(key) && typeof v === "number") {
-    return new Date(v * 1000).toLocaleString();
-  }
+  if (TS_KEYS.has(key) && typeof v === "number") return new Date(v * 1000).toLocaleString();
   if (typeof v === "object") return JSON.stringify(v);
   return String(v);
 }
 
-/** Minimal structural view of a tool UI part (the SDK's full types are heavy). */
 interface ToolPartLike {
   type: string;
   toolName?: string;
@@ -89,12 +89,9 @@ function ApprovalCard({
   const id = part.approval?.id;
   const name = toolNameOf(part);
   if (!id) return null;
-
   return (
     <div className="my-1 rounded-lg border border-amber-300 bg-amber-50 p-3 text-left">
-      <p className="text-xs font-semibold text-amber-900">
-        Proposed: {labelFor(name)}
-      </p>
+      <p className="text-xs font-semibold text-amber-900">Proposed: {labelFor(name)}</p>
       <ArgList input={part.input} />
       <input
         className="mt-2 w-full rounded border border-amber-300 bg-white px-2 py-1 text-xs"
@@ -140,9 +137,7 @@ function ToolPart({
   switch (part.state) {
     case "input-streaming":
     case "input-available":
-      return (
-        <p className="my-1 text-xs italic text-muted">Preparing {labelFor(name)}…</p>
-      );
+      return <p className="my-1 text-xs italic text-muted">Preparing {labelFor(name)}…</p>;
     case "approval-requested":
       return <ApprovalCard part={part} onRespond={onRespond} />;
     case "approval-responded":
@@ -167,9 +162,7 @@ function ToolPart({
         <div className="my-1 text-xs text-muted">
           ✓ {labelFor(name)}
           {md && (
-            <pre className="mt-1 whitespace-pre-wrap rounded bg-surface-alt p-2 text-ink">
-              {md}
-            </pre>
+            <pre className="mt-1 whitespace-pre-wrap rounded bg-surface-alt p-2 text-ink">{md}</pre>
           )}
         </div>
       );
@@ -179,15 +172,27 @@ function ToolPart({
   }
 }
 
-export default function AgentChat() {
+/** The actual chat thread for one session id. Keyed by sessionId so switching
+ *  conversations remounts cleanly with the right seeded messages. */
+function ChatThread({
+  sessionId,
+  initialMessages,
+}: {
+  sessionId: string;
+  initialMessages: UIMessage[];
+}) {
   const [input, setInput] = useState("");
   const [offline, setOffline] = useState(false);
 
   const { messages, sendMessage, status, error, addToolApprovalResponse } = useChat({
-    transport: new DefaultChatTransport({ api: "/api/agent/admin" }),
-    // After an Approve/Deny is recorded, auto-send the updated history back so
-    // the server resumes the agent and actually executes the approved tool
-    // (the DB write). Without this the approval is recorded client-side only.
+    id: sessionId,
+    messages: initialMessages,
+    transport: new DefaultChatTransport({
+      api: "/api/agent/admin",
+      prepareSendMessagesRequest: ({ messages, body }) => ({
+        body: { ...body, messages, sessionId },
+      }),
+    }),
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
     onError: (err) => {
       if (/501|not_implemented|not implemented/i.test(err.message)) setOffline(true);
@@ -209,34 +214,20 @@ export default function AgentChat() {
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-lg font-semibold">Assistant</h1>
-        <p className="text-sm text-muted">
-          Proposes actions as forms you approve, and drafts documents. It never
-          acts without your confirmation. (English &amp; Persian.)
-        </p>
-      </div>
-
+    <>
       {offline && (
         <div className="card border-accent/30 bg-accent/5 text-sm text-ink">
-          <strong>Assistant coming online.</strong> The agent runtime is being
-          wired up.
+          <strong>Assistant coming online.</strong> The agent runtime is being wired up.
         </div>
       )}
-
       {error && !offline && (
-        <div className="card border-red/30 bg-red/5 text-sm text-red">
-          {error.message}
-        </div>
+        <div className="card border-red/30 bg-red/5 text-sm text-red">{error.message}</div>
       )}
-
       <div className="card min-h-[280px] space-y-3">
         {messages.length === 0 && !offline && (
           <p className="text-sm text-muted">
-            Ask the assistant to book or reschedule an appointment, change an
-            intake&rsquo;s status, draft aftercare, or summarize today&rsquo;s urgent
-            intakes.
+            Ask the assistant to book or reschedule an appointment, change an intake&rsquo;s
+            status, draft aftercare, or summarize today&rsquo;s urgent intakes.
           </p>
         )}
         {messages.map((m) => (
@@ -265,7 +256,6 @@ export default function AgentChat() {
         ))}
         {busy && <p className="text-xs text-muted">Thinking…</p>}
       </div>
-
       <form onSubmit={submit} className="flex gap-2">
         <input
           className="input flex-1"
@@ -274,14 +264,101 @@ export default function AgentChat() {
           onChange={(e) => setInput(e.target.value)}
           disabled={offline || busy}
         />
-        <button
-          type="submit"
-          className="btn-primary"
-          disabled={offline || busy || !input.trim()}
-        >
+        <button type="submit" className="btn-primary" disabled={offline || busy || !input.trim()}>
           Send
         </button>
       </form>
+    </>
+  );
+}
+
+interface AdminSession {
+  sessionId: string;
+  updated_at: number;
+  snippet: string;
+}
+
+export default function AgentChat() {
+  const [sessionId, setSessionId] = useState("");
+  const [initial, setInitial] = useState<UIMessage[] | null>(null);
+  const [history, setHistory] = useState<AdminSession[]>([]);
+
+  // Resolve a stable session id (survives navigation) on mount.
+  useEffect(() => {
+    let sid = localStorage.getItem(SID_KEY);
+    if (!sid) {
+      sid = crypto.randomUUID();
+      localStorage.setItem(SID_KEY, sid);
+    }
+    setSessionId(sid);
+  }, []);
+
+  // Restore the active conversation + refresh the history list.
+  useEffect(() => {
+    if (!sessionId) return;
+    setInitial(null);
+    void (async () => {
+      const [mRes, hRes] = await Promise.all([
+        fetch(`/api/agent-sessions?id=${encodeURIComponent(sessionId)}`),
+        fetch(`/api/agent-sessions`),
+      ]);
+      const m = (await mRes.json().catch(() => ({}))) as { messages?: UIMessage[] };
+      const h = (await hRes.json().catch(() => ({}))) as { sessions?: AdminSession[] };
+      setInitial(Array.isArray(m.messages) ? m.messages : []);
+      setHistory(Array.isArray(h.sessions) ? h.sessions : []);
+    })();
+  }, [sessionId]);
+
+  function newChat() {
+    const sid = crypto.randomUUID();
+    localStorage.setItem(SID_KEY, sid);
+    setSessionId(sid);
+  }
+
+  function switchTo(id: string) {
+    if (id === sessionId) return;
+    localStorage.setItem(SID_KEY, id);
+    setSessionId(id);
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h1 className="text-lg font-semibold">Assistant</h1>
+          <p className="text-sm text-muted">
+            Proposes actions as forms you approve, and drafts documents. It never acts
+            without your confirmation. (English &amp; Persian.)
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {history.length > 0 && (
+            <select
+              className="rounded border border-ink/20 px-2 py-1 text-xs"
+              value={sessionId}
+              onChange={(e) => switchTo(e.target.value)}
+            >
+              {!history.some((s) => s.sessionId === sessionId) && (
+                <option value={sessionId}>Current conversation</option>
+              )}
+              {history.map((s) => (
+                <option key={s.sessionId} value={s.sessionId}>
+                  {new Date(s.updated_at * 1000).toLocaleString()} — {s.snippet}
+                </option>
+              ))}
+            </select>
+          )}
+          <button className="btn-ghost text-xs" onClick={newChat}>
+            New chat
+          </button>
+        </div>
+      </div>
+
+      {!sessionId || initial === null ? (
+        <p className="text-sm text-muted">Loading conversation…</p>
+      ) : (
+        <ChatThread key={sessionId} sessionId={sessionId} initialMessages={initial} />
+      )}
     </div>
   );
 }
