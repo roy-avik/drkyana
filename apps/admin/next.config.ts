@@ -18,6 +18,10 @@ const withSerwist = withSerwistInit({
 export default withSerwist(nextConfig);
 
 // OpenNext: make Cloudflare bindings (DB/KV/VECTORIZE/R2/EMAIL) available during
-// `next dev` via getCloudflareContext(). No-op in production builds.
+// `next dev` via getCloudflareContext(). Guard on dev — at module load this also
+// runs during `next build`, where `remote: true` bindings try to open a remote
+// proxy session to Cloudflare and fail in CI (no auth). Only needed for `next dev`.
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
-initOpenNextCloudflareForDev();
+if (process.env.NODE_ENV === "development") {
+  initOpenNextCloudflareForDev();
+}
