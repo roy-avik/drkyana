@@ -8,14 +8,19 @@ import { runTriageTool } from "./run_triage";
 import { suggestChamberTool } from "./suggest_chamber";
 import { lookupReturningPatientTool } from "./lookup_returning_patient";
 import { submitIntakeTool } from "./submit_intake";
+import { collectIntakeTool } from "./collect_intake";
 
 export { runTriageTool, assessTriage } from "./run_triage";
 export { suggestChamberTool } from "./suggest_chamber";
 export { lookupReturningPatientTool } from "./lookup_returning_patient";
 export { submitIntakeTool } from "./submit_intake";
+export { collectIntakeTool } from "./collect_intake";
 
 /** Registry keyed by the tool name the model sees. */
 export const patientTools: ToolRegistry = {
+  // Client-rendered: opens the structured intake form (form-first flow).
+  collect_intake: collectIntakeTool,
+  // Server-executed:
   run_triage: runTriageTool,
   suggest_chamber: suggestChamberTool,
   lookup_returning_patient: lookupReturningPatientTool,
