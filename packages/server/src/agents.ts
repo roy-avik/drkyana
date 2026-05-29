@@ -13,6 +13,21 @@ import { toAiSdkTools, type ToolRegistry } from "./tools";
 import { modelFor } from "./models";
 import type { AgentContext } from "./context";
 
+/**
+ * The system prompt as a cached message. Setting an Anthropic `ephemeral`
+ * cache breakpoint on the system block caches the large static prefix (system
+ * prompt + tool definitions, which precede it in the request) across turns —
+ * big token-cost savings since only the conversation tail varies. The history
+ * is intentionally NOT cached (it changes every turn).
+ */
+function cachedSystem(system: string): ModelMessage {
+  return {
+    role: "system",
+    content: system,
+    providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } } },
+  };
+}
+
 /** Logical model tiers — mapped to concrete Claude model IDs in Phase 1 config. */
 export type ModelTier = "cheap" | "standard" | "vision";
 
@@ -62,8 +77,7 @@ export async function streamAgent(
 ): Promise<Response> {
   const result = streamText({
     model: modelFor(ctx.env, spec.defaultTier),
-    system: spec.system,
-    messages: history as ModelMessage[],
+    messages: [cachedSystem(spec.system), ...(history as ModelMessage[])],
     tools: toAiSdkTools(spec.tools, ctx),
     stopWhen: stepCountIs(spec.maxSteps),
     prepareStep: buildPrepareStep(spec, ctx),
@@ -83,8 +97,7 @@ export async function runAgent(
 ): Promise<{ text: string }> {
   const { text } = await generateText({
     model: modelFor(ctx.env, spec.defaultTier),
-    system: spec.system,
-    messages: history as ModelMessage[],
+    messages: [cachedSystem(spec.system), ...(history as ModelMessage[])],
     tools: toAiSdkTools(spec.tools, ctx),
     stopWhen: stepCountIs(spec.maxSteps),
     prepareStep: buildPrepareStep(spec, ctx),
