@@ -77,25 +77,40 @@ function accessConfig(): { teamDomain: string; aud: string } | null {
   return { teamDomain, aud };
 }
 
+/** Is the explicit local-dev bypass enabled? Must be opt-in, never the default. */
+function devOpenEnabled(): boolean {
+  let env: CloudflareEnv | undefined;
+  try {
+    env = getCloudflareContext().env;
+  } catch {
+    env = undefined;
+  }
+  const flag =
+    (env as { ADMIN_DEV_OPEN?: string } | undefined)?.ADMIN_DEV_OPEN ??
+    process.env.ADMIN_DEV_OPEN;
+  return flag === "1";
+}
+
 /**
  * Verify the Cloudflare Access JWT on a request. Throws AccessDeniedError when
  * the token is missing, malformed, expired, audience-mismatched, or unsigned by
  * the team's keys.
  *
- * If ACCESS_TEAM_DOMAIN / ACCESS_AUD are not configured (e.g. local dev before
- * provisioning), verification is intentionally skipped and a dev identity is
- * returned so the UI is reachable. In production these env vars are always set,
- * so the gate is always enforced.
+ * FAIL CLOSED: if ACCESS_TEAM_DOMAIN / ACCESS_AUD are not configured, every
+ * request is DENIED — unless the explicit `ADMIN_DEV_OPEN=1` flag is set (local
+ * dev only). This prevents a deploy made before Cloudflare Access is wired from
+ * silently exposing patient PHI. Production must set ACCESS_TEAM_DOMAIN+ACCESS_AUD
+ * and must NOT set ADMIN_DEV_OPEN.
  */
 export async function verifyAccess(req: Request): Promise<AdminIdentity> {
   const cfg = accessConfig();
   if (!cfg) {
-    // Unconfigured: dev / pre-provisioning fallback. Real deploys always set env.
-    return {
-      email: "dev@localhost",
-      sub: "dev",
-      claims: { dev: true },
-    };
+    if (devOpenEnabled()) {
+      // Explicit local-dev bypass only.
+      return { email: "dev@localhost", sub: "dev", claims: { dev: true } };
+    }
+    // Unconfigured + not explicitly opened → deny. Never expose PHI by default.
+    throw new AccessDeniedError("admin access not configured");
   }
 
   const token = readToken(req);

@@ -16,10 +16,10 @@
   //   npx wrangler vectorize create drkyana-kb --dimensions=1024 --metric=cosine
   //   npx wrangler r2 bucket create drkyana-media
   "d1_databases": [
-    { "binding": "DB", "database_name": "drkyana", "database_id": "REPLACE_ME" }
+    { "binding": "DB", "database_name": "drkyana", "database_id": "d7825979-7ab9-4cc3-8e97-5ba1e31eb686" }
   ],
   "kv_namespaces": [
-    { "binding": "KV", "id": "REPLACE_ME" }
+    { "binding": "KV", "id": "cfe12f92e1ad489297da35c1b9cae74a" }
   ],
   "vectorize": [
     { "binding": "VECTORIZE", "index_name": "drkyana-kb" }
@@ -48,7 +48,10 @@
   // separate Worker that exports `scheduled()` → runReminders(env) over the same
   // D1/EMAIL bindings, or have an external scheduler POST the route. See that
   // route handler's comment for details.
-  "triggers": { "crons": ["0 3 * * *"] }
+  // Cron disabled until a scheduled() host exists (see note above) — an active
+  // trigger with no scheduled handler would just fail daily. Re-enable on the
+  // separate cron Worker.
+  "triggers": { "crons": [] }
 
   // Secrets (never commit): set with `wrangler secret put`:
   //   ANTHROPIC_API_KEY, PATIENT_AGENT_TOKEN, IP_HASH_SALT
