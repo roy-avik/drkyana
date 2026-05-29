@@ -34,6 +34,40 @@ function parseTags(s: string): string[] {
     .filter(Boolean);
 }
 
+/**
+ * Tags input — keeps the RAW typed string in local state so spaces aren't eaten
+ * mid-word. Only parses into string[] when the user leaves the field. The form
+ * already drops empty fields on submit, so an unblurred typo doesn't slip out.
+ */
+function TagsField({
+  field,
+  cls,
+  label,
+  value,
+  onChange,
+}: {
+  field: IntakeFormField;
+  cls: string;
+  label: string;
+  value: Value;
+  onChange: (v: Value) => void;
+}) {
+  const initial = Array.isArray(value) ? value.join(', ') : '';
+  const [raw, setRaw] = useState(initial);
+  return (
+    <label className="block text-xs text-muted">
+      {label}
+      <input
+        className={cls}
+        placeholder={field.placeholder ?? 'comma-separated'}
+        value={raw}
+        onChange={(e) => setRaw(e.target.value)}
+        onBlur={() => onChange(parseTags(raw))}
+      />
+    </label>
+  );
+}
+
 function FieldRow({
   field,
   value,
@@ -86,17 +120,8 @@ function FieldRow({
   }
 
   if (field.type === 'tags') {
-    const tags = Array.isArray(value) ? value : [];
     return (
-      <label className="block text-xs text-muted">
-        {label}
-        <input
-          className={cls}
-          placeholder={field.placeholder ?? 'comma-separated'}
-          value={tags.join(', ')}
-          onChange={(e) => onChange(parseTags(e.target.value))}
-        />
-      </label>
+      <TagsField field={field} cls={cls} label={label} value={value} onChange={onChange} />
     );
   }
 
