@@ -7,6 +7,9 @@
  * or model-facing lives in @drkyana/server, which clients must never import.
  */
 
+// Patient intake form schema (PR-C form-first flow).
+export * from "./intake-form";
+
 // ---------------------------------------------------------------------------
 // Enums / unions
 // ---------------------------------------------------------------------------
