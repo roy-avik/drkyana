@@ -2,7 +2,7 @@
 
 Promotional site **and** clinical agent platform for Dr Kyana, a dental surgeon consulting at chambers across Dhaka on a freelance basis (no single fixed clinic — appointment locations are confirmed per patient). Two front ends share one server-side tool layer:
 
-1. **Patient site + AI receptionist** (public) — the marketing SPA with an inline AI receptionist that conducts a dental intake and persists it. Intent classification + slot-filling now run **server-side** via a Claude agent (the old on-device Transformers.js classifier was removed — too heavy a download).
+1. **Patient site + AI receptionist** (public) — the marketing SPA with an inline AI receptionist that conducts a dental intake and persists it. Intent classification runs server-side via a Claude agent; on a booking/urgent intent the agent calls **`collect_intake`** (a client-rendered tool) and the receptionist renders the **structured intake form** in one step — no slot-by-slot Q&A, big cut in Claude calls. (The old on-device Transformers.js classifier was removed — too heavy a download.)
 2. **Admin practice console** (private, behind Cloudflare Access) — Dr Kyana's management surface (intake queue, status workflow, chamber editing, draft review) **plus** an agent that drafts clinical documents, reads X-rays, researches conditions, and sends email. This **replaces Google Sheets + AppSheet** — the platform now owns its own database.
 
 Brand voice: calm, considered, modern. Tagline **"Modern dentistry. Considered care."** Don't reintroduce "fresh graduate" framing.
@@ -51,8 +51,8 @@ src/                                 # Patient marketing site + receptionist UI.
   components/Receptionist.tsx        #   useChat chat against /api/agent/patient.
   i18n/, components/, index.css
 public/locales/{en,fa,bn}.yaml       # Patient copy (conservative YAML — see i18n note).
-functions/api/agent/patient.ts       # Patient Pages Function: token auth + KV rate
-                                     #   limit + D1 session + streamAgent(patient).
+functions/api/agent/patient.ts       # Patient Pages Function: KV rate limit
+                                     #   + D1 session + streamAgent(patient).
 migrations/0001_init.sql             # D1 schema (the sole data store).
 scripts/
   locales.py                         # i18n linter/manager (stdlib-only).
@@ -66,7 +66,8 @@ packages/
     src/agents/{patient,admin,radiology}.ts
     src/tools.ts                     #   defineTool / ToolSpec (category read|write|external,
                                      #   needsApproval), toAiSdkTools.
-    src/tools/patient/*              #   run_triage, suggest_chamber, lookup_returning_patient,
+    src/tools/patient/*              #   collect_intake (client-rendered form),
+                                     #     run_triage, suggest_chamber, lookup_returning_patient,
                                      #     submit_intake (fires urgent-notify email).
     src/tools/admin/*                #   list_intakes, get_intake, get/update_patient_memory,
                                      #     kb_search, draft_* , update_status, upsert_chamber,
