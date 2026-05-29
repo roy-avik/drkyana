@@ -14,10 +14,6 @@ import { WHATSAPP_LINK } from './Contact';
 // messages are processed by an AI service) must be acknowledged before chat.
 // ---------------------------------------------------------------------------
 
-const PATIENT_AGENT_TOKEN = import.meta.env.VITE_PATIENT_AGENT_TOKEN as
-  | string
-  | undefined;
-
 type Phase = 'standby' | 'consent' | 'chat';
 
 function newSessionId(): string {
@@ -50,9 +46,6 @@ export function Receptionist() {
     () =>
       new DefaultChatTransport({
         api: '/api/agent/patient',
-        headers: PATIENT_AGENT_TOKEN
-          ? { 'x-patient-agent-token': PATIENT_AGENT_TOKEN }
-          : undefined,
         // Carry the session id + locale alongside the messages each turn so the
         // server can load/persist history and reply in the patient's language.
         prepareSendMessagesRequest: ({ messages, body }) => ({
