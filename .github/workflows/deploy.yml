@@ -41,8 +41,20 @@ jobs:
       - name: Install Node deps
         run: npm ci
 
-      - name: Typecheck
+      - name: Isolation guard (no server-only code in client source)
+        run: node scripts/check-isolation.mjs
+
+      - name: Typecheck server package
+        run: npx tsc -p packages/server/tsconfig.json
+
+      - name: Typecheck patient
         run: npm run typecheck
 
-      - name: Build
+      - name: Build patient
         run: npm run build
+
+      - name: Isolation guard (patient dist bundle)
+        run: node scripts/check-isolation.mjs --dist
+
+      - name: Build admin (Next.js + Serwist)
+        run: npm run build --workspace=@drkyana/admin
