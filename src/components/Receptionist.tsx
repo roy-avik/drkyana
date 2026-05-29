@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport, type UIMessage } from 'ai';
+import {
+  DefaultChatTransport,
+  lastAssistantMessageIsCompleteWithToolCalls,
+  type UIMessage,
+} from 'ai';
 import { useTranslation } from '../i18n/useTranslation';
 import { WHATSAPP_LINK } from './Contact';
+import { IntakeForm } from './IntakeForm';
 
 // ---------------------------------------------------------------------------
 // Server-backed AI receptionist.
@@ -55,12 +60,38 @@ export function Receptionist() {
     [sessionId, lang],
   );
 
-  const { messages, sendMessage, status, error } = useChat({
+  const { messages, sendMessage, status, error, addToolResult } = useChat({
     id: sessionId,
     transport,
+    // After the client returns the intake form result, auto-resume the agent
+    // so it runs triage + submit_intake without a manual nudge.
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
   });
 
   const busy = status === 'submitted' || status === 'streaming';
+
+  /** Most recent collect_intake tool call awaiting the patient's form input. */
+  const pendingForm = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (m.role !== 'assistant') continue;
+      for (const part of m.parts) {
+        const p = part as unknown as {
+          type: string;
+          state?: string;
+          toolCallId?: string;
+          input?: { reason?: 'booking' | 'urgent' };
+        };
+        if (p.type === 'tool-collect_intake' && p.state === 'input-available') {
+          return {
+            toolCallId: String(p.toolCallId ?? ''),
+            reason: (p.input?.reason ?? 'booking') as 'booking' | 'urgent',
+          };
+        }
+      }
+    }
+    return null;
+  }, [messages]);
 
   // Auto-scroll the transcript on new content.
   useEffect(() => {
@@ -149,8 +180,21 @@ export function Receptionist() {
                     if (!text) return null;
                     return <ChatBubble key={m.id} role={m.role} text={text} />;
                   })}
-                  {status === 'submitted' && (
+                  {status === 'submitted' && !pendingForm && (
                     <ChatBubble role="assistant" text={t('receptionist.thinking')} />
+                  )}
+                  {pendingForm && (
+                    <IntakeForm
+                      reason={pendingForm.reason}
+                      disabled={busy}
+                      onSubmit={(data) =>
+                        void addToolResult({
+                          tool: 'collect_intake',
+                          toolCallId: pendingForm.toolCallId,
+                          output: data,
+                        })
+                      }
+                    />
                   )}
                   {error && (
                     <p className="text-center text-xs text-red-600">
@@ -171,13 +215,17 @@ export function Receptionist() {
                       type="text"
                       value={draft}
                       onChange={(e) => setDraft(e.target.value)}
-                      placeholder={t('receptionist.placeholder')}
-                      disabled={busy}
+                      placeholder={
+                        pendingForm
+                          ? 'Please fill the form above to continue'
+                          : t('receptionist.placeholder')
+                      }
+                      disabled={busy || !!pendingForm}
                       className="flex-1 rounded-full border border-ink/10 bg-white px-4 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:opacity-60"
                     />
                     <button
                       type="submit"
-                      disabled={!draft.trim() || busy}
+                      disabled={!draft.trim() || busy || !!pendingForm}
                       className="rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       ↑

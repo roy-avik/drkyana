@@ -38,7 +38,10 @@ export async function gatherCitations(
   topK = 4,
 ): Promise<DraftCitation[]> {
   try {
-    const res = await kbSearchTool.execute({ query, topK }, ctx);
+    // kb_search is server-executed; the assertion is safe. ToolSpec.execute
+    // became optional to support client-rendered tools (collect_intake), but
+    // read tools always have it.
+    const res = await kbSearchTool.execute!({ query, topK }, ctx);
     const matches = (res as { matches?: { kbDocId: string; title: string; snippet?: string }[] }).matches ?? [];
     return matches.map((m) => ({
       kbDocId: m.kbDocId,

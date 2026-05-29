@@ -31,8 +31,13 @@ export interface ToolSpec<TArgs = unknown, TResult = unknown> {
    * `inputSchema`, so the SDK validates + types the args before `execute` runs.
    */
   inputSchema: z.ZodType<TArgs>;
-  /** Server-side effect. Authorize via ctx (NOT via args). Keep result compact. */
-  execute(args: TArgs, ctx: AgentContext): Promise<TResult>;
+  /**
+   * Server-side effect. Authorize via ctx (NOT via args). Keep result compact.
+   * Omit `execute` to mark the tool as CLIENT-RENDERED — the AI SDK pauses, the
+   * client renders UI for it, and the result returns via addToolResult. Used
+   * for the form-first patient intake (collect_intake).
+   */
+  execute?(args: TArgs, ctx: AgentContext): Promise<TResult>;
 }
 
 /** Identity helper for type inference when declaring a tool. */
@@ -54,14 +59,19 @@ export type ToolRegistry = Record<string, ToolSpec>;
  * against `inputSchema` and only then calls `execute(args, ctx)`.
  */
 export function toAiSdkTools(registry: ToolRegistry, ctx: AgentContext): ToolSet {
-  const entries = Object.entries(registry).map(([key, spec]) => [
-    key,
-    tool({
+  const entries = Object.entries(registry).map(([key, spec]) => {
+    const execute = spec.execute;
+    const common = {
       description: spec.description,
       inputSchema: spec.inputSchema,
       needsApproval: spec.needsApproval ?? spec.category !== "read",
-      execute: (args: unknown) => spec.execute(args, ctx),
-    }),
-  ]);
+    };
+    // Two explicit branches so TS picks the right `tool()` overload:
+    // with `execute` (server-executed) vs without (client-rendered).
+    const t = execute
+      ? tool({ ...common, execute: (args: unknown) => execute(args, ctx) })
+      : tool(common);
+    return [key, t];
+  });
   return Object.fromEntries(entries) as ToolSet;
 }
