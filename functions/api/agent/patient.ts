@@ -195,6 +195,8 @@ export const onRequestPost = async (ctx: PagesContext): Promise<Response> => {
   );
 
   // --- Run the patient agent → UI message stream Response ---
-  const history = convertToModelMessages(merged);
+  // convertToModelMessages is async in AI SDK 6 — must await, else a Promise is
+  // passed as `messages` and streamText throws "messages.some is not a function".
+  const history = await convertToModelMessages(merged);
   return streamAgent(patientAgentSpec, agentCtx, history);
 };
