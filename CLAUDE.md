@@ -165,3 +165,9 @@ Persian is RTL. **Do not set `dir="rtl"` on `<html>`** — it flips every flex/g
 - **Cron Worker** for scheduled reminders (logic exists; needs a scheduled-handler host).
 - **Farsi receptionist tuning** — the agent handles FA, but examples/eval are EN+BN-weighted.
 - **Email `EmailMessage` API validation** during Email Service onboarding.
+
+## Dependency advisories
+
+Run `npm audit` before adding/upgrading packages. Current known item (accepted, low risk):
+
+- **`GHSA-qx2v-qp2m-jg93`** — `postcss <8.5.10` XSS via unescaped `</style>` in CSS **stringify** output. Pulled in only as **Next.js's exact-pinned `postcss@8.4.31`** (`node_modules/next/node_modules/postcss`). **Build-time only and not runtime-exploitable here** — postcss processes our own trusted CSS during `next build`, never attacker-controlled input. **Do NOT `npm audit fix --force`** (it downgrades Next.js to 9.x). An npm `overrides` pin can't displace Next's exact pin, and a full lock regen to chase it churns unvetted transitives. Resolves when Next ships a patched postcss — re-check `npm audit` after each Next upgrade.
