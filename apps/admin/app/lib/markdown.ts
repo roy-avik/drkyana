@@ -23,6 +23,31 @@ function inline(s: string): string {
     );
 }
 
+function splitRow(line: string): string[] {
+  return line
+    .trim()
+    .replace(/^\|/, "")
+    .replace(/\|$/, "")
+    .split("|")
+    .map((c) => c.trim());
+}
+
+function isSeparatorRow(line: string): boolean {
+  const cells = splitRow(line);
+  return cells.length > 0 && cells.every((c) => /^:?-{1,}:?$/.test(c));
+}
+
+function renderTable(header: string[], rows: string[][]): string {
+  const th = header.map((c) => `<th>${inline(c)}</th>`).join("");
+  const body = rows
+    .map(
+      (r) =>
+        `<tr>${header.map((_, i) => `<td>${inline(r[i] ?? "")}</td>`).join("")}</tr>`,
+    )
+    .join("");
+  return `<table><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
 export function renderMarkdown(md: string): string {
   const lines = escapeHtml(md).split(/\r?\n/);
   const out: string[] = [];
@@ -35,12 +60,31 @@ export function renderMarkdown(md: string): string {
     }
   };
 
-  for (const raw of lines) {
-    const line = raw.trimEnd();
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trimEnd();
     if (!line.trim()) {
       closeList();
       continue;
     }
+
+    // GFM table: a "| … |" row followed by a "|---|---|" separator row.
+    if (
+      /^\|.*\|$/.test(line.trim()) &&
+      i + 1 < lines.length &&
+      isSeparatorRow(lines[i + 1])
+    ) {
+      closeList();
+      const header = splitRow(line);
+      i += 1; // consume the separator row
+      const rows: string[][] = [];
+      while (i + 1 < lines.length && /^\|.*\|$/.test(lines[i + 1].trim())) {
+        i += 1;
+        rows.push(splitRow(lines[i]));
+      }
+      out.push(renderTable(header, rows));
+      continue;
+    }
+
     const h = /^(#{1,6})\s+(.*)$/.exec(line);
     if (h) {
       closeList();

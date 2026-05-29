@@ -81,3 +81,13 @@ body {
 .prose-draft code {
   @apply rounded bg-ink/5 px-1 py-0.5 font-mono text-xs;
 }
+.prose-draft table {
+  @apply my-2 w-full border-collapse overflow-hidden rounded border border-ink/15 text-xs;
+}
+.prose-draft th,
+.prose-draft td {
+  @apply border border-ink/10 px-2 py-1 text-left align-top;
+}
+.prose-draft th {
+  @apply bg-surface-alt font-semibold;
+}
