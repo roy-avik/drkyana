@@ -63,9 +63,14 @@ export async function sendEmail(
   }
   const raw = buildRawEmail(from, to, subject, body);
   try {
-    // The send_email binding expects an EmailMessage(from, to, raw); the
-    // runtime resolves the ctor at the binding layer from this structured object.
-    await env.EMAIL.send({ from, to, raw });
+    // The send_email binding requires a real EmailMessage(from, to, raw)
+    // instance from `cloudflare:email` — a plain object is rejected at runtime.
+    // `cloudflare:email` is a Workers built-in: unresolvable by tsc/webpack/
+    // turbopack at build time, provided by the runtime wherever EMAIL exists.
+    // The ignore comments stop the bundlers; @ts-ignore stops tsc.
+    // @ts-ignore cloudflare:email is a Workers runtime built-in module
+    const { EmailMessage } = (await import(/* webpackIgnore: true */ /* turbopackIgnore: true */ "cloudflare:email")) as { EmailMessage: new (from: string, to: string, raw: string) => unknown };
+    await env.EMAIL.send(new EmailMessage(from, to, raw));
     return { ok: true, to };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "send failed" };
