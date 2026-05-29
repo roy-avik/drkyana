@@ -3,16 +3,24 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "locales:check": "python3 scripts/locales.py check",
-    "images:optimize": "python3 scripts/optimize_images.py"
+    "images:optimize": "python3 scripts/optimize_images.py",
+    "db:migrate:local": "wrangler d1 execute drkyana --local --file=migrations/0001_init.sql",
+    "db:migrate:remote": "wrangler d1 execute drkyana --remote --file=migrations/0001_init.sql",
+    "check:isolation": "node scripts/check-isolation.mjs"
   },
   "dependencies": {
-    "@huggingface/transformers": "^4.2.0",
+    "@ai-sdk/react": "^3.0.194",
+    "@drkyana/types": "*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

@@ -1,0 +1,62 @@
+# Canonical bindings reference for the Dr Kyana clinical agent platform.
+# Copy the relevant blocks into each deployable app's wrangler config:
+#   - apps/admin (Next.js via OpenNext) — full bindings (D1, KV, Vectorize, R2, Email)
+#   - the patient agent endpoint        — DB, KV, secrets (no admin tools)
+#
+# Provisioning (run once, with your Cloudflare account — these create the
+# resources and print the IDs to paste below):
+#   npx wrangler d1 create drkyana
+#   npx wrangler kv namespace create drkyana-kv
+#   npx wrangler vectorize create drkyana-kb --dimensions=1024 --metric=cosine
+#   npx wrangler r2 bucket create drkyana-media
+#   npx wrangler d1 execute drkyana --remote --file=migrations/0001_init.sql
+#
+# Secrets (never commit):
+#   npx wrangler secret put ANTHROPIC_API_KEY
+#   npx wrangler secret put PATIENT_AGENT_TOKEN
+#   npx wrangler secret put IP_HASH_SALT
+
+name = "drkyana-agent"
+main = "src/index.ts"
+compatibility_date = "2026-05-01"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "drkyana"
+database_id = "<paste-from-d1-create>"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "<paste-from-kv-create>"
+
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "drkyana-kb"
+
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "drkyana-media"
+
+# Workers AI — embeddings for kb_search (@cf/baai/bge-m3, 1024-dim → matches the
+# drkyana-kb Vectorize index). Enable Workers AI on the account in the dashboard.
+[ai]
+binding = "AI"
+
+# Cloudflare Email Service — sends as receptionist@drkyana.com.
+# Onboard the domain in dash > Email Service > Email Sending (adds SPF/DKIM on
+# cf-bounce.drkyana.com). Root-domain MX stays with GoDaddy — no conflict.
+[[send_email]]
+name = "EMAIL"
+remote = true
+
+[vars]
+RECEPTIONIST_FROM = "receptionist@drkyana.com"
+DR_KYANA_NOTIFY_EMAIL = "kyanalotfi96@gmail.com"
+
+# Scheduled email (reminders / follow-ups). Times in UTC.
+[triggers]
+crons = ["0 3 * * *"] # 09:00 Dhaka — next-day reminders
