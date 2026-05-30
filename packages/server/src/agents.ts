@@ -8,6 +8,7 @@ import {
   stepCountIs,
   type ModelMessage,
   type PrepareStepFunction,
+  type UIMessage,
 } from "ai";
 import { toAiSdkTools, type ToolRegistry } from "./tools";
 import { modelFor } from "./models";
@@ -67,13 +68,41 @@ function buildPrepareStep(
 }
 
 /**
+ * Options for `streamAgent` — opt-in chat persistence per AI SDK 6's
+ * "persistence mode" on `toUIMessageStreamResponse`. When you pass
+ * `originalMessages`, the SDK assigns a stable id to the response message and
+ * fires `onFinish` with the FULL updated `messages` array (original + new
+ * assistant turn, including tool calls). That is the moment to upsert the
+ * session row in D1 — without it, the assistant turn lives only in the
+ * client's `useChat` state and a reload loses it.
+ */
+export interface StreamAgentPersistenceOptions {
+  /** The thread the client sent (stored ∪ incoming, already merged by the endpoint). */
+  originalMessages: UIMessage[];
+  /**
+   * Fires once after the stream completes. `messages` is the updated thread
+   * (`originalMessages` + the new assistant turn). Use `ctx.waitUntil` inside
+   * to persist without blocking the response.
+   */
+  onFinish: (event: {
+    messages: UIMessage[];
+    isAborted: boolean;
+  }) => void | Promise<void>;
+}
+
+/**
  * Interactive agent (patient + admin chat) — returns a UI message stream
  * Response the client consumes via the AI SDK chat transport.
+ *
+ * Pass `persistence` to upsert the full thread on stream completion. Without
+ * it, the response is streamed but the assistant turn is never persisted on
+ * the server — any reload that lands before the user's next message loses it.
  */
 export async function streamAgent(
   spec: AgentSpec,
   ctx: AgentContext,
   history: unknown[],
+  persistence?: StreamAgentPersistenceOptions,
 ): Promise<Response> {
   const result = streamText({
     model: modelFor(ctx.env, spec.defaultTier),
@@ -83,7 +112,12 @@ export async function streamAgent(
     prepareStep: buildPrepareStep(spec, ctx),
     abortSignal: ctx.abortSignal,
   });
-  return result.toUIMessageStreamResponse();
+  if (!persistence) return result.toUIMessageStreamResponse();
+  return result.toUIMessageStreamResponse({
+    originalMessages: persistence.originalMessages,
+    onFinish: ({ messages, isAborted }) =>
+      persistence.onFinish({ messages, isAborted }),
+  });
 }
 
 /**
