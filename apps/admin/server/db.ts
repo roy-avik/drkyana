@@ -6,6 +6,8 @@ import type {
   TriageLevel,
   ChamberRow,
   ChamberScheduleSlot,
+  ClinicalAssistKind,
+  ClinicalAssistRow,
   DraftRow,
   DraftCitation,
   PatientRow,
@@ -830,4 +832,73 @@ export async function getTranscript(
     })
     .filter((t) => t.text !== "");
   return { sessionId: row.id, created_at: row.created_at, turns };
+}
+
+// ---------------------------------------------------------------------------
+// Clinical assists (plan item 4) — read + supersede.
+// ---------------------------------------------------------------------------
+
+function mapClinicalAssist(r: Record<string, unknown>): ClinicalAssistRow {
+  return {
+    id: String(r.id),
+    patient_id: String(r.patient_id),
+    intake_id: (r.intake_id as string | null) ?? null,
+    kind: (r.kind as ClinicalAssistKind) ?? "differential_diagnosis",
+    model_id: String(r.model_id),
+    prompt_hash: String(r.prompt_hash),
+    output_markdown: String(r.output_markdown ?? ""),
+    citations: parseJson<DraftCitation[]>(r.citations, []),
+    disclaimer_persisted: Number(r.disclaimer_persisted ?? 0) === 1,
+    initiated_by: String(r.initiated_by),
+    superseded_by_clinician_note:
+      (r.superseded_by_clinician_note as string | null) ?? null,
+    superseded_by: (r.superseded_by as string | null) ?? null,
+    superseded_at: (r.superseded_at as number | null) ?? null,
+    created_at: Number(r.created_at ?? 0),
+    updated_at: Number(r.updated_at ?? 0),
+  };
+}
+
+/** Newest-first list of every assist attached to an intake. */
+export async function listClinicalAssistsForIntake(
+  intakeId: string,
+): Promise<ClinicalAssistRow[]> {
+  const { results } = await db()
+    .prepare(
+      "SELECT * FROM clinical_assists WHERE intake_id = ? ORDER BY created_at DESC",
+    )
+    .bind(intakeId)
+    .all<Record<string, unknown>>();
+  return (results ?? []).map(mapClinicalAssist);
+}
+
+export async function getClinicalAssist(
+  id: string,
+): Promise<ClinicalAssistRow | null> {
+  const row = await db()
+    .prepare("SELECT * FROM clinical_assists WHERE id = ?")
+    .bind(id)
+    .first<Record<string, unknown>>();
+  return row ? mapClinicalAssist(row) : null;
+}
+
+/**
+ * Supersede an AI-generated assist with Dr Kyana's clinical note. The original
+ * row is preserved (audit) — the note + supersede metadata are added in place.
+ * Re-superseding overwrites the prior note; the audit trail is the row's
+ * `updated_at`.
+ */
+export async function setClinicalAssistSupersede(
+  id: string,
+  note: string,
+  supersededBy: string,
+): Promise<ClinicalAssistRow | null> {
+  const now = Math.floor(Date.now() / 1000);
+  await db()
+    .prepare(
+      "UPDATE clinical_assists SET superseded_by_clinician_note = ?, superseded_by = ?, superseded_at = ?, updated_at = ? WHERE id = ?",
+    )
+    .bind(note, supersededBy, now, now, id)
+    .run();
+  return getClinicalAssist(id);
 }

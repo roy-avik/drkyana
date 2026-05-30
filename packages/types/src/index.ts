@@ -40,6 +40,13 @@ export type DraftStatus = "draft" | "approved" | "sent";
 
 export type SessionKind = "patient" | "admin";
 
+/**
+ * Kind of AI-generated clinical reasoning persisted in `clinical_assists`
+ * (plan item 4). One row per generation. New kinds can be added without
+ * schema changes — the table is shaped around provenance, not content type.
+ */
+export type ClinicalAssistKind = "differential_diagnosis";
+
 export type AppointmentStatus =
   | "proposed"
   | "confirmed"
@@ -204,6 +211,31 @@ export interface DraftRow {
   citations: DraftCitation[];
   pdf_r2_key?: string | null;
   status: DraftStatus;
+  created_at: number;
+  updated_at: number;
+}
+
+/**
+ * Clinical assist row — audit-grade record of AI-generated clinical reasoning
+ * (plan item 4). One row per generation; the row is discoverable and stamped
+ * with provenance (model id, prompt hash, initiator). `disclaimer_persisted`
+ * means the admin UI renders the "AI-assisted, not a diagnosis" banner above
+ * the output. `superseded_*` is Dr Kyana's authoritative override.
+ */
+export interface ClinicalAssistRow {
+  id: string;
+  patient_id: string;
+  intake_id: string | null;
+  kind: ClinicalAssistKind;
+  model_id: string;
+  prompt_hash: string;
+  output_markdown: string;
+  citations: DraftCitation[];
+  disclaimer_persisted: boolean;
+  initiated_by: string;
+  superseded_by_clinician_note: string | null;
+  superseded_by: string | null;
+  superseded_at: number | null;
   created_at: number;
   updated_at: number;
 }
