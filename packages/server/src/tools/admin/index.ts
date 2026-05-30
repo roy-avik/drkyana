@@ -38,6 +38,7 @@ import { listPatientTranscriptsTool } from "./list_patient_transcripts";
 import { getTranscriptTool } from "./get_transcript";
 import { webSearchTool } from "./web_search";
 import { webFetchTool } from "./web_fetch";
+import { differentialDiagnosisTool } from "./differential_diagnosis";
 import { loadSkillToolFor } from "../../skills";
 
 export { listIntakesTool } from "./list_intakes";
@@ -64,6 +65,7 @@ export { listPatientTranscriptsTool } from "./list_patient_transcripts";
 export { getTranscriptTool } from "./get_transcript";
 export { webSearchTool } from "./web_search";
 export { webFetchTool } from "./web_fetch";
+export { differentialDiagnosisTool } from "./differential_diagnosis";
 
 /** Registry keyed by the tool name the model sees. */
 export const adminTools: ToolRegistry = {
@@ -100,6 +102,8 @@ export const adminTools: ToolRegistry = {
   // live web (read — fail-soft when TAVILY_API_KEY unset)
   web_search: webSearchTool,
   web_fetch: webFetchTool,
+  // clinical reasoning (write — approval-gated; persists provenance + supersede flow)
+  differential_diagnosis: differentialDiagnosisTool,
   // behavior skills (load on demand, audience-scoped)
   load_skill: loadSkillToolFor("admin"),
 };

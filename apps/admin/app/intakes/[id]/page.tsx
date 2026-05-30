@@ -5,6 +5,7 @@ import { getIntake, getPatient, listChambers } from "@/server/db";
 import StatusControl from "../../components/StatusControl";
 import AppointmentsPanel from "../../components/AppointmentsPanel";
 import TranscriptPanel from "../../components/TranscriptPanel";
+import { ClinicalAssistsPanel } from "../../components/ClinicalAssistsPanel";
 import NotAuthorized from "../../components/NotAuthorized";
 import { fmtDate, TRIAGE_CLASS } from "../../lib/format";
 
@@ -140,6 +141,8 @@ export default async function IntakeDetail({
         patientId={intake.patient_id ?? null}
         originatingSessionId={intake.session_id ?? null}
       />
+
+      <ClinicalAssistsPanel intakeId={intake.id} />
 
       {patient && (
         <section className="card border-accent/30 bg-accent/5">
