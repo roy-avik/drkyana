@@ -70,23 +70,43 @@ async function isRateLimited(env: Env, ipHash: string): Promise<boolean> {
   return false;
 }
 
-/** Load stored UI messages for a patient session from D1 (empty if none). */
-async function loadSessionMessages(
+interface LoadedSession {
+  messages: UIMessage[];
+  /** Verified email (from sessions.verified_email) — populated after OTP verify. */
+  verifiedEmail?: string;
+  /** Patient id, if the session was already bound to one (e.g. by submit_intake). */
+  patientId?: string;
+}
+
+/** Load stored UI messages + verification state for a patient session. */
+async function loadSession(
   env: Env,
   sessionId: string,
-): Promise<UIMessage[]> {
+): Promise<LoadedSession> {
   const row = await env.DB.prepare(
-    "SELECT messages FROM sessions WHERE id = ?",
+    "SELECT messages, verified_email, patient_id FROM sessions WHERE id = ?",
   )
     .bind(sessionId)
-    .first<{ messages: string }>();
-  if (!row?.messages) return [];
-  try {
-    const parsed = JSON.parse(row.messages);
-    return Array.isArray(parsed) ? (parsed as UIMessage[]) : [];
-  } catch {
-    return [];
+    .first<{
+      messages: string | null;
+      verified_email: string | null;
+      patient_id: string | null;
+    }>();
+  if (!row) return { messages: [] };
+  let messages: UIMessage[] = [];
+  if (row.messages) {
+    try {
+      const parsed = JSON.parse(row.messages);
+      if (Array.isArray(parsed)) messages = parsed as UIMessage[];
+    } catch {
+      messages = [];
+    }
   }
+  return {
+    messages,
+    verifiedEmail: row.verified_email ?? undefined,
+    patientId: row.patient_id ?? undefined,
+  };
 }
 
 /** Upsert the session's UI message history + metadata in D1. */
@@ -154,14 +174,23 @@ export const onRequestPost = async (ctx: PagesContext): Promise<Response> => {
   const locale: Locale = body.locale ?? "en";
   const incoming = Array.isArray(body.messages) ? body.messages : [];
 
-  // --- Session history (D1) ---
-  const stored = await loadSessionMessages(env as Env, sessionId);
-  const merged = mergeById(stored, incoming);
+  // --- Session history + verification state (D1) ---
+  const session = await loadSession(env as Env, sessionId);
+  const merged = mergeById(session.messages, incoming);
 
   // --- Build patient context ---
+  // verifiedEmail / patientId come from the session row, NOT from request input
+  // or model args — they are the result of a previous /api/auth/patient/email/verify
+  // call (or a prior submit_intake bind) and are the trustworthy source.
   const agentCtx: AgentContext = {
     env: env as Env,
-    caller: { kind: "patient", sessionId, ipHash },
+    caller: {
+      kind: "patient",
+      sessionId,
+      ipHash,
+      verifiedEmail: session.verifiedEmail,
+      patientId: session.patientId,
+    },
     locale,
     abortSignal: request.signal,
     waitUntil: (p) => ctx.waitUntil(p),

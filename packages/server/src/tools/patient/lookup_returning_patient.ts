@@ -18,7 +18,12 @@ const inputSchema = z.object({
   phone: z
     .string()
     .min(3)
-    .describe("The patient's phone number, used as the match key."),
+    .describe(
+      "The patient's phone number, used as a fallback match key. With the email " +
+        "OTP gate in place (plan item 1), the verified email from the session is " +
+        "preferred when available — the server uses that automatically; this arg " +
+        "is the fallback for legacy (pre-verified) records.",
+    ),
 });
 
 export interface ReturningPatientResult {
@@ -69,12 +74,29 @@ export const lookupReturningPatientTool = defineTool({
     args,
     ctx: AgentContext,
   ): Promise<ReturningPatientResult> {
-    const phone = normalizePhone(args.phone);
-    const row = await ctx.env.DB.prepare(
-      "SELECT id, name, summary, memory, last_visit, visit_count FROM patients WHERE phone = ?",
-    )
-      .bind(phone)
-      .first<Record<string, unknown>>();
+    // Email-first: if the session is verified, look up by the verified email
+    // (server-trusted, not model-supplied). Only fall back to phone — never
+    // trust an email passed in via args.
+    const verifiedEmail =
+      ctx.caller.kind === "patient" ? ctx.caller.verifiedEmail : undefined;
+
+    let row: Record<string, unknown> | null = null;
+    if (verifiedEmail) {
+      row = await ctx.env.DB.prepare(
+        "SELECT id, name, summary, memory, last_visit, visit_count FROM patients " +
+          "WHERE email = ? AND email_verified_at IS NOT NULL",
+      )
+        .bind(verifiedEmail)
+        .first<Record<string, unknown>>();
+    }
+    if (!row) {
+      const phone = normalizePhone(args.phone);
+      row = await ctx.env.DB.prepare(
+        "SELECT id, name, summary, memory, last_visit, visit_count FROM patients WHERE phone = ?",
+      )
+        .bind(phone)
+        .first<Record<string, unknown>>();
+    }
 
     if (!row) return { found: false };
 
