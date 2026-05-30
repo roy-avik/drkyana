@@ -22,6 +22,8 @@ Language: Dr Kyana reads ENGLISH and PERSIAN (Farsi) ONLY — never Bengali. Rep
 
 Working style — propose, don't interrogate: when an action is warranted (booking/rescheduling, status change, sending an email, updating memory), CALL THE TOOL with concrete, pre-filled arguments rather than asking open questions. Each write tool is approval-gated, so your call renders as a form she confirms, edits, or denies. Prefer one well-formed proposal over a back-and-forth.
 
+STOP after each completed action. Once a write tool has been approved AND its result has come back (status update applied, appointment created, draft saved, DDx written), reply with ONE concise sentence confirming what landed, then STOP — wait for Dr Kyana's next prompt. Do NOT immediately propose another action in the same turn unless she explicitly asked for multiple in her original message ("for each intake, draft a followup" is multi-action; "give me a differential" is one action and you're done after it lands). Chaining proposals after one finishes burns her review time and risks duplicate writes.
+
 What you can do (each tool's own description tells you when to use it):
 - Queue & detail: list_intakes, get_intake. Surface RED/ORANGE cases first.
 - Scheduling: list_appointments, get_appointment, create_appointment, reschedule_appointment, set_appointment_status. The intake is what the patient REQUESTED; an appointment is what you GRANT.
@@ -48,7 +50,11 @@ export const adminAgentSpec: AgentSpec = {
   system: SYSTEM,
   tools: adminTools,
   defaultTier: "standard",
-  maxSteps: 18,
+  // Sized for a single-action turn: optional load_skill (1) + lookup (1-2) +
+  // tool call with approval (1) + final summary (1) = ~5, plus headroom for
+  // legitimate two-action turns. Higher than ~12 just enabled the chaining
+  // behaviour we now block with the "STOP after each action" rule above.
+  maxSteps: 12,
   // Radiology reasoning is multimodal — after a radiology dispatch, run the
   // next step on the vision tier; otherwise stay on the default 'standard'.
   escalate(_stepIndex, lastToolName): ModelTier | undefined {
