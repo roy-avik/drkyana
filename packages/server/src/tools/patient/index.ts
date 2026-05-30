@@ -9,6 +9,7 @@ import { suggestChamberTool } from "./suggest_chamber";
 import { lookupReturningPatientTool } from "./lookup_returning_patient";
 import { submitIntakeTool } from "./submit_intake";
 import { collectIntakeTool } from "./collect_intake";
+import { loadSkillToolFor } from "../../skills";
 
 export { runTriageTool, assessTriage } from "./run_triage";
 export { suggestChamberTool } from "./suggest_chamber";
@@ -25,4 +26,6 @@ export const patientTools: ToolRegistry = {
   suggest_chamber: suggestChamberTool,
   lookup_returning_patient: lookupReturningPatientTool,
   submit_intake: submitIntakeTool,
+  // Behavior skills: load on demand (audience-scoped).
+  load_skill: loadSkillToolFor("patient"),
 };

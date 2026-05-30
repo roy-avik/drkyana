@@ -99,6 +99,12 @@ export interface Env {
   ANTHROPIC_API_KEY: string;
   PATIENT_AGENT_TOKEN: string;
   IP_HASH_SALT: string;
+  /**
+   * Tavily search API key — admin agent's `web_search` and `web_fetch`.
+   * Optional: when unset, both tools fail soft and the agent continues without
+   * live web access (treat like an empty KB).
+   */
+  TAVILY_API_KEY?: string;
   // config
   RECEPTIONIST_FROM: string; // "receptionist@drkyana.com"
   DR_KYANA_NOTIFY_EMAIL: string;
