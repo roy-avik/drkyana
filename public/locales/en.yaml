@@ -73,6 +73,7 @@ receptionist.submit.error: "Could not submit. Please try again."
 
 # Email OTP verification (intake gate — plan item 1)
 receptionist.otp.title: "Verify your email"
+receptionist.otp.consent: "Verifying creates your record with Dr Kyana's clinic. Your information stays internal — Dr Kyana may use AI tools to help review and prepare your case."
 receptionist.otp.email_prompt: "What's your email?"
 receptionist.otp.email_explainer: "We'll send you a 6-digit code to confirm."
 receptionist.otp.send: "Send code"

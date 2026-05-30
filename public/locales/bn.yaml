@@ -72,6 +72,7 @@ receptionist.submit.error: "জমা দেওয়া যায়নি। �
 
 # ইমেল OTP যাচাই (ইনটেক গেট — পরিকল্পনা আইটেম ১)
 receptionist.otp.title: "আপনার ইমেল যাচাই করুন"
+receptionist.otp.consent: "যাচাই করলে ডা. কিয়ানার ক্লিনিকে আপনার একটি রেকর্ড তৈরি হবে। আপনার তথ্য অভ্যন্তরীণ থাকবে — ডা. কিয়ানা আপনার কেস পর্যালোচনা ও প্রস্তুত করতে AI সরঞ্জাম ব্যবহার করতে পারেন।"
 receptionist.otp.email_prompt: "আপনার ইমেল কী?"
 receptionist.otp.email_explainer: "নিশ্চিত করতে আমরা আপনাকে একটি ৬-সংখ্যার কোড পাঠাব।"
 receptionist.otp.send: "কোড পাঠান"
