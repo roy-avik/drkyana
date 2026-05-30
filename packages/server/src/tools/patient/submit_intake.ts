@@ -95,14 +95,31 @@ function parseMemory(raw: unknown): PatientMemory {
 export const submitIntakeTool = defineTool({
   name: "submit_intake",
   description:
-    "Submit the collected intake to Dr Kyana. Upserts the patient by phone, " +
-    "records the visit, and runs triage. Call this ONLY after collecting at " +
-    "least the patient's phone and a description of their complaint, and after " +
-    "the patient has agreed to share their information.",
+    "Submit the collected intake to Dr Kyana. Upserts the patient (matched by " +
+    "verified email when available, otherwise phone), records the visit, and " +
+    "runs triage. Call this AFTER collecting the intake AND after the patient " +
+    "has verified their email via the email_verification tool — submit will " +
+    "refuse with `email_verification_required` if the session has not been " +
+    "verified, at which point you must call email_verification and then retry.",
   category: "write",
   needsApproval: false, // the patient is submitting their own intake — no gate.
   inputSchema,
   async execute(args, ctx: AgentContext): Promise<SubmitIntakeResult> {
+    // --- Verification gate (plan item 1) ---
+    // The verified email lives on the session (sessions.verified_email) and is
+    // injected into ctx.caller by the Pages Function — never trusted from
+    // model args. If absent, refuse — the agent must walk the patient through
+    // email_verification first, then retry.
+    if (ctx.caller.kind !== "patient") {
+      throw new Error("submit_intake: patient context required");
+    }
+    const verifiedEmail = ctx.caller.verifiedEmail;
+    if (!verifiedEmail) {
+      throw new Error(
+        "email_verification_required: call the email_verification tool with the patient's email, then retry submit_intake",
+      );
+    }
+
     const db = ctx.env.DB;
     const now = Math.floor(Date.now() / 1000);
     const phone = args.phone.trim();
@@ -112,13 +129,25 @@ export const submitIntakeTool = defineTool({
       severity: args.severity,
     });
 
-    // --- Upsert patient (match by unique phone) ---
-    const existing = await db
+    // --- Upsert patient: prefer verified-email match, fall back to phone ---
+    // Email-first preserves identity across phone-number changes; phone
+    // fallback links legacy (pre-OTP) records on a returning patient's first
+    // verified visit, after which we stamp the verified email on the existing
+    // row rather than creating a duplicate.
+    let existing = await db
       .prepare(
-        "SELECT id, memory, visit_count, summary FROM patients WHERE phone = ?",
+        "SELECT id, memory, visit_count, summary FROM patients WHERE email = ? AND email_verified_at IS NOT NULL",
       )
-      .bind(phone)
+      .bind(verifiedEmail)
       .first<Record<string, unknown>>();
+    if (!existing) {
+      existing = await db
+        .prepare(
+          "SELECT id, memory, visit_count, summary FROM patients WHERE phone = ?",
+        )
+        .bind(phone)
+        .first<Record<string, unknown>>();
+    }
 
     const conditions = uniq(args.conditions);
     const allergies = uniq(args.allergies);
@@ -144,15 +173,20 @@ export const submitIntakeTool = defineTool({
         flags: prev.flags,
       };
       const visitCount = Number(existing.visit_count ?? 0) + 1;
+      // Always stamp the verified email + phone on the existing record. This
+      // both links legacy phone-only rows to the verified identity and keeps
+      // the phone in sync if the patient updated it on intake.
       await db
         .prepare(
-          "UPDATE patients SET name = COALESCE(?, name), email = COALESCE(?, email), " +
-            "age = COALESCE(?, age), gender = COALESCE(?, gender), memory = ?, " +
+          "UPDATE patients SET name = COALESCE(?, name), email = ?, email_verified_at = ?, " +
+            "phone = ?, age = COALESCE(?, age), gender = COALESCE(?, gender), memory = ?, " +
             "last_visit = ?, visit_count = ?, updated_at = ? WHERE id = ?",
         )
         .bind(
           args.name ?? null,
-          args.email ?? null,
+          verifiedEmail,
+          now,
+          phone,
           args.age ?? null,
           args.gender ?? null,
           JSON.stringify(mergedMemory),
@@ -175,9 +209,9 @@ export const submitIntakeTool = defineTool({
       };
       await db
         .prepare(
-          "INSERT INTO patients (id, phone, name, age, gender, email, summary, memory, " +
+          "INSERT INTO patients (id, phone, name, age, gender, email, email_verified_at, summary, memory, " +
             "last_visit, visit_count, created_at, updated_at) " +
-            "VALUES (?, ?, ?, ?, ?, ?, '', ?, ?, 1, ?, ?)",
+            "VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, ?, 1, ?, ?)",
         )
         .bind(
           patientId,
@@ -185,7 +219,8 @@ export const submitIntakeTool = defineTool({
           args.name ?? null,
           args.age ?? null,
           args.gender ?? null,
-          args.email ?? null,
+          verifiedEmail,
+          now,
           JSON.stringify(memory),
           now,
           now,
@@ -216,6 +251,9 @@ export const submitIntakeTool = defineTool({
     }
 
     // --- Insert intake linked to the patient (+ originating session) ---
+    // Intake email reflects the VERIFIED email (the source of truth), not the
+    // model-supplied args.email — keeps the intake row honest about whose
+    // contact details Dr Kyana's team is acting on.
     const intakeId = crypto.randomUUID();
     await db
       .prepare(
@@ -231,7 +269,7 @@ export const submitIntakeTool = defineTool({
         patientId,
         args.name ?? null,
         phone,
-        args.email ?? null,
+        verifiedEmail,
         args.age ?? null,
         args.gender ?? null,
         args.affectedArea ?? null,

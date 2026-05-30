@@ -8,7 +8,19 @@ import type { Env } from "./bindings";
 import type { Locale } from "@drkyana/types";
 
 export type Caller =
-  | { kind: "patient"; sessionId: string; patientId?: string; ipHash: string }
+  | {
+      kind: "patient";
+      sessionId: string;
+      patientId?: string;
+      ipHash: string;
+      /**
+       * Set when this session has completed email OTP verification (item 1).
+       * Read from `sessions.verified_email` by the Pages Function at request
+       * time. The MODEL never sees this; server tools (e.g. `submit_intake`)
+       * gate on it from the context, not from args.
+       */
+      verifiedEmail?: string;
+    }
   | { kind: "admin"; email: string; accessSub: string };
 
 export interface AgentContext {
