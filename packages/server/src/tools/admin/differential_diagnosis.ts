@@ -206,6 +206,36 @@ export const differentialDiagnosisTool = defineTool({
     const modelId = MODEL_IDS.standard;
     const promptHash = await sha256Hex(`${SYSTEM}\n\n${userPrompt}`);
 
+    // --- Idempotency guard ---
+    // If a row for this (intake, prompt_hash) already exists, return it instead
+    // of regenerating. The hash pins the exact prompt — same intake + same focus
+    // + same KB context = same DDx, so re-running just burns Sonnet tokens and
+    // creates a duplicate row. The guard also covers the auto-resume re-fire
+    // pattern that produced duplicates prior to the persistence fix in
+    // streamAgent.
+    const existing = await env.DB.prepare(
+      "SELECT id, output_markdown, citations FROM clinical_assists " +
+        "WHERE intake_id = ? AND prompt_hash = ? ORDER BY created_at DESC LIMIT 1",
+    )
+      .bind(intake.id, promptHash)
+      .first<{ id: string; output_markdown: string; citations: string }>();
+    if (existing) {
+      let parsedCitations: DraftCitation[] = [];
+      try {
+        const v = JSON.parse(existing.citations) as DraftCitation[];
+        if (Array.isArray(v)) parsedCitations = v;
+      } catch {
+        /* keep empty */
+      }
+      return {
+        assistId: existing.id,
+        modelId,
+        promptHash,
+        output: existing.output_markdown,
+        citations: parsedCitations,
+      };
+    }
+
     const { text: output } = await generateText({
       model: modelFor(env, "standard"),
       messages: [

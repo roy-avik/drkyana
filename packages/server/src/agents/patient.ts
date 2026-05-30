@@ -41,8 +41,9 @@ export const patientAgentSpec: AgentSpec = {
   system: SYSTEM,
   tools: patientTools,
   defaultTier: "cheap",
-  // Sized for: collect_intake → form result → lookup_returning_patient →
-  // run_triage → suggest_chamber → submit_intake → final confirmation, plus
-  // up to ~2 load_skill round-trips for load-on-demand skills mid-conversation.
-  maxSteps: 12,
+  // Sized for: collect_intake → form result → email_verification round-trip →
+  // lookup_returning_patient → run_triage → submit_intake → final confirmation,
+  // plus one load_skill round-trip. Tighter than the prior 12 to discourage
+  // the agent chaining unrelated tool calls after the intake completes.
+  maxSteps: 10,
 };
