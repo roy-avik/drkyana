@@ -458,6 +458,12 @@ function OtpStep({
             disabled={busy || disabled}
             className="rounded-full border border-ink/10 bg-white px-4 py-2 text-center font-mono text-base tracking-[0.4em] text-ink focus:outline-none focus:ring-2 focus:ring-brand/30"
           />
+          {/* Consent moment — verifying creates the patient record + covers
+              internal AI-assisted workflow (item 4). Tap Verify is the
+              affirmative act, matching the chat-start consent pattern. */}
+          <p className="text-[11px] leading-relaxed text-muted">
+            {t('receptionist.otp.consent')}
+          </p>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
