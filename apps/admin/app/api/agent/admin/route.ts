@@ -116,10 +116,21 @@ export async function POST(req: Request): Promise<Response> {
     waitUntil: (p) => ctx.waitUntil(p),
   };
 
-  // Persist request-side history now; the assistant turn lands on the next turn.
+  // Persist the request-side history immediately. This guarantees the session
+  // row exists for any in-stream tool that updates it. The assistant turn is
+  // persisted again in the `onFinish` hook below — the full thread (original +
+  // new assistant turn including tool calls) is what survives a reload.
   ctx.waitUntil(saveSessionMessages(env, sessionId, merged, locale));
 
   // --- Run the admin agent → UI message stream Response ---
   const history = await convertToModelMessages(merged);
-  return streamAgent(adminAgentSpec, agentCtx, history);
+  return streamAgent(adminAgentSpec, agentCtx, history, {
+    originalMessages: merged,
+    onFinish: ({ messages }) => {
+      // `messages` is the full updated thread (per AI SDK 6 persistence mode).
+      // Upsert without blocking the response — the client has already received
+      // the stream; this is just durability.
+      ctx.waitUntil(saveSessionMessages(env, sessionId, messages, locale));
+    },
+  });
 }

@@ -199,12 +199,24 @@ export const onRequestPost = async (ctx: PagesContext): Promise<Response> => {
   // Persist the session row BEFORE streaming (awaited, not waitUntil): tools
   // like submit_intake link this session to the resolved patient with an
   // in-stream UPDATE, which would no-op if the row didn't exist yet. waitUntil
-  // runs after the response — too late for that UPDATE.
+  // runs after the response — too late for that UPDATE. The assistant turn is
+  // persisted again on stream completion via `onFinish` below.
   await saveSessionMessages(env as Env, sessionId, merged, locale, ipHash);
 
   // --- Run the patient agent → UI message stream Response ---
   // convertToModelMessages is async in AI SDK 6 — must await, else a Promise is
   // passed as `messages` and streamText throws "messages.some is not a function".
   const history = await convertToModelMessages(merged);
-  return streamAgent(patientAgentSpec, agentCtx, history);
+  return streamAgent(patientAgentSpec, agentCtx, history, {
+    originalMessages: merged,
+    onFinish: ({ messages }) => {
+      // `messages` is the full updated thread (per AI SDK 6 persistence mode).
+      // Upsert without blocking the response; the stream has already finished
+      // delivering bytes to the client. This is what makes the assistant turn
+      // survive a reload — without it, only the user message was in D1.
+      ctx.waitUntil(
+        saveSessionMessages(env as Env, sessionId, messages, locale, ipHash),
+      );
+    },
+  });
 };
