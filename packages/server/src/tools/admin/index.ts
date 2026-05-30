@@ -36,6 +36,9 @@ import { rescheduleAppointmentTool } from "./reschedule_appointment";
 import { setAppointmentStatusTool } from "./set_appointment_status";
 import { listPatientTranscriptsTool } from "./list_patient_transcripts";
 import { getTranscriptTool } from "./get_transcript";
+import { webSearchTool } from "./web_search";
+import { webFetchTool } from "./web_fetch";
+import { loadSkillToolFor } from "../../skills";
 
 export { listIntakesTool } from "./list_intakes";
 export { getIntakeTool } from "./get_intake";
@@ -59,6 +62,8 @@ export { rescheduleAppointmentTool } from "./reschedule_appointment";
 export { setAppointmentStatusTool } from "./set_appointment_status";
 export { listPatientTranscriptsTool } from "./list_patient_transcripts";
 export { getTranscriptTool } from "./get_transcript";
+export { webSearchTool } from "./web_search";
+export { webFetchTool } from "./web_fetch";
 
 /** Registry keyed by the tool name the model sees. */
 export const adminTools: ToolRegistry = {
@@ -92,4 +97,9 @@ export const adminTools: ToolRegistry = {
   // transcripts (read)
   list_patient_transcripts: listPatientTranscriptsTool,
   get_transcript: getTranscriptTool,
+  // live web (read — fail-soft when TAVILY_API_KEY unset)
+  web_search: webSearchTool,
+  web_fetch: webFetchTool,
+  // behavior skills (load on demand, audience-scoped)
+  load_skill: loadSkillToolFor("admin"),
 };
