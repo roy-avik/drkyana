@@ -97,10 +97,9 @@ export const submitIntakeTool = defineTool({
   description:
     "Submit the collected intake to Dr Kyana. Upserts the patient (matched by " +
     "verified email when available, otherwise phone), records the visit, and " +
-    "runs triage. Call this AFTER collecting the intake AND after the patient " +
-    "has verified their email via the email_verification tool — submit will " +
-    "refuse with `email_verification_required` if the session has not been " +
-    "verified, at which point you must call email_verification and then retry.",
+    "runs triage. Call this AFTER the intake form returns its values. The " +
+    "patient's email was already verified before the conversation, so the " +
+    "server attaches it automatically — you do not collect or pass an email.",
   category: "write",
   needsApproval: false, // the patient is submitting their own intake — no gate.
   inputSchema,

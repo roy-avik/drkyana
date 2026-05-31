@@ -2,20 +2,25 @@
  * Patient email OTP — verify a code.
  *
  * Route: POST /api/auth/patient/email/verify
- * Body: { sessionId: string; email: string; code: string }
+ * Body: { email: string; code: string }   (sessionId comes from the cookie)
  * Returns:
- *   200 { ok: true, verifiedEmail: string }
+ *   200 { ok: true, verifiedEmail: string }  + refreshed Set-Cookie
  *   400 { error: "bad_request" | "missing_session" | "no_pending_code" | "invalid_code" }
  *   410 { error: "expired" }
  *   429 { error: "rate_limited" | "too_many_attempts" }
  *
- * Success writes `sessions.verified_email` + `sessions.email_verified_at`; the
- * next call to /api/agent/patient picks that up when building the patient
- * AgentContext, so the verified state survives the agent loop without the
- * model ever seeing or being trusted with it.
+ * The session id is read from the signed httpOnly cookie set by .../email/request
+ * (cookie-authoritative — never from input). Success writes
+ * `sessions.verified_email` + `sessions.email_verified_at`; the next call to
+ * /api/agent/patient reads the same cookie → that verified state, so the
+ * model never sees or is trusted with the email.
  */
 import { verifyOtp } from "@drkyana/server/otp";
-import type { Env } from "@drkyana/server";
+import {
+  readSessionCookie,
+  serializeSessionCookie,
+  type Env,
+} from "@drkyana/server";
 
 interface PagesContext {
   request: Request;
@@ -23,7 +28,6 @@ interface PagesContext {
 }
 
 interface ReqBody {
-  sessionId?: string;
   email?: string;
   code?: string;
 }
@@ -76,12 +80,18 @@ export const onRequestPost = async (ctx: PagesContext): Promise<Response> => {
     return json({ error: "bad_request" }, 400);
   }
 
-  if (!body.sessionId) return json({ error: "missing_session" }, 400);
   if (!body.email) return json({ error: "bad_request" }, 400);
   if (!body.code) return json({ error: "bad_request" }, 400);
 
+  const secret = (env.IP_HASH_SALT as string) ?? "";
+  const sessionId = await readSessionCookie(
+    request.headers.get("cookie"),
+    secret,
+  );
+  if (!sessionId) return json({ error: "missing_session" }, 400);
+
   const result = await verifyOtp(env as Env, {
-    sessionId: body.sessionId,
+    sessionId,
     email: body.email,
     code: body.code,
   });
@@ -96,5 +106,14 @@ export const onRequestPost = async (ctx: PagesContext): Promise<Response> => {
     }
     return json({ error: result.error }, 500);
   }
-  return json({ ok: true, verifiedEmail: result.verifiedEmail }, 200);
+
+  // Refresh the cookie (extends Max-Age now that it's a verified session).
+  const cookie = await serializeSessionCookie(sessionId, secret);
+  return new Response(
+    JSON.stringify({ ok: true, verifiedEmail: result.verifiedEmail }),
+    {
+      status: 200,
+      headers: { "content-type": "application/json", "set-cookie": cookie },
+    },
+  );
 };

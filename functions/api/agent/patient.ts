@@ -19,6 +19,7 @@
 import {
   patientAgentSpec,
   streamAgent,
+  readSessionCookie,
   type AgentContext,
   type Env,
 } from "@drkyana/server";
@@ -34,8 +35,6 @@ interface PagesContext {
 }
 
 interface PatientChatBody {
-  sessionId?: string;
-  id?: string;
   messages?: UIMessage[];
   locale?: Locale;
 }
@@ -162,6 +161,13 @@ export const onRequestPost = async (ctx: PagesContext): Promise<Response> => {
     return json({ error: "rate_limited" }, 429);
   }
 
+  // --- Session id from the signed httpOnly cookie (never from input) ---
+  const sessionId = await readSessionCookie(
+    request.headers.get("cookie"),
+    env.IP_HASH_SALT ?? "",
+  );
+  if (!sessionId) return json({ error: "verification_required" }, 403);
+
   // --- Parse body ---
   let body: PatientChatBody;
   try {
@@ -169,8 +175,6 @@ export const onRequestPost = async (ctx: PagesContext): Promise<Response> => {
   } catch {
     return json({ error: "bad_request" }, 400);
   }
-  const sessionId = body.sessionId ?? body.id;
-  if (!sessionId) return json({ error: "missing_session" }, 400);
   const locale: Locale = body.locale ?? "en";
   const incoming = Array.isArray(body.messages) ? body.messages : [];
 

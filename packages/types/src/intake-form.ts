@@ -142,3 +142,32 @@ export const INTAKE_TAG_FIELDS: ReadonlySet<string> = new Set([
   "allergies",
   "medications",
 ]);
+
+/**
+ * Prefill payload the patient agent passes to `collect_intake` so the form
+ * opens ALREADY populated with everything the patient said in chat — the
+ * patient reviews + fills gaps instead of re-typing. Keys match field ids
+ * (and submit_intake's input). All optional; `email` is intentionally omitted
+ * (the verified email is filled by the client, never the model).
+ */
+export interface IntakePrefill {
+  name?: string;
+  phone?: string;
+  age?: number;
+  gender?: "female" | "male" | "other" | "unspecified";
+  affectedArea?: string;
+  symptoms?: string[];
+  duration?: string;
+  severity?: number;
+  triggers?: string[];
+  conditions?: string[];
+  allergies?: string[];
+  medications?: string[];
+  lastDentalVisit?: string;
+  anxiety?: "none" | "some" | "high";
+  preferredArea?: string;
+  preferredDays?: string;
+  timeOfDay?: "morning" | "afternoon" | "evening";
+  urgency?: "routine" | "soon" | "urgent";
+  payment?: string;
+}

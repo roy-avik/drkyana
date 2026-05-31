@@ -22,14 +22,13 @@ import { IntakeForm } from './IntakeForm';
 // Flow order: standby → consent (AI + health-data) → otp (verify email) → chat.
 // The agent endpoint rejects any message from an unverified session, so the
 // OTP step gates the whole conversation, not just submission.
+//
+// Session is COOKIE-AUTHORITATIVE: the server sets a signed httpOnly cookie on
+// OTP verify, and every patient endpoint reads the session id from it. The
+// client never holds the id. On mount we ask the server whether this browser is
+// already verified (GET /api/auth/patient/session) and, if so, restore the
+// transcript and skip straight to chat — so a refresh no longer resets anything.
 type Phase = 'standby' | 'consent' | 'otp' | 'chat';
-
-function newSessionId(): string {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return crypto.randomUUID();
-  }
-  return `s_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-}
 
 /** Pull the rendered text out of an assistant/user UI message's parts. */
 function messageText(m: UIMessage): string {
@@ -44,32 +43,67 @@ export function Receptionist() {
 
   const [phase, setPhase] = useState<Phase>('standby');
   const [draft, setDraft] = useState('');
+  // The patient's verified email — from OTP verify or session restore. Used to
+  // prefill the intake form's (read-only) email field.
+  const [verifiedEmail, setVerifiedEmail] = useState('');
   const sectionRef = useRef<HTMLElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  // One stable session id per mount.
-  const sessionId = useMemo(newSessionId, []);
+  const restoredRef = useRef(false);
 
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
         api: '/api/agent/patient',
-        // Carry the session id + locale alongside the messages each turn so the
-        // server can load/persist history and reply in the patient's language.
+        // The session id lives in the httpOnly cookie (sent automatically with
+        // this same-origin request); we only carry the messages + locale so the
+        // server can persist history and reply in the patient's language.
         prepareSendMessagesRequest: ({ messages, body }) => ({
-          body: { ...body, messages, sessionId, locale: lang },
+          body: { ...body, messages, locale: lang },
         }),
       }),
-    [sessionId, lang],
+    [lang],
   );
 
-  const { messages, sendMessage, status, error, addToolResult } = useChat({
-    id: sessionId,
-    transport,
-    // After the client returns the intake form result, auto-resume the agent
-    // so it runs triage + submit_intake without a manual nudge.
-    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
-  });
+  const { messages, setMessages, sendMessage, status, error, addToolResult } =
+    useChat({
+      transport,
+      // After the client returns the intake form result, auto-resume the agent
+      // so it runs triage + submit_intake without a manual nudge.
+      sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+    });
+
+  // On mount, ask the server whether this browser already has a verified
+  // session (cookie). If so, restore the transcript and jump to chat — refresh
+  // no longer drops verification or history.
+  useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch('/api/auth/patient/session', {
+          credentials: 'same-origin',
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          verified?: boolean;
+          email?: string;
+          messages?: UIMessage[];
+        };
+        if (cancelled || !data.verified) return;
+        if (data.email) setVerifiedEmail(data.email);
+        if (Array.isArray(data.messages) && data.messages.length > 0) {
+          setMessages(data.messages);
+        }
+        setPhase('chat');
+      } catch {
+        // Best-effort restore; fall back to the standby entry point.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [setMessages]);
 
   const busy = status === 'submitted' || status === 'streaming';
 
@@ -83,12 +117,13 @@ export function Receptionist() {
           type: string;
           state?: string;
           toolCallId?: string;
-          input?: { reason?: 'booking' | 'urgent' };
+          input?: { reason?: 'booking' | 'urgent'; prefill?: Record<string, unknown> };
         };
         if (p.type === 'tool-collect_intake' && p.state === 'input-available') {
           return {
             toolCallId: String(p.toolCallId ?? ''),
             reason: (p.input?.reason ?? 'booking') as 'booking' | 'urgent',
+            prefill: (p.input?.prefill ?? {}) as Record<string, unknown>,
           };
         }
       }
@@ -179,12 +214,14 @@ export function Receptionist() {
               <div className="flex flex-1 flex-col items-center justify-center px-6 py-10 md:py-14">
                 <div className="w-full max-w-sm">
                   <OtpStep
-                    sessionId={sessionId}
                     locale={lang}
                     initialEmail=""
                     disabled={false}
                     t={t}
-                    onComplete={() => setPhase('chat')}
+                    onComplete={(email) => {
+                      setVerifiedEmail(email);
+                      setPhase('chat');
+                    }}
                   />
                 </div>
               </div>
@@ -210,6 +247,10 @@ export function Receptionist() {
                   {pendingForm && (
                     <IntakeForm
                       reason={pendingForm.reason}
+                      prefill={pendingForm.prefill}
+                      verifiedEmail={verifiedEmail}
+                      t={t}
+                      lang={lang}
                       disabled={busy}
                       onSubmit={(data) =>
                         void addToolResult({
@@ -294,20 +335,18 @@ function ChatBubble({ role, text }: { role: string; text: string }) {
  *   1. `email` — collect/confirm the email; POST /api/auth/patient/email/request.
  *   2. `code`  — collect the 6-digit code; POST /api/auth/patient/email/verify.
  *
- * On success, calls `onComplete(verifiedEmail)` which addToolResults the
- * server-confirmed email back to the agent. The server-side stamp on the
- * session row (set by the verify endpoint) is what actually gates the
- * subsequent submit_intake call — this component's output is just the ack.
+ * On success, calls `onComplete(verifiedEmail)`. The verify endpoint sets a
+ * signed httpOnly session cookie + stamps the session row verified; that cookie
+ * is what gates every subsequent patient request. The session id is never
+ * handled here — the request/verify endpoints mint + read it from the cookie.
  */
 function OtpStep({
-  sessionId,
   locale,
   initialEmail,
   disabled,
   t,
   onComplete,
 }: {
-  sessionId: string;
   locale: string;
   initialEmail: string;
   disabled: boolean;
@@ -351,7 +390,8 @@ function OtpStep({
       const r = await fetch('/api/auth/patient/email/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, email: email.trim(), locale }),
+        credentials: 'same-origin',
+        body: JSON.stringify({ email: email.trim(), locale }),
       });
       let data: { ok?: boolean; error?: string } = {};
       try {
@@ -377,7 +417,8 @@ function OtpStep({
       const r = await fetch('/api/auth/patient/email/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, email: email.trim(), code: code.trim() }),
+        credentials: 'same-origin',
+        body: JSON.stringify({ email: email.trim(), code: code.trim() }),
       });
       let data: { ok?: boolean; verifiedEmail?: string; error?: string } = {};
       try {
