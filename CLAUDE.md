@@ -33,7 +33,7 @@ PATIENT (public)                          ADMIN (Cloudflare Access)
      ▼             ▼              ▼              ▼            ▼
    D1            KV           Vectorize         R2          Email Service
  (system of    (chat        (drkyana-kb,     (images,    (send as
-  record)       sessions,    1024-dim KB)     PDFs)       receptionist@drkyana.com)
+  record)       sessions,    1024-dim KB)     PDFs)       care@drkyana.com)
                 job results,
                 rate limits)
 ```
@@ -147,7 +147,7 @@ Persian is RTL. **Do not set `dir="rtl"` on `<html>`** — it flips every flex/g
 ## Brand & content references
 
 - **Practitioner:** Dr Kyana (English handle `@drkyana`; Persian کیانا / Bengali কিয়ানা). First name only.
-- **Email:** `kyanalotfi96@gmail.com` (personal/notify) and `receptionist@drkyana.com` (clinic, GoDaddy-hosted; the agent *sends* as this via Cloudflare Email Service).
+- **Email:** `kyanalotfi96@gmail.com` (personal/notify) and `care@drkyana.com` (clinic, GoDaddy-hosted; the agent *sends* as this via Cloudflare Email Service).
 - **Instagram:** [@drkyana](https://instagram.com/drkyana) · **WhatsApp:** `+8801614369673` → `https://wa.me/8801614369673`
 - **Practice model:** freelance across multiple Dhaka chambers; location set per booking; no fixed address.
 - **Brand color** `#0f4c81`, accent `#3b82f6`, ink `#0f172a`, muted `#475569`, surfaces `#ffffff`/`#f8fafc` (Tailwind `@theme` in `src/index.css`).

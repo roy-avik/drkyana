@@ -124,6 +124,6 @@ export interface Env {
   /** SMTP port — default 465 (implicit TLS); 587 for STARTTLS. */
   SMTP_PORT?: string;
   // config
-  RECEPTIONIST_FROM: string; // "receptionist@drkyana.com"
+  RECEPTIONIST_FROM: string; // "care@drkyana.com" — the clinic's only mailbox
   DR_KYANA_NOTIFY_EMAIL: string;
 }

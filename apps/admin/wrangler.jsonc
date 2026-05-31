@@ -31,12 +31,12 @@
   // the drkyana-kb Vectorize index). No id to paste; enable Workers AI on the
   // account in the CF dashboard.
   "ai": { "binding": "AI" },
-  // Cloudflare Email Service — sends as receptionist@drkyana.com (cf-bounce subdomain).
+  // Cloudflare Email Service — sends as care@drkyana.com (cf-bounce subdomain).
   "send_email": [
     { "name": "EMAIL", "remote": true }
   ],
   "vars": {
-    "RECEPTIONIST_FROM": "receptionist@drkyana.com",
+    "RECEPTIONIST_FROM": "care@drkyana.com",
     "DR_KYANA_NOTIFY_EMAIL": "kyanalotfi96@gmail.com"
   },
   // Scheduled reminders/follow-ups (UTC). 03:00 UTC = 09:00 Dhaka.
