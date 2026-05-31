@@ -2,19 +2,29 @@
  * Patient email OTP — request a code.
  *
  * Route: POST /api/auth/patient/email/request
- * Body: { sessionId: string; email: string; locale?: "en"|"fa"|"bn" }
+ * Body: { email: string; locale?: "en"|"fa"|"bn" }   (NO sessionId — see below)
  * Returns:
- *   200 { ok: true }
- *   400 { error: "bad_request" | "missing_session" | "bad_email" }
+ *   200 { ok: true }  + Set-Cookie: dk_psid=...   (httpOnly, signed)
+ *   400 { error: "bad_request" | "bad_email" }
  *   429 { error: "rate_limited" | "rate_limit_email" | "rate_limit_ip" }
  *   500 { error: "send_failed" }
+ *
+ * Session is COOKIE-AUTHORITATIVE: the client never sends a session id. We read
+ * the signed httpOnly cookie if present (returning patient re-requesting a
+ * code), otherwise mint a fresh id, issue the OTP against it, and set the
+ * cookie on the response. Verify + the agent endpoint then read the same cookie.
  *
  * The endpoint is public (matches /api/agent/patient). Abuse is gated by:
  *   - a coarse per-IP KV rate limit at the HTTP layer (cheap),
  *   - tighter per-email + per-IP D1 counts INSIDE mail_otp.requestOtp.
  */
 import { requestOtp } from "@drkyana/server/otp";
-import type { Env } from "@drkyana/server";
+import {
+  readSessionCookie,
+  newPatientSessionId,
+  serializeSessionCookie,
+  type Env,
+} from "@drkyana/server";
 import type { Locale } from "@drkyana/types";
 
 interface PagesContext {
@@ -23,7 +33,6 @@ interface PagesContext {
 }
 
 interface ReqBody {
-  sessionId?: string;
   email?: string;
   locale?: Locale;
 }
@@ -76,11 +85,20 @@ export const onRequestPost = async (ctx: PagesContext): Promise<Response> => {
     return json({ error: "bad_request" }, 400);
   }
 
-  if (!body.sessionId) return json({ error: "missing_session" }, 400);
   if (!body.email) return json({ error: "bad_email" }, 400);
 
+  // Cookie-authoritative: reuse the existing session id if the cookie is valid,
+  // else mint a fresh one. Either way the OTP is issued against this id and the
+  // cookie is (re)set on the response.
+  const secret = (env.IP_HASH_SALT as string) ?? "";
+  const existing = await readSessionCookie(
+    request.headers.get("cookie"),
+    secret,
+  );
+  const sessionId = existing ?? newPatientSessionId();
+
   const result = await requestOtp(env as Env, {
-    sessionId: body.sessionId,
+    sessionId,
     email: body.email,
     ipHash,
     locale: body.locale ?? "en",
@@ -93,5 +111,10 @@ export const onRequestPost = async (ctx: PagesContext): Promise<Response> => {
     }
     return json({ error: result.error }, 500);
   }
-  return json({ ok: true }, 200);
+
+  const cookie = await serializeSessionCookie(sessionId, secret);
+  return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: { "content-type": "application/json", "set-cookie": cookie },
+  });
 };

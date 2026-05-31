@@ -188,6 +188,18 @@ def source_keys(ref_keys: set[str] | None = None) -> set[str]:
 # are read directly from the dict in I18nProvider.
 EXTRA_USED_KEYS = {"meta.title", "meta.description"}
 
+# Prefixes whose keys are consumed dynamically via `t(variable)`, where the
+# variable holds a key string defined in @drkyana/types (not a literal in src/),
+# so the static scanner can't see the reference. The intake form renders every
+# field/group/option label through t(field.labelKey) / t(group.titleKey) /
+# t(option.labelKey), whose values are exactly these prefixes. Treat all
+# concrete keys under them as used.
+DYNAMIC_USED_PREFIXES = (
+    "intake.field.",
+    "intake.group.",
+    "intake.option.",
+)
+
 # Dotted string literals that look like locale keys but aren't — e.g. the
 # localStorage namespace. Excluded from the "used" set so they don't generate
 # false-positive "missing key" errors.
@@ -231,6 +243,9 @@ def cmd_check(_args) -> int:
                 warnings.append(f"{lang}: TODO placeholder for {k!r}")
 
     used = (source_keys(ref_keys) | EXTRA_USED_KEYS) - NON_LOCALE_DOTTED_STRINGS
+    used |= {
+        k for k in ref_keys if k.startswith(DYNAMIC_USED_PREFIXES)
+    }
     undefined = used - ref_keys
     unused = ref_keys - used
     if undefined:

@@ -12,21 +12,60 @@
 import { z } from "zod";
 import { defineTool } from "../../tools";
 
+/**
+ * `prefill` lets the agent open the form ALREADY populated from what the
+ * patient said in chat. Keys match the intake field ids. Everything is
+ * optional — pass only what the patient actually stated; never guess. `email`
+ * is intentionally absent: the client fills the patient's VERIFIED email,
+ * read-only, so the model can't set it.
+ */
+const prefillSchema = z
+  .object({
+    name: z.string(),
+    phone: z.string(),
+    age: z.number().int().min(0).max(120),
+    gender: z.enum(["female", "male", "other", "unspecified"]),
+    affectedArea: z.string(),
+    symptoms: z.array(z.string()),
+    duration: z.string(),
+    severity: z.number().int().min(0).max(10),
+    triggers: z.array(z.string()),
+    conditions: z.array(z.string()),
+    allergies: z.array(z.string()),
+    medications: z.array(z.string()),
+    lastDentalVisit: z.string(),
+    anxiety: z.enum(["none", "some", "high"]),
+    preferredArea: z.string(),
+    preferredDays: z.string(),
+    timeOfDay: z.enum(["morning", "afternoon", "evening"]),
+    urgency: z.enum(["routine", "soon", "urgent"]),
+    payment: z.string(),
+  })
+  .partial();
+
 const inputSchema = z.object({
   reason: z
     .enum(["booking", "urgent"])
     .describe("Why the form is being shown — informs the title/tone."),
+  prefill: prefillSchema
+    .optional()
+    .describe(
+      "Fields the patient ALREADY stated, to pre-populate the form. Map their " +
+        "words to field ids (e.g. 'my name is X and I need scaling' → " +
+        "{name:'X', affectedArea:'scaling'}). Only include what they actually " +
+        "said; omit the rest. Do NOT include email.",
+    ),
 });
 
 export const collectIntakeTool = defineTool({
   name: "collect_intake",
   description:
-    "Open the structured intake form for the patient to fill (identity, " +
-    "complaint, medical & dental history, booking preferences) in ONE step. " +
-    "Use this on the FIRST patient turn that indicates booking or an urgent " +
-    "problem — do not ask slot-by-slot questions yourself. The client renders " +
-    "the form and returns the structured answers; you then call run_triage " +
-    "and submit_intake with those values.",
+    "Open the structured intake form, PRE-FILLED with everything the patient " +
+    "has already told you, for them to review and complete in ONE step. Use " +
+    "this on the FIRST patient turn that indicates booking or an urgent " +
+    "problem — do not ask slot-by-slot questions yourself, and always pass a " +
+    "`prefill` with whatever they've stated so they aren't re-typing it. The " +
+    "client renders the form and returns the full answers; you then submit.",
   category: "read",
   inputSchema,
   // No execute → client-rendered tool. The form result returns via the AI SDK

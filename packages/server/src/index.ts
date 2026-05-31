@@ -29,6 +29,15 @@ export { embedQuery, embedTexts, EMBEDDING_MODEL, EMBEDDING_DIM } from "./embedd
 // Email helper (Cloudflare Email Service `send_email` binding). Server-only.
 export { sendEmail, buildRawEmail, type SendEmailArgs } from "./email";
 
+// Patient session cookie (httpOnly, signed) — read/mint/serialize. Pure crypto,
+// safe in the barrel (no sockets). Used by the patient Pages Functions.
+export {
+  SESSION_COOKIE_NAME,
+  newPatientSessionId,
+  serializeSessionCookie,
+  readSessionCookie,
+} from "./session";
+
 // Patient email OTP (plan item 1) is intentionally NOT re-exported from this
 // barrel. It pulls in `worker-mailer` → `cloudflare:sockets`, which the admin
 // app's webpack build can't resolve. The patient Pages Functions import it
