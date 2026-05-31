@@ -8,10 +8,12 @@
  * socket API — works in Pages Functions / Workers).
  *
  * Config (Env):
- *   RECEPTIONIST_FROM — the From address AND the SMTP username (same mailbox).
- *   SMTP_PASSWORD     — the mailbox password (Cloudflare secret; never committed).
- *   SMTP_HOST         — default "smtpout.secureserver.net" (GoDaddy Pro Email).
- *   SMTP_PORT         — default 465 (implicit TLS). Set 587 for STARTTLS.
+ *   SMTP_USER     — the From address AND SMTP username (the sendable GoDaddy
+ *                   mailbox, e.g. "care@drkyana.com"). Falls back to
+ *                   RECEPTIONIST_FROM if unset.
+ *   SMTP_PASSWORD — the mailbox password (Cloudflare secret; never committed).
+ *   SMTP_HOST     — default "smtpout.secureserver.net" (GoDaddy Pro Email).
+ *   SMTP_PORT     — default 465 (implicit TLS). Set 587 for STARTTLS.
  *
  * Returns a discriminated result rather than throwing, so callers decide
  * whether a failure is fatal (OTP request surfaces it) or best-effort.
@@ -32,7 +34,7 @@ export async function sendSmtpEmail(
   env: Env,
   { to, subject, text }: SmtpEmailArgs,
 ): Promise<{ ok: true; to: string } | { ok: false; error: string }> {
-  const from = env.RECEPTIONIST_FROM;
+  const from = env.SMTP_USER || env.RECEPTIONIST_FROM;
   const password = env.SMTP_PASSWORD;
   if (!from || !password) {
     return { ok: false, error: "smtp not configured" };

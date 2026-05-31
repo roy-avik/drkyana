@@ -106,10 +106,17 @@ export interface Env {
    */
   TAVILY_API_KEY?: string;
   /**
-   * SMTP password for the clinic mailbox (RECEPTIONIST_FROM) — patient OTP
-   * send path (packages/server/src/smtp.ts). Cloudflare secret; never committed.
-   * The `cloudflare:email` binding can't reach arbitrary patient addresses, so
-   * OTP goes out over GoDaddy SMTP instead.
+   * SMTP mailbox identity for the patient OTP send path
+   * (packages/server/src/smtp.ts) — the sendable GoDaddy Professional Email
+   * mailbox (e.g. "care@drkyana.com"). Used as BOTH the SMTP auth username and
+   * the From. Distinct from RECEPTIONIST_FROM (the cloudflare:email notify
+   * address). Falls back to RECEPTIONIST_FROM if unset.
+   */
+  SMTP_USER?: string;
+  /**
+   * SMTP password for SMTP_USER — patient OTP send path. Cloudflare secret;
+   * never committed. The `cloudflare:email` binding can't reach arbitrary
+   * patient addresses, so OTP goes out over GoDaddy SMTP instead.
    */
   SMTP_PASSWORD?: string;
   /** SMTP host — default "smtpout.secureserver.net" (GoDaddy Pro Email). */
