@@ -4,6 +4,9 @@ import type {
   IntakeRow,
   IntakeStatus,
   TriageLevel,
+  AgentRunKind,
+  AgentRunRow,
+  AgentRunStatus,
   ChamberRow,
   ChamberScheduleSlot,
   ClinicalAssistKind,
@@ -901,4 +904,44 @@ export async function setClinicalAssistSupersede(
     .bind(note, supersededBy, now, now, id)
     .run();
   return getClinicalAssist(id);
+}
+
+// ---------------------------------------------------------------------------
+// Agent runs (plan item 5) — deep-research inference runs with cost.
+// ---------------------------------------------------------------------------
+
+function mapAgentRun(r: Record<string, unknown>): AgentRunRow {
+  return {
+    id: String(r.id),
+    kind: (r.kind as AgentRunKind) ?? "intake_patterns",
+    status: (r.status as AgentRunStatus) ?? "pending",
+    input_json: String(r.input_json ?? "{}"),
+    output_md: String(r.output_md ?? ""),
+    model_id: (r.model_id as string | null) ?? null,
+    input_tokens: Number(r.input_tokens ?? 0),
+    output_tokens: Number(r.output_tokens ?? 0),
+    cost_usd: Number(r.cost_usd ?? 0),
+    error: (r.error as string | null) ?? null,
+    initiated_by: String(r.initiated_by ?? ""),
+    started_at: Number(r.started_at ?? 0),
+    finished_at: (r.finished_at as number | null) ?? null,
+    created_at: Number(r.created_at ?? 0),
+  };
+}
+
+/** Newest-first list of recent agent runs. */
+export async function listAgentRuns(limit = 30): Promise<AgentRunRow[]> {
+  const { results } = await db()
+    .prepare("SELECT * FROM agent_runs ORDER BY started_at DESC LIMIT ?")
+    .bind(Math.min(Math.max(limit, 1), 100))
+    .all<Record<string, unknown>>();
+  return (results ?? []).map(mapAgentRun);
+}
+
+export async function getAgentRun(id: string): Promise<AgentRunRow | null> {
+  const row = await db()
+    .prepare("SELECT * FROM agent_runs WHERE id = ?")
+    .bind(id)
+    .first<Record<string, unknown>>();
+  return row ? mapAgentRun(row) : null;
 }

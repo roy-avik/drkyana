@@ -39,6 +39,7 @@ import { getTranscriptTool } from "./get_transcript";
 import { webSearchTool } from "./web_search";
 import { webFetchTool } from "./web_fetch";
 import { differentialDiagnosisTool } from "./differential_diagnosis";
+import { scheduleAgentRunTool } from "./schedule_agent_run";
 import { loadSkillToolFor } from "../../skills";
 
 export { listIntakesTool } from "./list_intakes";
@@ -66,6 +67,7 @@ export { getTranscriptTool } from "./get_transcript";
 export { webSearchTool } from "./web_search";
 export { webFetchTool } from "./web_fetch";
 export { differentialDiagnosisTool } from "./differential_diagnosis";
+export { scheduleAgentRunTool } from "./schedule_agent_run";
 
 /** Registry keyed by the tool name the model sees. */
 export const adminTools: ToolRegistry = {
@@ -104,6 +106,8 @@ export const adminTools: ToolRegistry = {
   web_fetch: webFetchTool,
   // clinical reasoning (write — approval-gated; persists provenance + supersede flow)
   differential_diagnosis: differentialDiagnosisTool,
+  // deep research (read — runs inference over practice data; persists cost)
+  schedule_agent_run: scheduleAgentRunTool,
   // behavior skills (load on demand, audience-scoped)
   load_skill: loadSkillToolFor("admin"),
 };

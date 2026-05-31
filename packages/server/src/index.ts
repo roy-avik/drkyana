@@ -56,6 +56,14 @@ export {
   type ReminderRunResult,
 } from "./scheduled/reminders";
 
+// Deep-research inference runs (plan item 5) — cron + clinician-initiated. Server-only.
+export {
+  runAgentRun,
+  runScheduledResearch,
+  type RunAgentRunOptions,
+  type ScheduledResearchResult,
+} from "./research";
+
 // Concrete admin agent + toolset (Phase 1C). Server-only.
 export { adminAgentSpec } from "./agents/admin";
 export { adminTools } from "./tools/admin";
