@@ -65,15 +65,15 @@ receptionist.placeholder: "Tell me what you need…"
 receptionist.thinking: "Thinking…"
 receptionist.privacy: "Your messages are processed by an AI service (Anthropic's Claude) and shared only with Dr Kyana's team."
 
-intake.consent.message: "To help Dr Kyana prepare the right care, I'll ask a few questions, including about your health. Your messages are processed by an AI service (Anthropic's Claude) and shared only with Dr Kyana's team. Tap continue to agree, or message Dr Kyana directly instead."
-intake.consent.accept: "I understand, let's continue"
+intake.consent.message: "To help Dr Kyana prepare the right care, I'll ask a few questions, including about your health."
+intake.consent.health: "Your messages — including the health details you share — are processed by our AI provider (Anthropic's Claude) to handle your request, and are shared only with Dr Kyana's team. By continuing you agree to this. You can instead message Dr Kyana directly."
+intake.consent.accept: "I agree, continue"
 intake.escape: "Just message Dr Kyana directly"
 receptionist.start_button: "Describe your problem"
 receptionist.submit.error: "Could not submit. Please try again."
 
 # Email OTP verification (intake gate — plan item 1)
 receptionist.otp.title: "Verify your email"
-receptionist.otp.consent: "Verifying creates your record with Dr Kyana's clinic. Your information stays internal — Dr Kyana may use AI tools to help review and prepare your case."
 receptionist.otp.email_prompt: "What's your email?"
 receptionist.otp.email_explainer: "We'll send you a 6-digit code to confirm."
 receptionist.otp.send: "Send code"

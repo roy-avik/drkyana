@@ -176,6 +176,15 @@ export const onRequestPost = async (ctx: PagesContext): Promise<Response> => {
 
   // --- Session history + verification state (D1) ---
   const session = await loadSession(env as Env, sessionId);
+
+  // --- Verification gate (plan item 1, reordered) ---
+  // Email OTP is now completed BEFORE the patient can chat. The agent must not
+  // process any message for an unverified session — verifiedEmail comes from
+  // the session row (set by /api/auth/patient/email/verify), never from input.
+  if (!session.verifiedEmail) {
+    return json({ error: "verification_required" }, 403);
+  }
+
   const merged = mergeById(session.messages, incoming);
 
   // --- Build patient context ---

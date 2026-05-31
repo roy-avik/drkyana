@@ -46,7 +46,7 @@ bucket_name = "drkyana-media"
 [ai]
 binding = "AI"
 
-# Cloudflare Email Service — sends as receptionist@drkyana.com.
+# Cloudflare Email Service — sends as care@drkyana.com.
 # Onboard the domain in dash > Email Service > Email Sending (adds SPF/DKIM on
 # cf-bounce.drkyana.com). Root-domain MX stays with GoDaddy — no conflict.
 [[send_email]]
@@ -54,7 +54,7 @@ name = "EMAIL"
 remote = true
 
 [vars]
-RECEPTIONIST_FROM = "receptionist@drkyana.com"
+RECEPTIONIST_FROM = "care@drkyana.com"
 DR_KYANA_NOTIFY_EMAIL = "kyanalotfi96@gmail.com"
 
 # Scheduled email (reminders / follow-ups). Times in UTC.

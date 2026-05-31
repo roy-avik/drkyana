@@ -19,7 +19,10 @@ import { IntakeForm } from './IntakeForm';
 // messages are processed by an AI service) must be acknowledged before chat.
 // ---------------------------------------------------------------------------
 
-type Phase = 'standby' | 'consent' | 'chat';
+// Flow order: standby → consent (AI + health-data) → otp (verify email) → chat.
+// The agent endpoint rejects any message from an unverified session, so the
+// OTP step gates the whole conversation, not just submission.
+type Phase = 'standby' | 'consent' | 'otp' | 'chat';
 
 function newSessionId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -93,32 +96,6 @@ export function Receptionist() {
     return null;
   }, [messages]);
 
-  /** Most recent email_verification tool call awaiting the OTP round-trip. */
-  const pendingOtp = useMemo(() => {
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const m = messages[i];
-      if (m.role !== 'assistant') continue;
-      for (const part of m.parts) {
-        const p = part as unknown as {
-          type: string;
-          state?: string;
-          toolCallId?: string;
-          input?: { email?: string };
-        };
-        if (
-          p.type === 'tool-email_verification' &&
-          p.state === 'input-available'
-        ) {
-          return {
-            toolCallId: String(p.toolCallId ?? ''),
-            initialEmail: p.input?.email ?? '',
-          };
-        }
-      }
-    }
-    return null;
-  }, [messages]);
-
   // Auto-scroll the transcript on new content.
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -166,16 +143,20 @@ export function Receptionist() {
               </div>
             )}
 
-            {/* Consent gate — states messages are processed by an AI service */}
+            {/* Consent gate — AI processing + health-data sharing with the LLM
+                provider. Must be accepted BEFORE email verification. */}
             {phase === 'consent' && (
               <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-10 md:py-14">
                 <p className="max-w-md text-center text-sm text-ink">
                   {t('intake.consent.message')}
                 </p>
+                <p className="max-w-md text-center text-xs text-muted">
+                  {t('intake.consent.health')}
+                </p>
                 <div className="flex flex-col items-stretch gap-2 sm:flex-row">
                   <button
                     type="button"
-                    onClick={() => setPhase('chat')}
+                    onClick={() => setPhase('otp')}
                     className="btn-primary px-6 py-2.5"
                   >
                     {t('intake.consent.accept')}
@@ -188,6 +169,23 @@ export function Receptionist() {
                   >
                     {t('intake.escape')}
                   </a>
+                </div>
+              </div>
+            )}
+
+            {/* Email verification — gates the whole conversation. On success,
+                the session row is stamped verified and we advance to chat. */}
+            {phase === 'otp' && (
+              <div className="flex flex-1 flex-col items-center justify-center px-6 py-10 md:py-14">
+                <div className="w-full max-w-sm">
+                  <OtpStep
+                    sessionId={sessionId}
+                    locale={lang}
+                    initialEmail=""
+                    disabled={false}
+                    t={t}
+                    onComplete={() => setPhase('chat')}
+                  />
                 </div>
               </div>
             )}
@@ -222,22 +220,6 @@ export function Receptionist() {
                       }
                     />
                   )}
-                  {pendingOtp && (
-                    <OtpStep
-                      sessionId={sessionId}
-                      locale={lang}
-                      initialEmail={pendingOtp.initialEmail}
-                      disabled={busy}
-                      t={t}
-                      onComplete={(verifiedEmail) =>
-                        void addToolResult({
-                          tool: 'email_verification',
-                          toolCallId: pendingOtp.toolCallId,
-                          output: { verified: true, email: verifiedEmail },
-                        })
-                      }
-                    />
-                  )}
                   {error && (
                     <p className="text-center text-xs text-red-600">
                       {t('receptionist.submit.error')}
@@ -258,16 +240,16 @@ export function Receptionist() {
                       value={draft}
                       onChange={(e) => setDraft(e.target.value)}
                       placeholder={
-                        pendingForm || pendingOtp
+                        pendingForm
                           ? 'Please complete the step above to continue'
                           : t('receptionist.placeholder')
                       }
-                      disabled={busy || !!pendingForm || !!pendingOtp}
+                      disabled={busy || !!pendingForm}
                       className="flex-1 rounded-full border border-ink/10 bg-white px-4 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:opacity-60"
                     />
                     <button
                       type="submit"
-                      disabled={!draft.trim() || busy || !!pendingForm || !!pendingOtp}
+                      disabled={!draft.trim() || busy || !!pendingForm}
                       className="rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       ↑
@@ -458,12 +440,6 @@ function OtpStep({
             disabled={busy || disabled}
             className="rounded-full border border-ink/10 bg-white px-4 py-2 text-center font-mono text-base tracking-[0.4em] text-ink focus:outline-none focus:ring-2 focus:ring-brand/30"
           />
-          {/* Consent moment — verifying creates the patient record + covers
-              internal AI-assisted workflow (item 4). Tap Verify is the
-              affirmative act, matching the chat-start consent pattern. */}
-          <p className="text-[11px] leading-relaxed text-muted">
-            {t('receptionist.otp.consent')}
-          </p>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
