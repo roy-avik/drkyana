@@ -33,12 +33,19 @@ const SERVER_ALLOW = [
 ];
 
 // Sentinels that must never appear in shipped CLIENT assets.
+//
+// These target the three things that are genuinely server-only: system prompts,
+// tool *implementation* bodies, and credentials. They deliberately do NOT include
+// tool *names*. In AI SDK 6 generative UI the tool-call stream the client renders
+// is keyed by tool name (parts arrive as `tool-<name>`; see AgentChat.tsx
+// `toolNameOf`), so names necessarily cross the boundary and are not secret.
+// A leaked prompt still trips "You are Dr Kyana"; a leaked tool body still trips
+// "needsApproval"; a leaked secret still trips "ANTHROPIC_API_KEY"; and Check 1
+// still bans any `@drkyana/server` import into a client context.
 const OUTPUT_SENTINELS = [
   "You are Dr Kyana", // system-prompt opener
-  "needsApproval",
+  "needsApproval", // marker present in any leaked tool definition body
   "ANTHROPIC_API_KEY",
-  "send_receptionist_email",
-  "update_patient_memory",
 ];
 
 const CODE_EXT = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs"]);

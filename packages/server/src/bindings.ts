@@ -106,6 +106,13 @@ export interface Env {
    */
   TAVILY_API_KEY?: string;
   /**
+   * NCBI E-utilities API key — admin agent's `pubmed_search` and `pubmed_fetch`.
+   * OPTIONAL: both tools work anonymously (NCBI's ~3 req/s per-IP limit is ample
+   * here). Setting this raises the limit to ~10 req/s; absence never disables the
+   * tools — only the rate ceiling changes.
+   */
+  NCBI_API_KEY?: string;
+  /**
    * SMTP mailbox identity for the patient OTP send path
    * (packages/server/src/smtp.ts) — the sendable GoDaddy Professional Email
    * mailbox (e.g. "care@drkyana.com"). Used as BOTH the SMTP auth username and

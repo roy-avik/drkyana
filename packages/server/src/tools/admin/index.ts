@@ -38,6 +38,8 @@ import { listPatientTranscriptsTool } from "./list_patient_transcripts";
 import { getTranscriptTool } from "./get_transcript";
 import { webSearchTool } from "./web_search";
 import { webFetchTool } from "./web_fetch";
+import { pubmedSearchTool } from "./pubmed_search";
+import { pubmedFetchTool } from "./pubmed_fetch";
 import { differentialDiagnosisTool } from "./differential_diagnosis";
 import { scheduleAgentRunTool } from "./schedule_agent_run";
 import { loadSkillToolFor } from "../../skills";
@@ -66,6 +68,8 @@ export { listPatientTranscriptsTool } from "./list_patient_transcripts";
 export { getTranscriptTool } from "./get_transcript";
 export { webSearchTool } from "./web_search";
 export { webFetchTool } from "./web_fetch";
+export { pubmedSearchTool } from "./pubmed_search";
+export { pubmedFetchTool } from "./pubmed_fetch";
 export { differentialDiagnosisTool } from "./differential_diagnosis";
 export { scheduleAgentRunTool } from "./schedule_agent_run";
 
@@ -104,6 +108,9 @@ export const adminTools: ToolRegistry = {
   // live web (read — fail-soft when TAVILY_API_KEY unset)
   web_search: webSearchTool,
   web_fetch: webFetchTool,
+  // peer-reviewed literature (read — NCBI PubMed, no key required)
+  pubmed_search: pubmedSearchTool,
+  pubmed_fetch: pubmedFetchTool,
   // clinical reasoning (write — approval-gated; persists provenance + supersede flow)
   differential_diagnosis: differentialDiagnosisTool,
   // deep research (read — runs inference over practice data; persists cost)
