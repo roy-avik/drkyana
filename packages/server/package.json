@@ -8,10 +8,11 @@
   },
   "types": "./src/index.ts",
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.81",
     "@drkyana/types": "*",
     "ai": "^6.0.192",
-    "@ai-sdk/anthropic": "^3.0.81",
     "pdf-lib": "^1.17.1",
+    "worker-mailer": "^1.2.1",
     "zod": "^4.1.13"
   },
   "devDependencies": {

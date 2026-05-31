@@ -106,18 +106,17 @@ export const submitIntakeTool = defineTool({
   inputSchema,
   async execute(args, ctx: AgentContext): Promise<SubmitIntakeResult> {
     // --- Verification gate (plan item 1) ---
-    // The verified email lives on the session (sessions.verified_email) and is
-    // injected into ctx.caller by the Pages Function — never trusted from
-    // model args. If absent, refuse — the agent must walk the patient through
-    // email_verification first, then retry.
+    // Defense in depth: the patient endpoint already rejects unverified
+    // sessions before the agent runs, so a patient context here is always
+    // verified. We still read verifiedEmail from ctx.caller (set by the Pages
+    // Function from sessions.verified_email — never model args) and refuse if
+    // somehow absent.
     if (ctx.caller.kind !== "patient") {
       throw new Error("submit_intake: patient context required");
     }
     const verifiedEmail = ctx.caller.verifiedEmail;
     if (!verifiedEmail) {
-      throw new Error(
-        "email_verification_required: call the email_verification tool with the patient's email, then retry submit_intake",
-      );
+      throw new Error("verification_required: session is not email-verified");
     }
 
     const db = ctx.env.DB;

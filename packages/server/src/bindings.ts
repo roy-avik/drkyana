@@ -105,6 +105,17 @@ export interface Env {
    * live web access (treat like an empty KB).
    */
   TAVILY_API_KEY?: string;
+  /**
+   * SMTP password for the clinic mailbox (RECEPTIONIST_FROM) — patient OTP
+   * send path (packages/server/src/smtp.ts). Cloudflare secret; never committed.
+   * The `cloudflare:email` binding can't reach arbitrary patient addresses, so
+   * OTP goes out over GoDaddy SMTP instead.
+   */
+  SMTP_PASSWORD?: string;
+  /** SMTP host — default "smtpout.secureserver.net" (GoDaddy Pro Email). */
+  SMTP_HOST?: string;
+  /** SMTP port — default 465 (implicit TLS); 587 for STARTTLS. */
+  SMTP_PORT?: string;
   // config
   RECEPTIONIST_FROM: string; // "receptionist@drkyana.com"
   DR_KYANA_NOTIFY_EMAIL: string;

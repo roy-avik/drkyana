@@ -23,7 +23,7 @@
  */
 import type { Locale } from "@drkyana/types";
 import type { Env } from "../bindings";
-import { sendEmail } from "../email";
+import { sendSmtpEmail } from "../smtp";
 
 const CODE_TTL_SECONDS = 600;          // 10 minutes
 const MAX_VERIFY_ATTEMPTS = 5;
@@ -209,10 +209,12 @@ export async function requestOtp(
     .run();
 
   const tpl = TEMPLATES[locale] ?? TEMPLATES.en;
-  const result = await sendEmail(env, {
+  // OTP goes to an ARBITRARY patient address, so it must use SMTP (GoDaddy),
+  // not the cloudflare:email binding (verified-destinations only).
+  const result = await sendSmtpEmail(env, {
     to: normalised,
     subject: tpl.subject,
-    body: tpl.body(code),
+    text: tpl.body(code),
   });
   if (!result.ok) return { ok: false, error: "send_failed" };
   return { ok: true };
@@ -263,15 +265,21 @@ export async function verifyOtp(
 
   if (expected !== row.code_hash) return { ok: false, error: "invalid_code" };
 
-  // Mark consumed + stamp the session. Both writes are best-effort-batched;
-  // failure of either is surfaced (we return success only when both land).
+  // Mark consumed + stamp the session. Verification now happens BEFORE the
+  // patient sends any chat message, so the session row may not exist yet — use
+  // an UPSERT (not a bare UPDATE) so the verified state is recorded either way.
+  // The later message-save in the agent endpoint does ON CONFLICT DO UPDATE on
+  // `messages`/`locale` only, so it never clobbers `verified_email`.
   await env.DB.batch([
     env.DB.prepare(
       "UPDATE email_otps SET consumed_at = ? WHERE id = ?",
     ).bind(now, row.id),
     env.DB.prepare(
-      "UPDATE sessions SET verified_email = ?, email_verified_at = ?, updated_at = ? WHERE id = ?",
-    ).bind(normalised, now, now, sessionId),
+      "INSERT INTO sessions (id, kind, verified_email, email_verified_at, created_at, updated_at) " +
+        "VALUES (?, 'patient', ?, ?, ?, ?) " +
+        "ON CONFLICT(id) DO UPDATE SET verified_email = excluded.verified_email, " +
+        "email_verified_at = excluded.email_verified_at, updated_at = excluded.updated_at",
+    ).bind(sessionId, normalised, now, now, now),
   ]);
 
   return { ok: true, verifiedEmail: normalised };
