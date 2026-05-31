@@ -53,8 +53,10 @@ jobs:
       - name: Build patient
         run: npm run build
 
-      - name: Isolation guard (patient dist bundle)
-        run: node scripts/check-isolation.mjs --dist
-
       - name: Build admin (Next.js + Serwist)
         run: npm run build --workspace=@drkyana/admin
+
+      # Run AFTER both client bundles exist so the scan covers patient `dist`
+      # AND admin `.next/static` — otherwise admin client leaks go ungated.
+      - name: Isolation guard (built client bundles)
+        run: node scripts/check-isolation.mjs --dist
