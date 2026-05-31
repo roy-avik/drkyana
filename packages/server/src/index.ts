@@ -29,15 +29,12 @@ export { embedQuery, embedTexts, EMBEDDING_MODEL, EMBEDDING_DIM } from "./embedd
 // Email helper (Cloudflare Email Service `send_email` binding). Server-only.
 export { sendEmail, buildRawEmail, type SendEmailArgs } from "./email";
 
-// Patient email OTP (plan item 1). Server-only.
-export {
-  requestOtp,
-  verifyOtp,
-  type RequestOtpInput,
-  type RequestOtpResult,
-  type VerifyOtpInput,
-  type VerifyOtpResult,
-} from "./lib/mail_otp";
+// Patient email OTP (plan item 1) is intentionally NOT re-exported from this
+// barrel. It pulls in `worker-mailer` → `cloudflare:sockets`, which the admin
+// app's webpack build can't resolve. The patient Pages Functions import it
+// from the dedicated subpath instead: `@drkyana/server/otp` (see package.json
+// exports). Keeping it out of the barrel means the admin's `@drkyana/server`
+// import never touches the SMTP socket dependency.
 
 // KB ingestion (human-curated: chunk → embed → Vectorize upsert → kb_docs). Server-only.
 export {

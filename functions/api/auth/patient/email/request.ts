@@ -13,7 +13,8 @@
  *   - a coarse per-IP KV rate limit at the HTTP layer (cheap),
  *   - tighter per-email + per-IP D1 counts INSIDE mail_otp.requestOtp.
  */
-import { requestOtp, type Env } from "@drkyana/server";
+import { requestOtp } from "@drkyana/server/otp";
+import type { Env } from "@drkyana/server";
 import type { Locale } from "@drkyana/types";
 
 interface PagesContext {

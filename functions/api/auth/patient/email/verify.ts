@@ -14,7 +14,8 @@
  * AgentContext, so the verified state survives the agent loop without the
  * model ever seeing or being trusted with it.
  */
-import { verifyOtp, type Env } from "@drkyana/server";
+import { verifyOtp } from "@drkyana/server/otp";
+import type { Env } from "@drkyana/server";
 
 interface PagesContext {
   request: Request;
