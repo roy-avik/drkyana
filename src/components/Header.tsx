@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from '../i18n/useTranslation';
 import { LangSwitcher } from './LangSwitcher';
+import { Link } from '../router';
 
+// Section anchors are absolute (/#id) so they work from any page — <Link>
+// navigates home then scrolls. /receptionist and /account are their own pages.
 const NAV = [
-  { href: '#home', key: 'nav.home', en: 'Home' },
-  { href: '#about', key: 'nav.about', en: 'About' },
-  { href: '#services', key: 'nav.services', en: 'Services' },
-  { href: '#receptionist', key: 'nav.receptionist', en: 'AI receptionist' },
-  { href: '#location', key: 'nav.practice', en: 'Practice' },
-  { href: '#contact', key: 'nav.contact', en: 'Contact' },
+  { href: '/#home', key: 'nav.home', en: 'Home' },
+  { href: '/#about', key: 'nav.about', en: 'About' },
+  { href: '/#services', key: 'nav.services', en: 'Services' },
+  { href: '/receptionist', key: 'nav.receptionist', en: 'AI receptionist' },
+  { href: '/account', key: 'nav.account', en: 'My records' },
+  { href: '/#location', key: 'nav.practice', en: 'Practice' },
+  { href: '/#contact', key: 'nav.contact', en: 'Contact' },
 ];
 
 export function Header() {
@@ -33,9 +37,9 @@ export function Header() {
       ].join(' ')}
     >
       <div className="container-page flex h-16 items-center md:h-20">
-        <a href="#home" className="text-xl font-bold tracking-tight text-brand md:text-2xl">
+        <Link to="/#home" className="text-xl font-bold tracking-tight text-brand md:text-2xl">
           {t('brand', 'Dr. Kyana')}
-        </a>
+        </Link>
 
         <nav
           className={[
@@ -47,13 +51,13 @@ export function Header() {
           <ul className="flex flex-col gap-1 px-5 py-4 md:flex-row md:gap-7 md:p-0">
             {NAV.map((item) => (
               <li key={item.href}>
-                <a
-                  href={item.href}
+                <Link
+                  to={item.href}
                   onClick={() => setNavOpen(false)}
                   className="block rounded-md px-2 py-2 text-sm font-medium text-ink transition-colors hover:text-brand md:px-0 md:py-1"
                 >
                   {t(item.key, item.en)}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>

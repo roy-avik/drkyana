@@ -51,14 +51,14 @@ const opt = (value: string, label: string): IntakeFieldOption => ({
   labelKey: `intake.option.${value}`,
 });
 
-/** The canonical intake form. Groups render top-to-bottom; only `phone` is hard-required. */
+/** The canonical intake form. Groups render top-to-bottom; `name` and `phone` are hard-required. */
 export const INTAKE_FORM: IntakeFormGroup[] = [
   {
     id: "identity",
     title: "About you",
     titleKey: "intake.group.identity",
     fields: [
-      { id: "name", type: "text", label: "Full name", labelKey: "intake.field.name" },
+      { id: "name", type: "text", required: true, label: "Full name", labelKey: "intake.field.name" },
       { id: "phone", type: "tel", required: true, label: "Phone number", labelKey: "intake.field.phone" },
       { id: "email", type: "email", label: "Email (optional)", labelKey: "intake.field.email" },
       { id: "age", type: "number", min: 0, max: 120, label: "Age", labelKey: "intake.field.age" },

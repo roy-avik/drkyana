@@ -1,25 +1,11 @@
-import { Header } from './components/Header';
-import { Hero } from './components/Hero';
-import { About } from './components/About';
-import { Services } from './components/Services';
-import { Location } from './components/Location';
-import { Receptionist } from './components/Receptionist';
-import { Contact } from './components/Contact';
-import { Footer } from './components/Footer';
+import { useRouter } from './router';
+import { Home } from './pages/Home';
+import { ReceptionistPage } from './pages/ReceptionistPage';
+import { AccountPage } from './pages/AccountPage';
 
 export function App() {
-  return (
-    <>
-      <Header />
-      <main>
-        <Hero />
-        <About />
-        <Services />
-        <Receptionist />
-        <Location />
-        <Contact />
-      </main>
-      <Footer />
-    </>
-  );
+  const { path } = useRouter();
+  if (path === '/receptionist') return <ReceptionistPage />;
+  if (path === '/account') return <AccountPage />;
+  return <Home />;
 }

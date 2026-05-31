@@ -1,0 +1,4 @@
+# Cloudflare Pages SPA fallback. Pages Functions (functions/api/*) are matched
+# BEFORE this rule, and real static assets are served directly, so only unknown
+# app routes (/receptionist, /account, deep links) fall through to index.html.
+/*  /index.html  200
