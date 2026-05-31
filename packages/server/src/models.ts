@@ -29,3 +29,27 @@ export function modelFor(env: Env, tier: ModelTier): LanguageModel {
   const anthropic = createAnthropic({ apiKey: env.ANTHROPIC_API_KEY });
   return anthropic(MODEL_IDS[tier]);
 }
+
+/**
+ * Per-model USD pricing per 1,000,000 tokens, {input, output}. APPROXIMATE —
+ * Anthropic pricing changes; verify against the current price list when a
+ * model id changes here. Used only for the agent_runs cost estimate (spend
+ * visibility), never for billing. Unknown models fall back to Sonnet pricing
+ * (conservative — overestimates rather than under).
+ */
+export const MODEL_PRICING_PER_MTOK: Record<string, { input: number; output: number }> = {
+  "claude-haiku-4-5": { input: 1.0, output: 5.0 },
+  "claude-sonnet-4-6": { input: 3.0, output: 15.0 },
+};
+
+/** Estimate the USD cost of a generation from its token usage. */
+export function estimateCostUsd(
+  modelId: string,
+  usage: { inputTokens?: number; outputTokens?: number },
+): number {
+  const price =
+    MODEL_PRICING_PER_MTOK[modelId] ?? MODEL_PRICING_PER_MTOK["claude-sonnet-4-6"];
+  const inTok = usage.inputTokens ?? 0;
+  const outTok = usage.outputTokens ?? 0;
+  return (inTok * price.input + outTok * price.output) / 1_000_000;
+}

@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/chambers", label: "Chambers" },
   { href: "/drafts", label: "Drafts" },
   { href: "/kb", label: "Knowledge" },
+  { href: "/research", label: "Research" },
   { href: "/assistant", label: "Assistant" },
 ];
 

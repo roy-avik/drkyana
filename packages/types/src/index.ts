@@ -278,6 +278,31 @@ export interface SessionRow {
 export type JobKind = "radiology" | "compile_pdf";
 export type JobStatus = "pending" | "running" | "done" | "error";
 
+/**
+ * Scheduled / clinician-initiated inference runs (plan item 5). Persisted to
+ * `agent_runs` in D1 with token + cost accounting (distinct from KV-backed
+ * `jobs`). New kinds plug into the same table.
+ */
+export type AgentRunKind = "intake_patterns";
+export type AgentRunStatus = "pending" | "running" | "done" | "error";
+
+export interface AgentRunRow {
+  id: string;
+  kind: AgentRunKind;
+  status: AgentRunStatus;
+  input_json: string;
+  output_md: string;
+  model_id: string | null;
+  input_tokens: number;
+  output_tokens: number;
+  cost_usd: number;
+  error: string | null;
+  initiated_by: string;
+  started_at: number;
+  finished_at: number | null;
+  created_at: number;
+}
+
 export interface JobRecord<TResult = unknown> {
   id: string;
   kind: JobKind;
