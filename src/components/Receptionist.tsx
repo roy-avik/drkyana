@@ -10,6 +10,7 @@ import { WHATSAPP_LINK } from './Contact';
 import { IntakeForm } from './IntakeForm';
 import { OtpStep } from './OtpStep';
 import { Link } from '../router';
+import { renderMarkdown } from '../lib/markdown';
 
 // ---------------------------------------------------------------------------
 // Server-backed AI receptionist.
@@ -151,7 +152,7 @@ export function Receptionist() {
   return (
     <section id="receptionist" ref={sectionRef} className="py-16 md:py-24">
       <div className="container-page">
-        <div className="mx-auto max-w-2xl">
+        <div className="mx-auto max-w-3xl">
           <div className="text-center">
             <span className="section-label">{t('receptionist.label')}</span>
             <h2 className="mt-3 text-3xl font-bold tracking-tight md:text-4xl">
@@ -328,11 +329,17 @@ function ChatBubble({ role, text }: { role: string; text: string }) {
     <div className={isBot ? 'flex justify-start' : 'flex justify-end'}>
       <div
         className={[
-          'max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed',
-          isBot ? 'bg-brand/8 text-ink' : 'bg-brand text-white',
+          'max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed',
+          isBot ? 'md-content bg-brand/8 text-ink' : 'whitespace-pre-wrap bg-brand text-white',
         ].join(' ')}
       >
-        {text}
+        {/* Assistant replies render markdown (escaped first, so injection-safe);
+            the patient's own messages stay literal text. */}
+        {isBot ? (
+          <div dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }} />
+        ) : (
+          text
+        )}
       </div>
     </div>
   );

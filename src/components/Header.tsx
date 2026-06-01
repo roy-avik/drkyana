@@ -10,7 +10,6 @@ const NAV = [
   { href: '/#about', key: 'nav.about', en: 'About' },
   { href: '/#services', key: 'nav.services', en: 'Services' },
   { href: '/receptionist', key: 'nav.receptionist', en: 'AI receptionist' },
-  { href: '/account', key: 'nav.account', en: 'My records' },
   { href: '/#location', key: 'nav.practice', en: 'Practice' },
   { href: '/#contact', key: 'nav.contact', en: 'Contact' },
 ];

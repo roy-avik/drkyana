@@ -1,4 +1,5 @@
 import { Link } from '../router';
+import { renderMarkdown } from '../lib/markdown';
 
 // ---------------------------------------------------------------------------
 // Read-only view of a returning patient's appointments + prescriptions, shown
@@ -136,9 +137,10 @@ function PrescriptionCard({
         />
       </div>
       {rx.markdown && (
-        <pre className="mt-3 whitespace-pre-wrap border-t border-ink/5 pt-3 font-sans text-sm leading-relaxed text-ink/85">
-          {rx.markdown}
-        </pre>
+        <div
+          className="md-content mt-3 border-t border-ink/5 pt-3 text-sm leading-relaxed text-ink/85"
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(rx.markdown) }}
+        />
       )}
     </li>
   );
