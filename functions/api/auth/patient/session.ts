@@ -37,10 +37,14 @@ export const onRequestGet = async (ctx: PagesContext): Promise<Response> => {
   if (!sessionId) return json({ verified: false }, 200);
 
   const row = await (env as Env).DB.prepare(
-    "SELECT verified_email, messages FROM sessions WHERE id = ?",
+    "SELECT verified_email, messages, patient_id FROM sessions WHERE id = ?",
   )
     .bind(sessionId)
-    .first<{ verified_email: string | null; messages: string | null }>();
+    .first<{
+      verified_email: string | null;
+      messages: string | null;
+      patient_id: string | null;
+    }>();
 
   if (!row?.verified_email) return json({ verified: false }, 200);
 
@@ -54,5 +58,13 @@ export const onRequestGet = async (ctx: PagesContext): Promise<Response> => {
     }
   }
 
-  return json({ verified: true, email: row.verified_email, messages }, 200);
+  return json(
+    {
+      verified: true,
+      email: row.verified_email,
+      patientId: row.patient_id ?? null,
+      messages,
+    },
+    200,
+  );
 };

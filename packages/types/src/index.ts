@@ -10,6 +10,15 @@
 // Patient intake form schema (PR-C form-first flow).
 export * from "./intake-form";
 
+/**
+ * Placeholder the receptionist agent uses in place of the patient's real name.
+ * The name is PII and never reaches the LLM: the server strips it from anything
+ * model-bound and substitutes this token; the client swaps the token back for
+ * the real name (resolved from the Patient Object via GET /api/patient/object).
+ * Shared so server (strip/emit) and client (substitute) agree on one string.
+ */
+export const PATIENT_NAME_TOKEN = "{{patient_name}}";
+
 // ---------------------------------------------------------------------------
 // Enums / unions
 // ---------------------------------------------------------------------------
@@ -267,6 +276,14 @@ export interface SessionRow {
   summary?: string | null;
   locale?: Locale | null;
   ip_hash?: string | null;
+  /** Verified email (set after OTP). Read into AgentContext; never model-supplied. */
+  verified_email?: string | null;
+  /**
+   * Real patient name captured from the intake form, held server-side for the
+   * submit handoff. PII — never sent to the LLM; the model only sees
+   * PATIENT_NAME_TOKEN. See functions/api/agent/patient.ts (stripPatientName).
+   */
+  patient_name?: string | null;
   created_at: number;
   updated_at: number;
 }

@@ -10,7 +10,7 @@
  * category 'read': SELECT only.
  */
 import { z } from "zod";
-import type { PatientMemory } from "@drkyana/types";
+import { PATIENT_NAME_TOKEN, type PatientMemory } from "@drkyana/types";
 import { defineTool } from "../../tools";
 import { assertOwnPatient, type AgentContext } from "../../context";
 
@@ -72,9 +72,12 @@ export const lookupReturningPatientTool = defineTool({
     "Look up whether this session belongs to a returning patient. The match is " +
     "by the session's VERIFIED email automatically, so call it at the START of a " +
     "booking/urgent intent — before opening the form — to pre-fill known details " +
-    "(name, phone, age, gender) and medical memory (allergies, conditions, " +
-    "medications, anxiety). Returns found:false for a first-time patient. A " +
-    "phone arg is an optional fallback to match legacy pre-verified records.",
+    "(phone, age, gender) and medical memory (allergies, conditions, " +
+    "medications, anxiety). The NAME comes back as the token \"" +
+    PATIENT_NAME_TOKEN +
+    "\", never the real name — you may greet with the token; the client shows the " +
+    "real name. Returns found:false for a first-time patient. A phone arg is an " +
+    "optional fallback to match legacy pre-verified records.",
   category: "read",
   inputSchema,
   async execute(
@@ -116,7 +119,10 @@ export const lookupReturningPatientTool = defineTool({
 
     return {
       found: true,
-      name: (row.name as string | null) ?? null,
+      // The real name is PII and must not enter the model. Return the token; the
+      // client resolves it to the real name via GET /api/patient/object. Use it
+      // in greetings (e.g. "Welcome back, {{patient_name}}").
+      name: row.name ? PATIENT_NAME_TOKEN : null,
       phone: (row.phone as string | null) ?? null,
       age: (row.age as number | null) ?? null,
       gender: (row.gender as string | null) ?? null,

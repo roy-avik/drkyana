@@ -72,20 +72,24 @@ function coercePrefill(fieldId: string, raw: unknown): Value | undefined {
   return undefined;
 }
 
-/** Build initial form state: empty → prefill → locked verified email. */
+/** Build initial form state: empty → prefill → locked verified email → known name. */
 function buildInitial(
   prefill: Record<string, unknown>,
   verifiedEmail: string,
+  knownName: string,
 ): FormData {
   const data = emptyForm();
   for (const g of INTAKE_FORM) {
     for (const f of g.fields) {
-      if (f.id === 'email') continue; // email is the verified address, set below
+      if (f.id === 'email' || f.id === 'name') continue; // set explicitly below
       const v = coercePrefill(f.id, prefill[f.id]);
       if (v !== undefined) data[f.id] = v;
     }
   }
   data.email = verifiedEmail;
+  // The name is PII the model never handles: it comes from the patient's own
+  // record (knownName), not from the agent's prefill. Editable for new patients.
+  data.name = knownName;
   return data;
 }
 
@@ -280,6 +284,7 @@ export function IntakeForm({
   reason,
   prefill,
   verifiedEmail,
+  knownName,
   t,
   lang,
   onSubmit,
@@ -288,6 +293,8 @@ export function IntakeForm({
   reason: 'booking' | 'urgent';
   prefill?: Record<string, unknown>;
   verifiedEmail?: string;
+  /** The patient's real name (from their record / prior entry). Never from the model. */
+  knownName?: string;
   t: T;
   lang?: string;
   onSubmit: (data: FormData) => void;
@@ -295,7 +302,7 @@ export function IntakeForm({
 }) {
   const email = verifiedEmail ?? '';
   const [data, setData] = useState<FormData>(() =>
-    buildInitial(prefill ?? {}, email),
+    buildInitial(prefill ?? {}, email, knownName ?? ''),
   );
   const [step, setStep] = useState(0); // index into STEPS
   const [requiredError, setRequiredError] = useState(false);

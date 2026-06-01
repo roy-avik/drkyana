@@ -21,7 +21,8 @@ import { defineTool } from "../../tools";
  */
 const prefillSchema = z
   .object({
-    name: z.string(),
+    // NOTE: no `name`. The name is PII and the client fills it from the Patient
+    // Object (you only ever have the PATIENT_NAME_TOKEN, never the real name).
     phone: z.string(),
     age: z.number().int().min(0).max(120),
     gender: z.enum(["female", "male", "other", "unspecified"]),
@@ -51,9 +52,10 @@ const inputSchema = z.object({
     .optional()
     .describe(
       "Fields the patient ALREADY stated, to pre-populate the form. Map their " +
-        "words to field ids (e.g. 'my name is X and I need scaling' → " +
-        "{name:'X', affectedArea:'scaling'}). Only include what they actually " +
-        "said; omit the rest. Do NOT include email.",
+        "words to field ids (e.g. 'I need scaling for a lower tooth' → " +
+        "{affectedArea:'lower tooth', symptoms:['scaling']}). Only include what " +
+        "they actually said; omit the rest. Do NOT include name or email — the " +
+        "client fills those itself.",
     ),
 });
 
