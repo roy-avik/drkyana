@@ -29,12 +29,9 @@ function ReceptionistCTA() {
               'Describe your concern and the assistant gathers your details for Dr Kyana’s team — book a visit or check your appointments and prescriptions.',
             )}
           </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <div className="mt-8 flex justify-center">
             <Link to="/receptionist" className="btn-primary px-8 py-3">
               {t('receptionist.start_button')}
-            </Link>
-            <Link to="/account" className="btn-ghost px-8 py-3">
-              {t('nav.account', 'My records')}
             </Link>
           </div>
         </div>

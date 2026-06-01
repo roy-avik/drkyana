@@ -118,3 +118,22 @@ body.is-ready { opacity: 1; transition: opacity 220ms ease-out; }
 .qc-badge--routine { @apply bg-green-600; }
 .qc-badge--soon { @apply bg-amber-500; }
 .qc-badge--urgent { @apply bg-red-600; }
+
+/* Rendered markdown (assistant chat bubbles + patient-facing prescriptions).
+   Tight spacing so it reads like chat, not a document. First/last children
+   shed their margins so a single paragraph sits flush in the bubble. */
+.md-content > :first-child { @apply mt-0; }
+.md-content > :last-child { @apply mb-0; }
+.md-content p { @apply my-2; }
+.md-content h1 { @apply mb-1 mt-3 text-base font-bold; }
+.md-content h2 { @apply mb-1 mt-3 text-sm font-bold; }
+.md-content h3 { @apply mb-1 mt-2 text-sm font-semibold; }
+.md-content ul { @apply my-2 ml-5 list-disc; }
+.md-content ol { @apply my-2 ml-5 list-decimal; }
+.md-content li { @apply mb-0.5; }
+.md-content a { @apply text-brand underline underline-offset-2; }
+.md-content code { @apply rounded bg-ink/10 px-1 py-0.5 font-mono text-xs; }
+.md-content strong { @apply font-semibold; }
+.md-content table { @apply my-2 w-full border-collapse overflow-hidden rounded border border-ink/15 text-xs; }
+.md-content th, .md-content td { @apply border border-ink/10 px-2 py-1 text-left align-top; }
+.md-content th { @apply bg-surface-alt font-semibold; }
