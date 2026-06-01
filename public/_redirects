@@ -1,9 +1,4 @@
-# Cloudflare Pages SPA deep-link fallback — SCOPED to the real client routes
-# only. Listing the actual app routes (instead of a blanket /* catch-all) means
-# any other unknown path — stale /drkyana/* links, typos, scanners — returns
-# Cloudflare Pages' default 404 rather than a soft-200 with the app shell, which
-# is better SEO hygiene. The root (/) is served by the index.html asset directly;
-# Pages Functions (functions/api/*) and real static assets are matched before
-# these rules. Add a line here when you add a new client route.
-/receptionist  /index.html  200
-/account       /index.html  200
+# Cloudflare Pages SPA fallback. Pages Functions (functions/api/*) are matched
+# BEFORE this rule, and real static assets are served directly, so only unknown
+# app routes (/receptionist, /account, deep links) fall through to index.html.
+/*  /index.html  200
