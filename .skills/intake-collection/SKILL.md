@@ -31,15 +31,15 @@ First call `lookup_returning_patient` (it matches on the verified email automati
 The form should open already populated, so the patient only reviews and fills gaps. Two sources of prefill:
 
 1. **Returning patient** — if `lookup_returning_patient` returned a match, prefill their known details and medical memory so they aren't re-entering their history:
-   - `name`, `phone`, `age`, `gender` → the matching field ids
+   - `phone`, `age`, `gender` → the matching field ids
    - `memory.conditions` → `conditions`, `memory.allergies` → `allergies`, `memory.medications` → `medications`
    - `memory.anxiety` → `anxiety`, `memory.dental_history` → `lastDentalVisit`
 2. **What they just said** — map this turn's words to field ids, for first-timers and returning patients alike:
-   - *"My name is Winson and I need scaling"* → `{ name: "Winson", affectedArea: "scaling" }`
+   - *"I need scaling for a lower back tooth"* → `{ affectedArea: "lower back tooth", symptoms: ["scaling"] }`
    - *"severe pain in a lower back tooth since yesterday"* → `{ affectedArea: "lower back tooth", symptoms: ["pain"], severity: 8, duration: "since yesterday", urgency: "urgent" }`
    - *"I'd prefer mornings in Dhanmondi"* → `{ timeOfDay: "morning", preferredArea: "Dhanmondi" }`
 
-Only include values that are **on file** or were **actually said** — never invent a value to look thorough. Don't prefill `email` (the form fills their verified email itself). An empty `prefill` is fine for a first-timer who gave nothing beyond intent.
+**Never prefill `name`.** The name is the patient's PII — you never have the real value (you only ever see the `{{patient_name}}` token), and the form fills it from the patient's own record. Likewise don't prefill `email` (the form fills the verified email). Only include values that are **on file** or were **actually said** — never invent one. An empty `prefill` is fine for a first-timer who gave nothing beyond intent.
 
 `name` and `phone` are required on the form — the patient cannot submit without them. Everything else is optional/skippable.
 

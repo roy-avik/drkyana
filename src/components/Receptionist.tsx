@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useChat } from '@ai-sdk/react';
 import {
   DefaultChatTransport,
   lastAssistantMessageIsCompleteWithToolCalls,
   type UIMessage,
 } from 'ai';
+import { PATIENT_NAME_TOKEN } from '@drkyana/types';
 import { useTranslation } from '../i18n/useTranslation';
 import { WHATSAPP_LINK } from './Contact';
 import { IntakeForm } from './IntakeForm';
@@ -49,9 +50,40 @@ export function Receptionist() {
   // The patient's verified email — from OTP verify or session restore. Used to
   // prefill the intake form's (read-only) email field.
   const [verifiedEmail, setVerifiedEmail] = useState('');
+  // The patient's real NAME. It never travels through the LLM — the agent uses
+  // PATIENT_NAME_TOKEN and we resolve the real name here (from the Patient
+  // Object for returning patients, or the form they just filled) purely for
+  // display + form prefill. PII stays server-side until this owner asks for it.
+  const [patientName, setPatientName] = useState('');
+  // After the intake is submitted the chat ends; "Ask another question" reopens it.
+  const [reopened, setReopened] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const restoredRef = useRef(false);
+
+  /** Resolve the patient's real name from the owner-only Patient Object. */
+  const loadPatientName = useCallback(async () => {
+    try {
+      const res = await fetch('/api/patient/object', {
+        credentials: 'same-origin',
+      });
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        verified?: boolean;
+        patient?: { name?: string | null } | null;
+      };
+      if (data.verified && data.patient?.name) setPatientName(data.patient.name);
+    } catch {
+      // Best-effort; the token simply falls back to a neutral word if unresolved.
+    }
+  }, []);
+
+  /** Swap the name token for the real name in assistant text (PII never hit the LLM). */
+  const renderNames = useCallback(
+    (text: string): string =>
+      text.split(PATIENT_NAME_TOKEN).join(patientName || t('receptionist.you', 'there')),
+    [patientName, t],
+  );
 
   const transport = useMemo(
     () =>
@@ -91,6 +123,7 @@ export function Receptionist() {
         const data = (await res.json()) as {
           verified?: boolean;
           email?: string;
+          patientId?: string | null;
           messages?: UIMessage[];
         };
         if (cancelled || !data.verified) return;
@@ -98,6 +131,8 @@ export function Receptionist() {
         if (Array.isArray(data.messages) && data.messages.length > 0) {
           setMessages(data.messages);
         }
+        // Resolve the real name for display/prefill (returning patients).
+        void loadPatientName();
         setPhase('chat');
       } catch {
         // Best-effort restore; fall back to the standby entry point.
@@ -106,9 +141,29 @@ export function Receptionist() {
     return () => {
       cancelled = true;
     };
-  }, [setMessages]);
+  }, [setMessages, loadPatientName]);
 
   const busy = status === 'submitted' || status === 'streaming';
+
+  /** True once the agent has submitted the intake — the chat is then over. */
+  const intakeSubmitted = useMemo(() => {
+    for (const m of messages) {
+      if (m.role !== 'assistant') continue;
+      for (const part of m.parts) {
+        const p = part as unknown as { type?: string; state?: string };
+        if (
+          p.type === 'tool-submit_intake' &&
+          (p.state === 'output-available' || p.state === 'result')
+        ) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }, [messages]);
+
+  /** The chat is closed once the intake is in — unless the patient reopened it. */
+  const ended = intakeSubmitted && !reopened;
 
   /** Most recent collect_intake tool call awaiting the patient's form input. */
   const pendingForm = useMemo(() => {
@@ -223,6 +278,7 @@ export function Receptionist() {
                     t={t}
                     onComplete={(email) => {
                       setVerifiedEmail(email);
+                      void loadPatientName();
                       setPhase('chat');
                     }}
                   />
@@ -242,7 +298,10 @@ export function Receptionist() {
                   {messages.map((m) => {
                     const text = messageText(m);
                     if (!text) return null;
-                    return <ChatBubble key={m.id} role={m.role} text={text} />;
+                    // Assistant text may carry the name token — resolve it for
+                    // display. The patient's own text is shown verbatim.
+                    const shown = m.role === 'assistant' ? renderNames(text) : text;
+                    return <ChatBubble key={m.id} role={m.role} text={shown} />;
                   })}
                   {status === 'submitted' && !pendingForm && (
                     <ChatBubble role="assistant" text={t('receptionist.thinking')} />
@@ -252,16 +311,23 @@ export function Receptionist() {
                       reason={pendingForm.reason}
                       prefill={pendingForm.prefill}
                       verifiedEmail={verifiedEmail}
+                      knownName={patientName}
                       t={t}
                       lang={lang}
                       disabled={busy}
-                      onSubmit={(data) =>
+                      onSubmit={(data) => {
+                        // Keep the real name on the client for display/records;
+                        // it travels to the server in the result but is stripped
+                        // there before ever reaching the model.
+                        if (typeof data.name === 'string' && data.name.trim()) {
+                          setPatientName(data.name.trim());
+                        }
                         void addToolResult({
                           tool: 'collect_intake',
                           toolCallId: pendingForm.toolCallId,
                           output: data,
-                        })
-                      }
+                        });
+                      }}
                     />
                   )}
                   {error && (
@@ -272,33 +338,61 @@ export function Receptionist() {
                 </div>
 
                 <div className="border-t border-ink/5 bg-surface-alt p-4 md:p-5">
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      send();
-                    }}
-                    className="flex items-center gap-2"
-                  >
-                    <input
-                      type="text"
-                      value={draft}
-                      onChange={(e) => setDraft(e.target.value)}
-                      placeholder={
-                        pendingForm
-                          ? 'Please complete the step above to continue'
-                          : t('receptionist.placeholder')
-                      }
-                      disabled={busy || !!pendingForm}
-                      className="flex-1 rounded-full border border-ink/10 bg-white px-4 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:opacity-60"
-                    />
-                    <button
-                      type="submit"
-                      disabled={!draft.trim() || busy || !!pendingForm}
-                      className="rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  {ended ? (
+                    // Intake submitted — the chat is closed. Offer the records
+                    // page and a way to start a fresh question if needed.
+                    <div className="flex flex-col items-center gap-3 text-center">
+                      <p className="text-sm font-semibold text-ink">
+                        {t('receptionist.done.title', 'Your intake is submitted')}
+                      </p>
+                      <p className="text-xs text-muted">
+                        {t(
+                          'receptionist.done.body',
+                          'Dr Kyana’s team will reach out to confirm. You can review it any time in your records.',
+                        )}
+                      </p>
+                      <div className="flex flex-wrap justify-center gap-2">
+                        <Link to="/account" className="btn-primary px-5 py-2">
+                          {t('receptionist.done.records', 'View my records')}
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => setReopened(true)}
+                          className="rounded-full border border-ink/15 px-5 py-2 text-sm text-muted hover:text-ink"
+                        >
+                          {t('receptionist.done.again', 'Ask another question')}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        send();
+                      }}
+                      className="flex items-center gap-2"
                     >
-                      ↑
-                    </button>
-                  </form>
+                      <input
+                        type="text"
+                        value={draft}
+                        onChange={(e) => setDraft(e.target.value)}
+                        placeholder={
+                          pendingForm
+                            ? t('receptionist.form_pending', 'Please complete the step above to continue')
+                            : t('receptionist.placeholder')
+                        }
+                        disabled={busy || !!pendingForm}
+                        className="flex-1 rounded-full border border-ink/10 bg-white px-4 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:opacity-60"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!draft.trim() || busy || !!pendingForm}
+                        className="rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        ↑
+                      </button>
+                    </form>
+                  )}
                 </div>
               </>
             )}

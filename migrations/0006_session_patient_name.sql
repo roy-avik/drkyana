@@ -1,0 +1,18 @@
+-- Dr Kyana clinical agent platform — per-session patient name handoff.
+-- Apply: npx wrangler d1 execute drkyana --remote --file=migrations/0006_session_patient_name.sql
+-- Local validation: npx wrangler d1 execute drkyana --local --file=migrations/0006_session_patient_name.sql
+--
+-- Conventions (carried from 0001..0005):
+--   * Timestamps are INTEGER unix epoch seconds.
+--   * ALTER TABLE ADD COLUMN is one-shot — re-applying yields a harmless
+--     "duplicate column name" error (the column already exists).
+--
+-- ---------------------------------------------------------------------------
+-- sessions.patient_name — the patient's real name, held server-side ONLY as a
+-- handoff for submit_intake. The name is PII and must never reach the LLM: the
+-- patient agent endpoint strips it out of the collect_intake tool result before
+-- the messages go to the model (replacing it with PATIENT_NAME_TOKEN) and
+-- stashes the real value here, where submit_intake reads it from AgentContext
+-- (never from model args). Mirrors the sessions.verified_email pattern (0003).
+-- ---------------------------------------------------------------------------
+ALTER TABLE sessions ADD COLUMN patient_name TEXT;

@@ -20,6 +20,13 @@ export type Caller =
        * gate on it from the context, not from args.
        */
       verifiedEmail?: string;
+      /**
+       * The patient's real name, lifted out of the intake form result by the
+       * Pages Function and held server-side (sessions.patient_name). PII — the
+       * MODEL never sees it (it only sees PATIENT_NAME_TOKEN). `submit_intake`
+       * reads it from here, never from model args, to write patients.name.
+       */
+      patientName?: string;
     }
   | { kind: "admin"; email: string; accessSub: string };
 

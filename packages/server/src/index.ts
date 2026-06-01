@@ -23,6 +23,9 @@ export * from "./jobs";
 export { patientAgentSpec } from "./agents/patient";
 export { patientTools } from "./tools/patient";
 
+// PII hygiene for the patient loop — strips the real name out of the model path.
+export { stripPatientName, type StripPatientNameResult } from "./pii";
+
 // Embeddings (Workers AI) for KB retrieval + ingestion. Server-only.
 export { embedQuery, embedTexts, EMBEDDING_MODEL, EMBEDDING_DIM } from "./embeddings";
 

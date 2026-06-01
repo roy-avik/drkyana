@@ -20,6 +20,7 @@ import {
   patientAgentSpec,
   streamAgent,
   readSessionCookie,
+  stripPatientName,
   type AgentContext,
   type Env,
 } from "@drkyana/server";
@@ -75,6 +76,8 @@ interface LoadedSession {
   verifiedEmail?: string;
   /** Patient id, if the session was already bound to one (e.g. by submit_intake). */
   patientId?: string;
+  /** Real patient name stashed server-side (PII — never sent to the model). */
+  patientName?: string;
 }
 
 /** Load stored UI messages + verification state for a patient session. */
@@ -83,13 +86,14 @@ async function loadSession(
   sessionId: string,
 ): Promise<LoadedSession> {
   const row = await env.DB.prepare(
-    "SELECT messages, verified_email, patient_id FROM sessions WHERE id = ?",
+    "SELECT messages, verified_email, patient_id, patient_name FROM sessions WHERE id = ?",
   )
     .bind(sessionId)
     .first<{
       messages: string | null;
       verified_email: string | null;
       patient_id: string | null;
+      patient_name: string | null;
     }>();
   if (!row) return { messages: [] };
   let messages: UIMessage[] = [];
@@ -105,6 +109,7 @@ async function loadSession(
     messages,
     verifiedEmail: row.verified_email ?? undefined,
     patientId: row.patient_id ?? undefined,
+    patientName: row.patient_name ?? undefined,
   };
 }
 
@@ -191,10 +196,27 @@ export const onRequestPost = async (ctx: PagesContext): Promise<Response> => {
 
   const merged = mergeById(session.messages, incoming);
 
+  // --- PII: strip the patient's real name out of the model path ---
+  // The intake form returns the name inside the collect_intake tool RESULT. We
+  // lift it out (replacing it with PATIENT_NAME_TOKEN) BEFORE the messages reach
+  // the model or the persisted transcript, and stash the real value on the
+  // session so submit_intake can read it from context. The model only ever sees
+  // the token; the client resolves it via GET /api/patient/object.
+  const { messages: cleaned, name: strippedName } = stripPatientName(merged);
+  const patientName = strippedName ?? session.patientName;
+  if (strippedName && strippedName !== session.patientName) {
+    const now = Math.floor(Date.now() / 1000);
+    await (env as Env).DB.prepare(
+      "UPDATE sessions SET patient_name = ?, updated_at = ? WHERE id = ?",
+    )
+      .bind(strippedName, now, sessionId)
+      .run();
+  }
+
   // --- Build patient context ---
-  // verifiedEmail / patientId come from the session row, NOT from request input
-  // or model args — they are the result of a previous /api/auth/patient/email/verify
-  // call (or a prior submit_intake bind) and are the trustworthy source.
+  // verifiedEmail / patientId / patientName come from the session row (or the
+  // just-stripped form result), NOT from request input or model args — they are
+  // server-trusted and the model never sees them.
   const agentCtx: AgentContext = {
     env: env as Env,
     caller: {
@@ -203,6 +225,7 @@ export const onRequestPost = async (ctx: PagesContext): Promise<Response> => {
       ipHash,
       verifiedEmail: session.verifiedEmail,
       patientId: session.patientId,
+      patientName,
     },
     locale,
     abortSignal: request.signal,
@@ -213,15 +236,16 @@ export const onRequestPost = async (ctx: PagesContext): Promise<Response> => {
   // like submit_intake link this session to the resolved patient with an
   // in-stream UPDATE, which would no-op if the row didn't exist yet. waitUntil
   // runs after the response — too late for that UPDATE. The assistant turn is
-  // persisted again on stream completion via `onFinish` below.
-  await saveSessionMessages(env as Env, sessionId, merged, locale, ipHash);
+  // persisted again on stream completion via `onFinish` below. We persist the
+  // CLEANED messages so the real name never lands in sessions.messages.
+  await saveSessionMessages(env as Env, sessionId, cleaned, locale, ipHash);
 
   // --- Run the patient agent → UI message stream Response ---
   // convertToModelMessages is async in AI SDK 6 — must await, else a Promise is
   // passed as `messages` and streamText throws "messages.some is not a function".
-  const history = await convertToModelMessages(merged);
+  const history = await convertToModelMessages(cleaned);
   return streamAgent(patientAgentSpec, agentCtx, history, {
-    originalMessages: merged,
+    originalMessages: cleaned,
     onFinish: ({ messages }) => {
       // `messages` is the full updated thread (per AI SDK 6 persistence mode).
       // Upsert without blocking the response; the stream has already finished

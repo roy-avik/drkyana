@@ -27,8 +27,9 @@ import { sendEmail } from "../../email";
 const genderEnum = z.enum(["female", "male", "other", "unspecified"]);
 
 const inputSchema = z.object({
-  // identity
-  name: z.string().optional(),
+  // identity — NOTE: `name` is intentionally absent. The patient's name is PII
+  // and never reaches the model; the server holds the real name on the session
+  // (ctx.caller.patientName) and this tool reads it from there, never from args.
   phone: z.string().min(3).describe("Match key for the patient record."),
   email: z.string().optional(),
   age: z.number().int().min(0).max(120).optional(),
@@ -117,6 +118,10 @@ export const submitIntakeTool = defineTool({
     if (!verifiedEmail) {
       throw new Error("verification_required: session is not email-verified");
     }
+    // Real name comes from the session (server-held), NEVER from model args —
+    // the model only ever saw PATIENT_NAME_TOKEN. May be undefined for a
+    // returning patient who didn't change their name; COALESCE keeps the prior.
+    const patientName = ctx.caller.patientName ?? null;
 
     const db = ctx.env.DB;
     const now = Math.floor(Date.now() / 1000);
@@ -181,7 +186,7 @@ export const submitIntakeTool = defineTool({
             "last_visit = ?, visit_count = ?, updated_at = ? WHERE id = ?",
         )
         .bind(
-          args.name ?? null,
+          patientName,
           verifiedEmail,
           now,
           phone,
@@ -214,7 +219,7 @@ export const submitIntakeTool = defineTool({
         .bind(
           patientId,
           phone,
-          args.name ?? null,
+          patientName,
           args.age ?? null,
           args.gender ?? null,
           verifiedEmail,
@@ -265,7 +270,7 @@ export const submitIntakeTool = defineTool({
       .bind(
         intakeId,
         patientId,
-        args.name ?? null,
+        patientName,
         phone,
         verifiedEmail,
         args.age ?? null,
@@ -306,7 +311,7 @@ export const submitIntakeTool = defineTool({
       const body = [
         `Urgent intake (${triage.level}).`,
         ``,
-        `Patient: ${args.name ?? "Unknown"}`,
+        `Patient: ${patientName ?? "Unknown"}`,
         `Phone: ${phone}`,
         `Triage: ${triage.level} (${triage.action})`,
         `Severity: ${args.severity ?? "n/a"}/10`,
@@ -323,7 +328,7 @@ export const submitIntakeTool = defineTool({
             if (notify) {
               await sendEmail(ctx.env, {
                 to: notify,
-                subject: `Urgent (${triage.level}) intake — ${args.name ?? phone}`,
+                subject: `Urgent (${triage.level}) intake — ${patientName ?? phone}`,
                 body,
               });
             }
