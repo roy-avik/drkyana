@@ -108,7 +108,7 @@ Patient and admin are separate builds; **prompts + tool implementations live onl
 | Admin agent behavior | `packages/server/src/agents/admin.ts` + `tools/admin/*`. New tool: `defineTool` (set `category`; writes/external auto-require approval), add to `tools/admin/index.ts`. |
 | Triage rules | `packages/server/src/tools/patient/run_triage.ts` (deterministic, no ML). |
 | Model tiers / IDs | `packages/server/src/models.ts` (single source). |
-| D1 schema | add a `migrations/000N_*.sql`; apply with `npm run db:migrate:remote`. Update `@drkyana/types`. |
+| D1 schema | add a `migrations/000N_*.sql` (next number, `IF NOT EXISTS`-friendly) + update `@drkyana/types`. **Migrations auto-apply on deploy**: the Pages production build runs `npm run cf:build` → `scripts/migrate-remote.mjs` applies pending migrations to remote D1 *before* publishing (tracked in `applied_migrations`, prod-branch only). No manual step. To apply by hand: `npm run db:migrate:remote`. |
 | Admin management UI | `apps/admin/app/**` (pages + `app/api/*` route handlers, all `withAccess`). |
 | Knowledge base | Dr Kyana curates via the admin `/kb` page → `kb/ingest.ts` chunks+embeds→Vectorize. |
 | Hero photo / QRs | replace source in `assets/`, run `python3 scripts/optimize_images.py`. |
@@ -135,6 +135,7 @@ Resources (created): D1 `drkyana`, KV `drkyana` (bind as `KV`), Vectorize `drkya
 
 **Still required before end-to-end runtime:**
 - **Patient Pages project `drkyana`** bindings must be named **`DB`, `KV`** (code reads those) + secrets `ANTHROPIC_API_KEY`, `IP_HASH_SALT`, and (for urgent-notify) the `EMAIL` send binding + `RECEPTIONIST_FROM`/`DR_KYANA_NOTIFY_EMAIL` vars. The patient `/api/agent/patient` endpoint is **public** (no token gate — a client-bundled token gave no real protection); abuse is controlled by the per-IP KV rate limit. Add Cloudflare Turnstile if stronger protection is needed.
+- **Auto-migrations on deploy** (so schema never lags code): set the Pages project **Build command** to `npm run cf:build` (not `npm run build`), and add build-time **environment variables** `CLOUDFLARE_API_TOKEN` (a token with *D1 Edit* on this account) + `CLOUDFLARE_ACCOUNT_ID`. The build then runs `scripts/migrate-remote.mjs` (prod branch only) to apply pending `migrations/*.sql` to remote D1 before publishing. Without the token the build fails loudly (by design — don't publish code whose schema didn't apply). First prod build auto-adopts the existing schema (records 0001–0006 as applied without re-running).
 - **Admin worker `drkyana-admin`**: paste resource IDs into `apps/admin/wrangler.jsonc`; add the **Workers AI (`AI`)** binding; set `ACCESS_TEAM_DOMAIN`/`ACCESS_AUD`; put Cloudflare Access in front.
 - **Email Service**: onboard `drkyana.com` for Email Sending (SPF/DKIM on `cf-bounce.drkyana.com` — root MX stays with GoDaddy). **Known runtime risk:** `packages/server/src/email.ts` calls `EMAIL.send({from,to,raw})`; validate against the `cloudflare:email` `EmailMessage` API when onboarding.
 - **Scheduled reminders**: logic is in `scheduled/reminders.ts`, reachable via `POST /api/cron/reminders`, but OpenNext exposes no `scheduled()` hook — wire a small separate cron Worker (or external scheduler) to call it.
