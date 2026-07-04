@@ -7,7 +7,9 @@ import {
   lastAssistantMessageIsCompleteWithApprovalResponses,
   type UIMessage,
 } from "ai";
+import type { ViewDocument } from "@drkyana/types";
 import { renderMarkdown } from "../lib/markdown";
+import ViewRenderer from "./ViewRenderer";
 
 /**
  * Admin agent chat. Streams from /api/agent/admin via useChat.
@@ -155,6 +157,13 @@ function ToolPart({
       );
     case "output-available": {
       const out = part.output as Record<string, unknown> | string | undefined;
+      // View tools return { summary, view } — render the interactive view
+      // (tables, forms, actions) instead of a text confirmation.
+      const view =
+        out && typeof out === "object" && typeof out.view === "object" && out.view
+          ? (out.view as ViewDocument)
+          : null;
+      if (view) return <ViewRenderer initial={view} />;
       const md =
         out && typeof out === "object" && typeof out.markdown === "string"
           ? (out.markdown as string)

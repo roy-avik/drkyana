@@ -89,3 +89,14 @@ export {
 
 // Markdown → PDF (pure-JS, Workers-compatible). Server-only.
 export { renderMarkdownToPdf, type RenderedPdf } from "./pdf/render";
+
+// MCP Apps surface — admin views as interactive MCP tools + the /api/mcp
+// protocol handler (docs/view-dsl.md, docs/dls.md). Server-only.
+export {
+  handleMcpPost,
+  handleMcpMethodNotAllowed,
+  viewTools,
+  appActionTools,
+  viewActionTools,
+  type ViewToolOutput,
+} from "./mcp";

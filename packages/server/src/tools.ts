@@ -38,6 +38,12 @@ export interface ToolSpec<TArgs = unknown, TResult = unknown> {
    * for the form-first patient intake (collect_intake).
    */
   execute?(args: TArgs, ctx: AgentContext): Promise<TResult>;
+  /**
+   * Optional compact text the MODEL sees in place of the full JSON result
+   * (AI SDK `toModelOutput`). The client still receives the full result. Used
+   * by view tools, whose ViewDocument payload is for rendering, not reasoning.
+   */
+  modelSummary?(result: TResult): string;
 }
 
 /** Identity helper for type inference when declaring a tool. */
@@ -61,10 +67,21 @@ export type ToolRegistry = Record<string, ToolSpec>;
 export function toAiSdkTools(registry: ToolRegistry, ctx: AgentContext): ToolSet {
   const entries = Object.entries(registry).map(([key, spec]) => {
     const execute = spec.execute;
+    const modelSummary = spec.modelSummary;
     const common = {
       description: spec.description,
       inputSchema: spec.inputSchema,
       needsApproval: spec.needsApproval ?? spec.category !== "read",
+      // Swap the model-facing result for a compact summary when the spec asks
+      // for it (view tools: the client renders the doc, the model reads text).
+      ...(modelSummary
+        ? {
+            toModelOutput: ({ output }: { output: unknown }) => ({
+              type: "text" as const,
+              value: modelSummary(output),
+            }),
+          }
+        : {}),
     };
     // Two explicit branches so TS picks the right `tool()` overload:
     // with `execute` (server-executed) vs without (client-rendered).

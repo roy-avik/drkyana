@@ -42,6 +42,7 @@ import { pubmedSearchTool } from "./pubmed_search";
 import { pubmedFetchTool } from "./pubmed_fetch";
 import { differentialDiagnosisTool } from "./differential_diagnosis";
 import { scheduleAgentRunTool } from "./schedule_agent_run";
+import { viewTools } from "../../mcp/tools";
 import { loadSkillToolFor } from "../../skills";
 
 export { listIntakesTool } from "./list_intakes";
@@ -117,4 +118,7 @@ export const adminTools: ToolRegistry = {
   schedule_agent_run: scheduleAgentRunTool,
   // behavior skills (load on demand, audience-scoped)
   load_skill: loadSkillToolFor("admin"),
+  // interactive views (read — render a View-DSL doc the client draws; the
+  // model only sees a one-line summary via modelSummary)
+  ...viewTools,
 };

@@ -10,6 +10,12 @@
 // Patient intake form schema (PR-C form-first flow).
 export * from "./intake-form";
 
+// DLS — the Dr Kyana Design Language System (tokens; spec: docs/dls.md).
+export * from "./dls";
+
+// View DSL — declarative admin views rendered by MCP Apps (docs/view-dsl.md).
+export * from "./view-dsl";
+
 /**
  * Placeholder the receptionist agent uses in place of the patient's real name.
  * The name is PII and never reaches the LLM: the server strips it from anything

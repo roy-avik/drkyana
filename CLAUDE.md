@@ -74,12 +74,18 @@ packages/
                                      #     send_receptionist_email, start_radiology_analysis,
                                      #     compile_pdf.
     src/context.ts                   #   AgentContext, assertAdmin/assertOwnPatient.
+    src/mcp/                         #   Admin views as MCP Apps: views.ts (View-DSL
+                                     #     builders), template.ts (ui:// app, DLS-styled),
+                                     #     tools.ts (open_* view tools + ui_* app-only),
+                                     #     server.ts (stateless Streamable-HTTP MCP).
     src/models.ts, bindings.ts (Env), jobs.ts, embeddings.ts, email.ts
     src/kb/ingest.ts, src/pdf/render.ts, src/scheduled/reminders.ts
 
 apps/admin/                          # Next.js 16 PWA (OpenNext/Cloudflare), Cloudflare Access.
   app/                               #   pages + api routes (intakes, chambers, drafts, kb,
-                                     #     jobs, agent/admin, cron/reminders).
+                                     #     jobs, agent/admin, cron/reminders, mcp,
+                                     #     views/action).
+  app/components/ViewRenderer.tsx    #   in-app View-DSL renderer (assistant chat).
   server/access.ts                   #   CF Access JWT verification (withAccess).
   server/db.ts                       #   parameterized D1 access for mgmt routes.
   wrangler.jsonc                     #   bindings DB/KV/VECTORIZE/R2/AI/EMAIL.
@@ -94,6 +100,7 @@ wrangler.example.toml                # Canonical bindings reference + provisioni
 - **Approval gates:** `category: 'write' | 'external'` ⇒ `needsApproval` ⇒ AI SDK 6 pauses for Dr Kyana's approve/edit before executing. This is "agent drafts, dentist sends," enforced by the framework.
 - **Long jobs don't stream:** `start_radiology_analysis` / `compile_pdf` enqueue via `createJobRunner` (`jobs.ts`) → write `job:{id}` to KV via `ctx.waitUntil` → admin UI polls `GET /api/jobs/:id`.
 - **Patient memory:** `patients.summary` (LLM narrative) + `patients.memory` (structured JSON). `update_patient_memory` merges structured facts **deterministically** (union/dedupe) and uses the LLM **only** to recompose the narrative — never to invent facts. Approval-gated.
+- **Interactive admin views (MCP Apps + agent loop):** the admin views are declarative **View-DSL documents** (`@drkyana/types` `view-dsl.ts`, spec `docs/view-dsl.md`) built server-side in `packages/server/src/mcp/views.ts` and styled by the **DLS** design-token system (`@drkyana/types` `dls.ts`, spec `docs/dls.md`). `open_*` view tools return `{ summary, view }` — the model sees only the summary (`modelSummary` → `toModelOutput`); the client renders the doc. Two render paths: (a) agent hosts connect to **`POST /api/mcp`** (stateless Streamable-HTTP MCP behind CF Access) and render `ui://drkyana/admin-view.html` per the MCP Apps extension (`io.modelcontextprotocol/ui`); (b) the in-app assistant chat renders via `ViewRenderer.tsx`, executing actions through `POST /api/views/action` (closed `viewActionTools` registry). View actions are clicks by the signed-in dentist — the click **is** the approval, so `ui_*` app-only tools set `needsApproval: false` and are listed over MCP with `visibility: ["app"]` (hidden from the model).
 
 ## Code isolation (hard rule)
 
@@ -110,6 +117,8 @@ Patient and admin are separate builds; **prompts + tool implementations live onl
 | Model tiers / IDs | `packages/server/src/models.ts` (single source). |
 | D1 schema | add a `migrations/000N_*.sql` (next number, `IF NOT EXISTS`-friendly) + update `@drkyana/types`. **Migrations auto-apply on deploy**: the Pages production build runs `npm run cf:build` → `scripts/migrate-remote.mjs` applies pending migrations to remote D1 *before* publishing (tracked in `applied_migrations`, prod-branch only). No manual step. To apply by hand: `npm run db:migrate:remote`. |
 | Admin management UI | `apps/admin/app/**` (pages + `app/api/*` route handlers, all `withAccess`). |
+| Interactive admin views | Builder in `packages/server/src/mcp/views.ts` + view tool in `src/mcp/tools.ts` (add to `viewTools`). Both renderers + MCP pick it up automatically. Spec: `docs/view-dsl.md`. |
+| Design language (DLS) | Tokens in `packages/types/src/dls.ts` (+ `docs/dls.md`). Never hard-code colors/sizes in a renderer. |
 | Knowledge base | Dr Kyana curates via the admin `/kb` page → `kb/ingest.ts` chunks+embeds→Vectorize. |
 | Hero photo / QRs | replace source in `assets/`, run `python3 scripts/optimize_images.py`. |
 
