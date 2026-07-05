@@ -97,9 +97,14 @@ sign-in. (Terminal clients call tools but don't render the iframe views.)
 ## Security model & revocation
 
 - **Who can connect:** only someone who completes the Access Google SSO —
-  i.e. the identities allowed on the admin Access app. The consent page
-  shows the requesting client and warns that access includes patient
-  records.
+  i.e. the identities allowed on the admin Access app. That policy must be
+  **email-scoped to exactly two identities** (no domain rules, no "any
+  Google account"):
+  - `kyanalotfi96@gmail.com` (Dr Kyana)
+  - `roy.ch.avik@gmail.com` (admin/developer)
+  With that in place, nobody else can mint an MCP token regardless of what
+  they register — the consent page additionally shows the requesting client
+  and warns that access includes patient records.
 - **Tokens:** access tokens live 1 h; refresh tokens 30 d and rotate on
   every use; codes are single-use with a 10-minute TTL; PKCE (S256) is
   mandatory; redirect URIs must be pre-registered and https.
