@@ -50,9 +50,15 @@ export async function recordAdminAction(
         JSON.stringify(filterActionDetail(entry.args)),
       )
       .run();
-  } catch {
-    // Logging must never break the action it describes (e.g. before the
-    // 0007 migration has applied). The write itself already succeeded.
+  } catch (err) {
+    // Logging must never break the action it describes (the business write
+    // has ALREADY committed by the time this runs). But never silently:
+    // a dropped entry — usually the 0007 migration not yet applied — must
+    // show up in Workers logs / wrangler tail so the gap is noticed.
+    console.error(
+      `admin_actions insert failed (entry dropped: ${entry.tool} by ${entry.actor}):`,
+      (err as Error).message,
+    );
   }
 }
 
@@ -74,8 +80,10 @@ export async function listAdminActions(
       detail: safeParse(r.detail),
       at: Number(r.at ?? 0),
     }));
-  } catch {
-    return []; // table may not exist yet — read as "no activity"
+  } catch (err) {
+    // Table may not exist yet — read as "no activity", but say so in logs.
+    console.error("admin_actions read failed:", (err as Error).message);
+    return [];
   }
 }
 
