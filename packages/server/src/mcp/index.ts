@@ -18,3 +18,15 @@ export {
   MCP_APP_MIME_TYPE,
   renderAdminViewTemplate,
 } from "./template";
+export {
+  buildAuthServerMetadata,
+  buildProtectedResourceMetadata,
+  bearerChallenge,
+  registerClient,
+  renderAuthorizePage,
+  completeAuthorize,
+  exchangeToken,
+  verifyBearer,
+  type AuthorizeParams,
+  type BearerIdentity,
+} from "./oauth";

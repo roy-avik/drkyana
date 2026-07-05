@@ -91,12 +91,24 @@ export {
 export { renderMarkdownToPdf, type RenderedPdf } from "./pdf/render";
 
 // MCP Apps surface — admin views as interactive MCP tools + the /api/mcp
-// protocol handler (docs/view-dsl.md, docs/dls.md). Server-only.
+// protocol handler (docs/view-dsl.md, docs/dls.md), plus the OAuth 2.1 layer
+// that lets Claude/ChatGPT native apps connect (docs/connect-agents.md).
+// Server-only.
 export {
   handleMcpPost,
   handleMcpMethodNotAllowed,
   viewTools,
   appActionTools,
   viewActionTools,
+  buildAuthServerMetadata,
+  buildProtectedResourceMetadata,
+  bearerChallenge,
+  registerClient,
+  renderAuthorizePage,
+  completeAuthorize,
+  exchangeToken,
+  verifyBearer,
+  type AuthorizeParams,
+  type BearerIdentity,
   type ViewToolOutput,
 } from "./mcp";
