@@ -42,6 +42,8 @@ import { pubmedSearchTool } from "./pubmed_search";
 import { pubmedFetchTool } from "./pubmed_fetch";
 import { differentialDiagnosisTool } from "./differential_diagnosis";
 import { scheduleAgentRunTool } from "./schedule_agent_run";
+import { getRecentActivityTool } from "./get_recent_activity";
+import { viewTools } from "../../mcp/tools";
 import { loadSkillToolFor } from "../../skills";
 
 export { listIntakesTool } from "./list_intakes";
@@ -115,6 +117,11 @@ export const adminTools: ToolRegistry = {
   differential_diagnosis: differentialDiagnosisTool,
   // deep research (read — runs inference over practice data; persists cost)
   schedule_agent_run: scheduleAgentRunTool,
+  // cross-session memory (read) — writes from other sessions/surfaces
+  get_recent_activity: getRecentActivityTool,
   // behavior skills (load on demand, audience-scoped)
   load_skill: loadSkillToolFor("admin"),
+  // interactive views (read — render a View-DSL doc the client draws; the
+  // model only sees a one-line summary via modelSummary)
+  ...viewTools,
 };

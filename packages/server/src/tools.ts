@@ -17,6 +17,7 @@
 import { tool, type ToolSet } from "ai";
 import type { z } from "zod";
 import type { AgentContext } from "./context";
+import { recordAdminAction } from "./audit";
 
 export type ToolCategory = "read" | "write" | "external";
 
@@ -38,6 +39,12 @@ export interface ToolSpec<TArgs = unknown, TResult = unknown> {
    * for the form-first patient intake (collect_intake).
    */
   execute?(args: TArgs, ctx: AgentContext): Promise<TResult>;
+  /**
+   * Optional compact text the MODEL sees in place of the full JSON result
+   * (AI SDK `toModelOutput`). The client still receives the full result. Used
+   * by view tools, whose ViewDocument payload is for rendering, not reasoning.
+   */
+  modelSummary?(result: TResult): string;
 }
 
 /** Identity helper for type inference when declaring a tool. */
@@ -61,15 +68,49 @@ export type ToolRegistry = Record<string, ToolSpec>;
 export function toAiSdkTools(registry: ToolRegistry, ctx: AgentContext): ToolSet {
   const entries = Object.entries(registry).map(([key, spec]) => {
     const execute = spec.execute;
+    const modelSummary = spec.modelSummary;
     const common = {
       description: spec.description,
       inputSchema: spec.inputSchema,
       needsApproval: spec.needsApproval ?? spec.category !== "read",
+      // Swap the model-facing result for a compact summary when the spec asks
+      // for it (view tools: the client renders the doc, the model reads text).
+      ...(modelSummary
+        ? {
+            toModelOutput: ({ output }: { output: unknown }) => ({
+              type: "text" as const,
+              value: modelSummary(output),
+            }),
+          }
+        : {}),
     };
     // Two explicit branches so TS picks the right `tool()` overload:
     // with `execute` (server-executed) vs without (client-rendered).
     const t = execute
-      ? tool({ ...common, execute: (args: unknown) => execute(args, ctx) })
+      ? tool({
+          ...common,
+          execute: async (args: unknown) => {
+            const result = await execute(args, ctx);
+            // Cross-session activity log: successful ADMIN writes are
+            // recorded (fire-and-forget) so other sessions/surfaces can see
+            // what happened here. Soft errors ({ error }) don't log.
+            if (
+              spec.category !== "read" &&
+              ctx.caller.kind === "admin" &&
+              !(result && typeof result === "object" && "error" in result)
+            ) {
+              ctx.waitUntil(
+                recordAdminAction(ctx.env, {
+                  actor: ctx.caller.email,
+                  surface: "agent",
+                  tool: spec.name,
+                  args,
+                }),
+              );
+            }
+            return result;
+          },
+        })
       : tool(common);
     return [key, t];
   });

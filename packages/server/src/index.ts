@@ -26,6 +26,14 @@ export { patientTools } from "./tools/patient";
 // PII hygiene for the patient loop — strips the real name out of the model path.
 export { stripPatientName, type StripPatientNameResult } from "./pii";
 
+// Cross-session activity log (admin_actions) — record + read. Server-only.
+export {
+  recordAdminAction,
+  listAdminActions,
+  type AdminActionRow,
+  type ActionSurface,
+} from "./audit";
+
 // Embeddings (Workers AI) for KB retrieval + ingestion. Server-only.
 export { embedQuery, embedTexts, EMBEDDING_MODEL, EMBEDDING_DIM } from "./embeddings";
 
@@ -89,3 +97,26 @@ export {
 
 // Markdown → PDF (pure-JS, Workers-compatible). Server-only.
 export { renderMarkdownToPdf, type RenderedPdf } from "./pdf/render";
+
+// MCP Apps surface — admin views as interactive MCP tools + the /api/mcp
+// protocol handler (docs/view-dsl.md, docs/dls.md), plus the OAuth 2.1 layer
+// that lets Claude/ChatGPT native apps connect (docs/connect-agents.md).
+// Server-only.
+export {
+  handleMcpPost,
+  handleMcpMethodNotAllowed,
+  viewTools,
+  appActionTools,
+  viewActionTools,
+  buildAuthServerMetadata,
+  buildProtectedResourceMetadata,
+  bearerChallenge,
+  registerClient,
+  renderAuthorizePage,
+  completeAuthorize,
+  exchangeToken,
+  verifyBearer,
+  type AuthorizeParams,
+  type BearerIdentity,
+  type ViewToolOutput,
+} from "./mcp";

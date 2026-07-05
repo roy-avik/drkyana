@@ -3,6 +3,30 @@ import withSerwistInit from "@serwist/next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // OAuth discovery documents live at RFC-mandated /.well-known paths, which
+  // the app router can't host directly — rewrite them onto API routes. The
+  // :path* variants cover the path-suffixed forms (RFC 8414 §3 / RFC 9728 §3),
+  // e.g. /.well-known/oauth-protected-resource/api/mcp.
+  async rewrites() {
+    return [
+      {
+        source: "/.well-known/oauth-authorization-server",
+        destination: "/api/oauth/metadata",
+      },
+      {
+        source: "/.well-known/oauth-authorization-server/:path*",
+        destination: "/api/oauth/metadata",
+      },
+      {
+        source: "/.well-known/oauth-protected-resource",
+        destination: "/api/oauth/resource",
+      },
+      {
+        source: "/.well-known/oauth-protected-resource/:path*",
+        destination: "/api/oauth/resource",
+      },
+    ];
+  },
 };
 
 // Serwist (PWA): compiles app/sw.ts → public/sw.js with a precache manifest and

@@ -10,6 +10,12 @@
 // Patient intake form schema (PR-C form-first flow).
 export * from "./intake-form";
 
+// DLS — the Dr Kyana Design Language System (tokens; spec: docs/dls.md).
+export * from "./dls";
+
+// View DSL — declarative admin views rendered by MCP Apps (docs/view-dsl.md).
+export * from "./view-dsl";
+
 /**
  * Placeholder the receptionist agent uses in place of the patient's real name.
  * The name is PII and never reaches the LLM: the server strips it from anything
@@ -357,4 +363,21 @@ export interface AgentChatRequest {
 export interface ToolInvocationView {
   toolName: string;
   state: "call" | "result" | "awaiting-approval" | "error";
+}
+
+// ---------------------------------------------------------------------------
+// Cross-session activity log (admin_actions — migration 0007)
+// ---------------------------------------------------------------------------
+
+/** Where a recorded admin write originated. */
+export type AdminActionSurface = "agent" | "mcp" | "app-view";
+
+export interface AdminActionRow {
+  id: string;
+  actor: string;
+  surface: AdminActionSurface;
+  tool: string;
+  /** Filtered args: short primitives only (ids/statuses) — never bodies. */
+  detail: Record<string, unknown>;
+  at: number;
 }
