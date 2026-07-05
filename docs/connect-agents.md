@@ -21,13 +21,22 @@ Claude/ChatGPT app ── POST /api/mcp ─────────────�
 
 ## 1. One-time Cloudflare Zero Trust setup
 
-The admin domain is fronted by one Access application (Google SSO). OAuth
-needs four paths reachable **without** the SSO redirect (they're called
-server-to-server by the connector backends and are self-protecting):
+Scripted — run once with an API token that has *Access: Apps and Policies →
+Edit* (or let an agent with Cloudflare access run it):
 
-Create a second, **path-scoped** Access application (Self-hosted) — most
-specific host+path wins in Access, so these carve exceptions out of the main
-app — with a single **Bypass → Everyone** policy, listing these paths:
+```
+CLOUDFLARE_API_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… \
+  node scripts/provision-mcp-access.mjs --host <admin-host>          # apply
+node scripts/provision-mcp-access.mjs --host <admin-host> --verify   # probe live endpoints
+```
+
+What it does (or to do it by hand): the admin domain is fronted by one
+Access application (Google SSO). OAuth needs four paths reachable
+**without** the SSO redirect (they're called server-to-server by the
+connector backends and are self-protecting). The script creates one
+path-scoped Access application (`drkyana-mcp-public`) — most specific
+host+path wins in Access, so these carve exceptions out of the main app —
+with a single **Bypass → Everyone** policy, listing these paths:
 
 | Path | Why it's safe to bypass |
 |---|---|
@@ -98,7 +107,6 @@ sign-in. (Terminal clients call tools but don't render the iframe views.)
   namespace (dashboard or `wrangler kv key list --prefix=oauth:` + delete).
   Removing Dr Kyana's connector inside Claude/ChatGPT drops the client-side
   token too.
-- **PHI caution:** a connected app can read what the tools expose. Only
-  connect accounts you'd let into the admin console itself, and remember
-  the Anthropic BAA / data-processing caveats before real patient data
-  flows through any third-party host.
+- **PHI caution:** a connected app can read what the tools expose — only
+  connect accounts you'd let into the admin console itself. (Single-clinician
+  practice: Dr Kyana connecting her own accounts is the accepted scope.)
