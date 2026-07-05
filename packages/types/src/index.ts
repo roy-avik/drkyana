@@ -364,3 +364,20 @@ export interface ToolInvocationView {
   toolName: string;
   state: "call" | "result" | "awaiting-approval" | "error";
 }
+
+// ---------------------------------------------------------------------------
+// Cross-session activity log (admin_actions — migration 0007)
+// ---------------------------------------------------------------------------
+
+/** Where a recorded admin write originated. */
+export type AdminActionSurface = "agent" | "mcp" | "app-view";
+
+export interface AdminActionRow {
+  id: string;
+  actor: string;
+  surface: AdminActionSurface;
+  tool: string;
+  /** Filtered args: short primitives only (ids/statuses) — never bodies. */
+  detail: Record<string, unknown>;
+  at: number;
+}

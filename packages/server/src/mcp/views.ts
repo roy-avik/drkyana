@@ -19,6 +19,7 @@ import type {
   ViewNode,
 } from "@drkyana/types";
 import type { AgentContext } from "../context";
+import { listAdminActions } from "../audit";
 
 // ---------------------------------------------------------------------------
 // Shared vocabulary
@@ -702,6 +703,50 @@ export async function buildAppointments(
           rowKey: "intakeId",
         },
         empty: "No appointments recorded.",
+      },
+    ],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Activity — the cross-session log (who did what, from which surface)
+// ---------------------------------------------------------------------------
+
+export async function buildActivity(ctx: AgentContext): Promise<ViewDocument> {
+  const actions = await listAdminActions(ctx.env, 30);
+
+  const SURFACE_LABEL: Record<string, BadgeSpec> = {
+    agent: { text: "assistant", tone: "info" },
+    mcp: { text: "connector", tone: "brand" },
+    "app-view": { text: "console", tone: "neutral" },
+  };
+
+  return {
+    v: 1,
+    key: "activity",
+    title: "Recent activity",
+    subtitle: "Writes from every surface — assistant chat, connected apps, console views",
+    refresh: { tool: "open_activity" },
+    children: [
+      {
+        type: "table",
+        columns: [
+          { key: "at", label: "When", format: "datetime" },
+          { key: "tool", label: "Action", format: "badge" },
+          { key: "detail", label: "Detail" },
+          { key: "surface", label: "Via", format: "badge" },
+          { key: "actor", label: "By" },
+        ],
+        rows: actions.map((a) => ({
+          at: a.at,
+          tool: { text: a.tool, tone: "neutral" },
+          detail: Object.entries(a.detail)
+            .map(([k, v]) => `${k}=${String(v)}`)
+            .join("  ") || "—",
+          surface: SURFACE_LABEL[a.surface] ?? { text: a.surface, tone: "neutral" },
+          actor: a.actor.split("@")[0],
+        })),
+        empty: "No recorded activity yet.",
       },
     ],
   };

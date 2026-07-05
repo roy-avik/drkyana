@@ -26,6 +26,14 @@ export { patientTools } from "./tools/patient";
 // PII hygiene for the patient loop — strips the real name out of the model path.
 export { stripPatientName, type StripPatientNameResult } from "./pii";
 
+// Cross-session activity log (admin_actions) — record + read. Server-only.
+export {
+  recordAdminAction,
+  listAdminActions,
+  type AdminActionRow,
+  type ActionSurface,
+} from "./audit";
+
 // Embeddings (Workers AI) for KB retrieval + ingestion. Server-only.
 export { embedQuery, embedTexts, EMBEDDING_MODEL, EMBEDDING_DIM } from "./embeddings";
 

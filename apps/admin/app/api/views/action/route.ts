@@ -1,6 +1,7 @@
 import "server-only";
 import {
   viewActionTools,
+  recordAdminAction,
   type AgentContext,
   type Env,
 } from "@drkyana/server";
@@ -50,6 +51,21 @@ export const POST = withAccess(async (req, identity) => {
 
   try {
     const result = await spec.execute(parsed.data, agentCtx);
+    // Cross-session activity log: in-app view clicks that WRITE are recorded
+    // so other sessions (incl. MCP hosts) can see them.
+    if (
+      spec.category !== "read" &&
+      !(result && typeof result === "object" && "error" in result)
+    ) {
+      ctx.waitUntil(
+        recordAdminAction(agentCtx.env, {
+          actor: identity.email,
+          surface: "app-view",
+          tool: body.tool!,
+          args: parsed.data,
+        }),
+      );
+    }
     return json({ result }, 200);
   } catch (e) {
     return json({ error: (e as Error).message }, 500);

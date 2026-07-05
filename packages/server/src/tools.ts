@@ -17,6 +17,7 @@
 import { tool, type ToolSet } from "ai";
 import type { z } from "zod";
 import type { AgentContext } from "./context";
+import { recordAdminAction } from "./audit";
 
 export type ToolCategory = "read" | "write" | "external";
 
@@ -86,7 +87,30 @@ export function toAiSdkTools(registry: ToolRegistry, ctx: AgentContext): ToolSet
     // Two explicit branches so TS picks the right `tool()` overload:
     // with `execute` (server-executed) vs without (client-rendered).
     const t = execute
-      ? tool({ ...common, execute: (args: unknown) => execute(args, ctx) })
+      ? tool({
+          ...common,
+          execute: async (args: unknown) => {
+            const result = await execute(args, ctx);
+            // Cross-session activity log: successful ADMIN writes are
+            // recorded (fire-and-forget) so other sessions/surfaces can see
+            // what happened here. Soft errors ({ error }) don't log.
+            if (
+              spec.category !== "read" &&
+              ctx.caller.kind === "admin" &&
+              !(result && typeof result === "object" && "error" in result)
+            ) {
+              ctx.waitUntil(
+                recordAdminAction(ctx.env, {
+                  actor: ctx.caller.email,
+                  surface: "agent",
+                  tool: spec.name,
+                  args,
+                }),
+              );
+            }
+            return result;
+          },
+        })
       : tool(common);
     return [key, t];
   });

@@ -23,6 +23,7 @@
  * agent loop.
  */
 import { z } from "zod";
+import { recordAdminAction } from "../audit";
 import { adminTools } from "../tools/admin";
 import { appActionTools, viewTools, type ViewToolOutput } from "./tools";
 import type { ToolSpec } from "../tools";
@@ -178,6 +179,20 @@ async function callTool(
         isError: true,
       },
     };
+  }
+
+  // Cross-session activity log: successful writes from MCP hosts (Claude /
+  // ChatGPT apps — model calls AND clicks inside rendered views) land in
+  // admin_actions so other sessions can see them.
+  if (spec.category !== "read" && ctx.caller.kind === "admin") {
+    ctx.waitUntil(
+      recordAdminAction(ctx.env, {
+        actor: ctx.caller.email,
+        surface: "mcp",
+        tool: name,
+        args: parsed.data,
+      }),
+    );
   }
 
   // View tools: text = the model-facing summary, structuredContent = the doc.

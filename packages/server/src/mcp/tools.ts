@@ -25,6 +25,7 @@ import { assertAdmin } from "../context";
 import { updateStatusTool } from "../tools/admin/update_status";
 import { upsertChamberTool } from "../tools/admin/upsert_chamber";
 import {
+  buildActivity,
   buildAppointments,
   buildChambers,
   buildDraftReview,
@@ -155,6 +156,22 @@ export const openAppointmentsTool = defineTool({
   },
 });
 
+export const openActivityTool = defineTool({
+  name: "open_activity",
+  description:
+    "Open the cross-session activity view: recent writes from every surface " +
+    "(assistant chats, connected Claude/ChatGPT apps, console clicks) — who did " +
+    "what, when, from where.",
+  category: "read",
+  inputSchema: z.object({}),
+  modelSummary: summarize,
+  async execute(_args, ctx: AgentContext) {
+    assertAdmin(ctx);
+    const view = await buildActivity(ctx);
+    return { summary: "Opened the recent-activity view", view };
+  },
+});
+
 /** Registered into the admin agent's toolset AND listed over MCP. */
 export const viewTools: ToolRegistry = {
   open_intake_queue: openIntakeQueueTool,
@@ -163,6 +180,7 @@ export const viewTools: ToolRegistry = {
   open_drafts: openDraftsTool,
   open_draft: openDraftTool,
   open_appointments: openAppointmentsTool,
+  open_activity: openActivityTool,
 };
 
 // ---------------------------------------------------------------------------
