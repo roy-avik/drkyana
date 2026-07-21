@@ -58,12 +58,46 @@ if (!local) {
 }
 
 // --- wrangler helpers ---------------------------------------------------
+
+/** Turn a wrangler failure into a legible, actionable message and exit 1. */
+function failWithDiagnosis(err) {
+  const out = `${err?.stdout ?? ""}${err?.stderr ?? ""}`;
+  // Cloudflare API auth failure (missing/expired token, or a token lacking the
+  // D1 permission). This is the failure a Pages build hits when CLOUDFLARE_API_TOKEN
+  // is unset or under-scoped — the raw execFileSync stack trace buries it.
+  const isAuth = /Authentication error|code:\s*10000|\b10000\b/.test(out);
+  console.error("\n[migrate] wrangler could not reach the D1 API.\n");
+  if (isAuth) {
+    console.error(
+      "  Cause: Cloudflare API authentication failed (code 10000).\n\n" +
+        "  The remote migrate runs `wrangler d1 execute --remote`, which needs an\n" +
+        "  API token. On a Pages build that comes from the build environment\n" +
+        "  variables, NOT from an interactive login. Check, in the Pages project\n" +
+        "  → Settings → Variables and Secrets (Production):\n\n" +
+        "    • CLOUDFLARE_API_TOKEN — set, not expired, and carrying the\n" +
+        "        \x1b[1mAccount → D1 → Edit\x1b[0m permission on this account.\n" +
+        "        A token scoped only to Pages/Workers will fail here with 10000.\n" +
+        "    • CLOUDFLARE_ACCOUNT_ID — the account that owns the `drkyana` D1.\n\n" +
+        "  Create/repair the token at dash.cloudflare.com → My Profile → API Tokens\n" +
+        "  (or use the 'Edit Cloudflare Workers' template, then add D1 → Edit).\n",
+    );
+  } else {
+    // Some other wrangler failure — surface CF's own error text, not our stack.
+    console.error(out.trim() || String(err?.message ?? err));
+  }
+  process.exit(1);
+}
+
 function wrangler(args) {
   // --yes so the CF build auto-installs wrangler via npx without prompting.
-  return execFileSync(npx, ["--yes", "wrangler", ...args], {
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "inherit"],
-  });
+  try {
+    return execFileSync(npx, ["--yes", "wrangler", ...args], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+  } catch (err) {
+    failWithDiagnosis(err);
+  }
 }
 const sql = (command) =>
   wrangler(["d1", "execute", DB, target, "--json", "--command", command]);
