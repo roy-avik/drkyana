@@ -50,6 +50,11 @@ jobs:
       - name: Typecheck patient
         run: npm run typecheck
 
+      # Unit tests for the pure logic where a silent regression reaches a
+      # patient: triage rules, deterministic fact merging, PII stripping.
+      - name: Unit tests
+        run: npm test
+
       - name: Build patient
         run: npm run build
 

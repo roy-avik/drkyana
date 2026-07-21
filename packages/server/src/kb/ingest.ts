@@ -90,7 +90,21 @@ export function chunkText(
     const piece = clean.slice(start, end).trim();
     if (piece) chunks.push(piece);
     if (end >= clean.length) break;
-    start = Math.max(end - overlapChars, start + 1);
+
+    // Rewind by the overlap, then snap FORWARD to the next word boundary. The
+    // rewind is a raw character count, so without this every chunk after the
+    // first began mid-word ("...pha alpha alpha"). That fragment is noise in
+    // the embedding and, worse, shows up verbatim in the `text` metadata that
+    // kb_search returns as a citation snippet to the clinician.
+    // Only snaps within the overlap region (which is duplicated content by
+    // definition), so no unique text can be skipped. If there is no boundary to
+    // snap to — one unbroken token — the raw offset stands.
+    let next = Math.max(end - overlapChars, start + 1);
+    if (next > 0 && !/\s/.test(clean[next - 1]!)) {
+      const space = clean.indexOf(" ", next);
+      if (space > 0 && space < end) next = space + 1;
+    }
+    start = next;
   }
   return chunks;
 }
