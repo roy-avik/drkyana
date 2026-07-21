@@ -72,8 +72,6 @@ export function LangSwitcher() {
     }
   };
 
-  const isRtl = lang === 'fa';
-
   return (
     <div ref={rootRef} className="relative ml-4 font-sans">
       <button
@@ -119,7 +117,14 @@ export function LangSwitcher() {
         className={[
           'absolute z-50 mt-2.5 min-w-[12rem] origin-top rounded-2xl border border-ink/5 bg-white/95 p-1.5 shadow-pop backdrop-blur-md backdrop-saturate-150',
           'transition duration-150 ease-out',
-          isRtl ? 'left-0 origin-top-left' : 'right-0 origin-top-right',
+          // Anchor right in EVERY language. <html dir> is forced to "ltr" for
+          // fa too (flipping it would invert every flex/grid — see CLAUDE.md),
+          // so the switcher sits top-right regardless of locale. Flipping the
+          // menu to left-0 for fa assumed a mirrored layout that never happens,
+          // and pushed the 12rem menu past the viewport — the closed menu is
+          // pointer-events-none but still contributes scrollWidth, so every
+          // Farsi page scrolled horizontally by ~17px on a narrow screen.
+          'right-0 origin-top-right',
           open
             ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto'
             : 'opacity-0 -translate-y-1 scale-[0.97] pointer-events-none',

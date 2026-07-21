@@ -21,7 +21,7 @@ export function Location() {
         </div>
 
         <div className="mt-12 grid gap-6 md:grid-cols-[1fr_1.4fr]">
-          <div className="card !p-7 !hover:translate-y-0">
+          <div className="card p-7! hover:translate-y-0!">
             <h3 className="text-base font-semibold text-ink">
               {t('location.servicearea', 'Service area')}
             </h3>

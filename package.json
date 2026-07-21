@@ -13,13 +13,15 @@
     "pretypecheck": "npm run skills:bundle",
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "cf:build": "node scripts/migrate-remote.mjs && npm run build",
+    "cf:build": "node scripts/migrate.mjs && npm run build",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "locales:check": "python3 scripts/locales.py check",
     "images:optimize": "python3 scripts/optimize_images.py",
-    "db:migrate:local": "wrangler d1 execute drkyana --local --file=migrations/0001_init.sql",
-    "db:migrate:remote": "node scripts/migrate-remote.mjs --force",
+    "db:migrate:local": "node scripts/migrate.mjs --local",
+    "db:migrate:remote": "node scripts/migrate.mjs --remote --force",
     "check:isolation": "node scripts/check-isolation.mjs"
   },
   "dependencies": {
@@ -35,6 +37,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.0",
-    "vite": "^6.0.0"
+    "vite": "^6.0.0",
+    "vitest": "^4.1.10"
   }
 }

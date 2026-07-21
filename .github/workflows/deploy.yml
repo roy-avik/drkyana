@@ -30,7 +30,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install Python deps
-        run: pip install pillow numpy
+        run: pip install pillow
 
       - name: Lint locales
         run: python scripts/locales.py check
@@ -49,6 +49,11 @@ jobs:
 
       - name: Typecheck patient
         run: npm run typecheck
+
+      # Unit tests for the pure logic where a silent regression reaches a
+      # patient: triage rules, deterministic fact merging, PII stripping.
+      - name: Unit tests
+        run: npm test
 
       - name: Build patient
         run: npm run build

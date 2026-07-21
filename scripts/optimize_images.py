@@ -17,19 +17,13 @@ Pipeline
    softens it. The source export is typically ~1000x1000 px / ~600 KB; the
    optimizer trims metadata + recompresses but otherwise preserves pixels.
 
-3. ``assets/whatsapp-qr.jpg``   -> ``public/assets/whatsapp-qr.png``
-   WhatsApp's "Share my contact" export bakes a caption band ("Kiana Lotfi /
-   WhatsApp Business Account") under the QR. We auto-crop it off by detecting
-   the run of solid-white rows just below the QR, then resize to 360 px and
-   write as optimized PNG.
-
 Idempotent — running it again on the same sources produces the same outputs.
 Designed to be invoked by humans, agents, or CI:
 
     python scripts/optimize_images.py           # rebuild everything
     python scripts/optimize_images.py --check   # exit 1 if outputs are stale
 
-Dependencies: ``pip install pillow numpy``.
+Dependencies: ``pip install pillow``.
 """
 
 from __future__ import annotations
@@ -40,11 +34,10 @@ import sys
 from pathlib import Path
 
 try:
-    import numpy as np
     from PIL import Image
 except ImportError as e:
     print(
-        f"missing dependency: {e}. install with `pip install pillow numpy`.",
+        f"missing dependency: {e}. install with `pip install pillow`.",
         file=sys.stderr,
     )
     sys.exit(2)
@@ -55,7 +48,6 @@ DST = ROOT / "public" / "assets"
 
 PHOTO_MAX_WIDTH = 1024
 PHOTO_QUALITY = 82
-WA_TARGET_WIDTH = 360
 
 
 # ---------------------------------------------------------------------------
@@ -80,53 +72,9 @@ def optimize_insta_qr(src: Path, dst: Path) -> None:
     img.save(dst, format="PNG", optimize=True)
 
 
-def _autocrop_whatsapp(img: Image.Image, top_skip: int = 0) -> Image.Image:
-    """Drop the caption band beneath the WhatsApp QR.
-
-    The export is structured as: [optional top margin] [QR block] [white gap]
-    [name band "Kiana Lotfi / WhatsApp Business Account"] [white bottom].
-    Strategy: walk down from the top, find the first long run of rows that are
-    almost entirely white *after* we've already seen non-white content. That
-    boundary is the gap between the QR and the caption.
-    """
-    rgb = img.convert("RGB")
-    arr = np.asarray(rgb)
-    # A row is "white" if min channel >= 245 for ~all pixels.
-    row_white = (arr.min(axis=2) >= 245).mean(axis=1) > 0.985
-
-    seen_content = False
-    crop_row: int | None = None
-    run = 0
-    for y in range(top_skip, len(row_white)):
-        if not row_white[y]:
-            seen_content = True
-            run = 0
-        else:
-            if seen_content:
-                run += 1
-                # 8 consecutive white rows = end of QR block.
-                if run >= 8:
-                    crop_row = y - run
-                    break
-    if crop_row is None or crop_row < 50:
-        return rgb  # nothing reasonable to crop
-    return rgb.crop((0, 0, rgb.width, crop_row))
-
-
-def optimize_whatsapp_qr(src: Path, dst: Path) -> None:
-    img = Image.open(src)
-    cropped = _autocrop_whatsapp(img)
-    if cropped.width > WA_TARGET_WIDTH:
-        new_h = int(cropped.height * WA_TARGET_WIDTH / cropped.width)
-        cropped = cropped.resize((WA_TARGET_WIDTH, new_h), Image.LANCZOS)
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    cropped.save(dst, format="PNG", optimize=True)
-
-
 STEPS = [
     ("photo.jpg", "photo.jpg", optimize_photo),
     ("insta-qr.png", "insta-qr.png", optimize_insta_qr),
-    ("whatsapp-qr.jpg", "whatsapp-qr.png", optimize_whatsapp_qr),
 ]
 
 
@@ -138,6 +86,43 @@ def _digest(path: Path) -> str:
     h = hashlib.sha256()
     h.update(path.read_bytes())
     return h.hexdigest()
+
+
+# Max per-channel difference tolerated between the committed output and a fresh
+# encode. JPEG is lossy and its encoder is not bit-identical across libjpeg
+# builds, so a couple of levels of drift is normal and imperceptible. PNG is
+# lossless, so its pixels must match exactly.
+_PIXEL_TOLERANCE = {".jpg": 2, ".jpeg": 2, ".png": 0}
+
+
+def _pixels_differ(a: Path, b: Path) -> str | None:
+    """Compare two encoded images by their DECODED pixels.
+
+    WHY not compare file bytes: the encoders are not reproducible across
+    platforms. Pillow 12.3.0 on Windows and the same 12.3.0 on Linux emit
+    different PNG streams for identical pixels (different zlib build), so a
+    byte comparison fails in CI for a file that is perfectly up to date —
+    which is exactly what it did here.
+
+    What this check is actually for is catching "someone changed assets/ and
+    forgot to regenerate public/assets/". A changed source moves the pixels, so
+    comparing pixels catches that while ignoring encoder noise.
+
+    Returns a human-readable reason, or None if they match.
+    """
+    with Image.open(a) as ia, Image.open(b) as ib:
+        ia = ia.convert("RGBA")
+        ib = ib.convert("RGBA")
+        if ia.size != ib.size:
+            return f"size {ia.size} != {ib.size}"
+        tolerance = _PIXEL_TOLERANCE.get(a.suffix.lower(), 0)
+        worst = max(
+            (abs(pa - pb) for pa, pb in zip(ia.tobytes(), ib.tobytes())),
+            default=0,
+        )
+        if worst > tolerance:
+            return f"pixels differ (max channel delta {worst} > {tolerance})"
+    return None
 
 
 def run(check_only: bool = False) -> int:
@@ -156,13 +141,12 @@ def run(check_only: bool = False) -> int:
             if not dst.exists():
                 stale.append(f"{dst_name}: missing")
                 continue
-            before = _digest(dst)
             tmp = dst.with_suffix(dst.suffix + ".check")
             fn(src, tmp)
-            after = _digest(tmp)
+            reason = _pixels_differ(dst, tmp)
             tmp.unlink(missing_ok=True)
-            if before != after:
-                stale.append(f"{dst_name}: stale")
+            if reason:
+                stale.append(f"{dst_name}: stale — {reason}")
             continue
         print(f"  {src_name}  ->  {dst.relative_to(ROOT)}")
         fn(src, dst)

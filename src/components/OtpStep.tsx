@@ -93,7 +93,10 @@ export function OtpStep({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ email: email.trim(), code: code.trim() }),
+        // `locale` is recorded on the consent rows written in the same batch
+        // that marks this session verified — it captures which translation of
+        // the notice the patient actually read.
+        body: JSON.stringify({ email: email.trim(), code: code.trim(), locale }),
       });
       let data: { ok?: boolean; verifiedEmail?: string; error?: string } = {};
       try {
@@ -148,7 +151,7 @@ export function OtpStep({
             type="text"
             inputMode="numeric"
             autoComplete="one-time-code"
-            pattern="\\d{6}"
+            pattern="\d{6}"
             maxLength={6}
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
@@ -185,7 +188,7 @@ export function OtpStep({
         </>
       )}
       {errorKey && (
-        <p className="text-xs text-red-600">{resolveErrorMessage(errorKey)}</p>
+        <p className="text-xs text-red">{resolveErrorMessage(errorKey)}</p>
       )}
     </div>
   );

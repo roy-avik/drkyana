@@ -116,7 +116,7 @@ Patient and admin are separate builds; **prompts + tool implementations live onl
 | Admin agent behavior | `packages/server/src/agents/admin.ts` + `tools/admin/*`. New tool: `defineTool` (set `category`; writes/external auto-require approval), add to `tools/admin/index.ts`. |
 | Triage rules | `packages/server/src/tools/patient/run_triage.ts` (deterministic, no ML). |
 | Model tiers / IDs | `packages/server/src/models.ts` (single source). |
-| D1 schema | add a `migrations/000N_*.sql` (next number, `IF NOT EXISTS`-friendly) + update `@drkyana/types`. **Migrations auto-apply on deploy**: the Pages production build runs `npm run cf:build` → `scripts/migrate-remote.mjs` applies pending migrations to remote D1 *before* publishing (tracked in `applied_migrations`, prod-branch only). No manual step. To apply by hand: `npm run db:migrate:remote`. |
+| D1 schema | add a `migrations/000N_*.sql` (next number, `IF NOT EXISTS`-friendly) + update `@drkyana/types`. **Migrations auto-apply on deploy**: the Pages production build runs `npm run cf:build` → `scripts/migrate.mjs` applies pending migrations to remote D1 *before* publishing (tracked in `applied_migrations`, prod-branch only). No manual step. To apply by hand: `npm run db:migrate:remote`. |
 | Admin management UI | `apps/admin/app/**` (pages + `app/api/*` route handlers, all `withAccess`). |
 | Interactive admin views | Builder in `packages/server/src/mcp/views.ts` + view tool in `src/mcp/tools.ts` (add to `viewTools`). Both renderers + MCP pick it up automatically. Spec: `docs/view-dsl.md`. |
 | Design language (DLS) | Tokens in `packages/types/src/dls.ts` (+ `docs/dls.md`). Never hard-code colors/sizes in a renderer. |
@@ -137,7 +137,7 @@ python3 scripts/locales.py check
 npm run db:migrate:local | :remote         # apply migrations
 ```
 
-Python deps: `pip install pillow numpy` (image script only).
+Python deps: `pip install pillow` (image script only).
 
 ## Provisioning (Cloudflare account)
 
@@ -145,7 +145,7 @@ Resources (created): D1 `drkyana`, KV `drkyana` (bind as `KV`), Vectorize `drkya
 
 **Still required before end-to-end runtime:**
 - **Patient Pages project `drkyana`** bindings must be named **`DB`, `KV`** (code reads those) + secrets `ANTHROPIC_API_KEY`, `IP_HASH_SALT`, and (for urgent-notify) the `EMAIL` send binding + `RECEPTIONIST_FROM`/`DR_KYANA_NOTIFY_EMAIL` vars. The patient `/api/agent/patient` endpoint is **public** (no token gate — a client-bundled token gave no real protection); abuse is controlled by the per-IP KV rate limit. Add Cloudflare Turnstile if stronger protection is needed.
-- **Auto-migrations on deploy** (so schema never lags code): set the Pages project **Build command** to `npm run cf:build` (not `npm run build`), and add build-time **environment variables** `CLOUDFLARE_API_TOKEN` (a token with *D1 Edit* on this account) + `CLOUDFLARE_ACCOUNT_ID`. The build then runs `scripts/migrate-remote.mjs` (prod branch only) to apply pending `migrations/*.sql` to remote D1 before publishing. Without the token the build fails loudly (by design — don't publish code whose schema didn't apply). First prod build auto-adopts the existing schema (records 0001–0006 as applied without re-running).
+- **Auto-migrations on deploy** (so schema never lags code): set the Pages project **Build command** to `npm run cf:build` (not `npm run build`), and add build-time **environment variables** `CLOUDFLARE_API_TOKEN` (a token with *D1 Edit* on this account) + `CLOUDFLARE_ACCOUNT_ID`. The build then runs `scripts/migrate.mjs` (prod branch only) to apply pending `migrations/*.sql` to remote D1 before publishing. Without the token the build fails loudly (by design — don't publish code whose schema didn't apply). First prod build auto-adopts the existing schema (records 0001–0006 as applied without re-running).
 - **Admin worker `drkyana-admin`**: paste resource IDs into `apps/admin/wrangler.jsonc`; add the **Workers AI (`AI`)** binding; set `ACCESS_TEAM_DOMAIN`/`ACCESS_AUD`; put Cloudflare Access in front.
 - **MCP connectors (Claude/ChatGPT apps, incl. iOS)**: `/api/mcp` speaks MCP OAuth (DCR + PKCE; sign-in federates to the Access SSO at `/oauth/authorize`). Requires a path-scoped Access **Bypass** app for `/.well-known/*`, `/api/oauth/register`, `/api/oauth/token`, `/api/mcp` (the Worker enforces bearer/Access auth itself). Setup + revocation: `docs/connect-agents.md`.
 - **Email Service**: onboard `drkyana.com` for Email Sending (SPF/DKIM on `cf-bounce.drkyana.com` — root MX stays with GoDaddy). **Known runtime risk:** `packages/server/src/email.ts` calls `EMAIL.send({from,to,raw})`; validate against the `cloudflare:email` `EmailMessage` API when onboarding.
@@ -160,7 +160,8 @@ Persian is RTL. **Do not set `dir="rtl"` on `<html>`** — it flips every flex/g
 
 - **Practitioner:** Dr Kyana (English handle `@drkyana`; Persian کیانا / Bengali কিয়ানা). First name only.
 - **Email:** `kyanalotfi96@gmail.com` (personal/notify) and `care@drkyana.com` (clinic, GoDaddy-hosted; the agent *sends* as this via Cloudflare Email Service).
-- **Instagram:** [@drkyana](https://instagram.com/drkyana) · **WhatsApp:** `+8801614369673` → `https://wa.me/8801614369673`
+- **Instagram:** [@drkyana](https://instagram.com/drkyana)
+- **WhatsApp:** Dr Kyana's number is **not published on the patient site** (personal number; public exposure invites contact outside any consent, record, or audit trail). It is held as the `DR_KYANA_WHATSAPP` Worker secret for the future admin-initiated escalation flow, and `scripts/check-isolation.mjs` fails the build if it appears in a client bundle.
 - **Practice model:** freelance across multiple Dhaka chambers; location set per booking; no fixed address.
 - **Brand color** `#0f4c81`, accent `#3b82f6`, ink `#0f172a`, muted `#475569`, surfaces `#ffffff`/`#f8fafc` (Tailwind `@theme` in `src/index.css`).
 - **Typography:** Poppins (Latin), Vazirmatn (Persian), Noto Sans Bengali.

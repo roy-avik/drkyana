@@ -40,6 +40,19 @@ export { embedQuery, embedTexts, EMBEDDING_MODEL, EMBEDDING_DIM } from "./embedd
 // Email helper (Cloudflare Email Service `send_email` binding). Server-only.
 export { sendEmail, buildRawEmail, type SendEmailArgs } from "./email";
 
+// Patient consent (PDPA 2026). Pure D1 + Web Crypto — no sockets, so it is
+// safe in the barrel and importable from the patient Pages Functions, which is
+// where `ai_inference` is enforced on every turn.
+export {
+  CONSENT_TEXTS,
+  consentTextHash,
+  buildConsentInserts,
+  hasConsent,
+  listConsents,
+  withdrawConsent,
+  type ConsentGrantInput,
+} from "./consent";
+
 // Patient session cookie (httpOnly, signed) — read/mint/serialize. Pure crypto,
 // safe in the barrel (no sockets). Used by the patient Pages Functions.
 export {

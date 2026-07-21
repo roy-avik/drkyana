@@ -7,7 +7,7 @@ import {
 } from 'ai';
 import { PATIENT_NAME_TOKEN } from '@drkyana/types';
 import { useTranslation } from '../i18n/useTranslation';
-import { WHATSAPP_LINK } from './Contact';
+import { CLINIC_EMAIL } from './Contact';
 import { IntakeForm } from './IntakeForm';
 import { OtpStep } from './OtpStep';
 import { Link } from '../router';
@@ -254,10 +254,13 @@ export function Receptionist() {
                   >
                     {t('intake.consent.accept')}
                   </button>
+                  {/* Escape hatch for a patient who declines the AI consent —
+                      they must still be able to reach the practice. Points at
+                      the clinic mailbox until the admin-side escalation
+                      workflow ships; Dr Kyana's personal number is not
+                      published (see Contact.tsx). */}
                   <a
-                    href={WHATSAPP_LINK}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href={`mailto:${CLINIC_EMAIL}`}
                     className="rounded-full border border-ink/10 px-6 py-2.5 text-center text-sm text-muted hover:text-ink"
                   >
                     {t('intake.escape')}
@@ -331,7 +334,7 @@ export function Receptionist() {
                     />
                   )}
                   {error && (
-                    <p className="text-center text-xs text-red-600">
+                    <p className="text-center text-xs text-red">
                       {t('receptionist.submit.error')}
                     </p>
                   )}

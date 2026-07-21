@@ -30,6 +30,8 @@ interface PagesContext {
 interface ReqBody {
   email?: string;
   code?: string;
+  /** Locale the consent notice was shown in — recorded on the consent rows. */
+  locale?: string;
 }
 
 const RATE_LIMIT = 30;
@@ -90,10 +92,15 @@ export const onRequestPost = async (ctx: PagesContext): Promise<Response> => {
   );
   if (!sessionId) return json({ error: "missing_session" }, 400);
 
+  // Consent is recorded atomically inside verifyOtp — the gate the patient
+  // accepted is what unlocked this call, so the record is written in the same
+  // batch that marks the session verified (PDPA 2026).
   const result = await verifyOtp(env as Env, {
     sessionId,
     email: body.email,
     code: body.code,
+    locale: body.locale,
+    ipHash,
   });
 
   if (!result.ok) {

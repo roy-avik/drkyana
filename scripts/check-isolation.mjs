@@ -46,6 +46,12 @@ const OUTPUT_SENTINELS = [
   "You are Dr Kyana", // system-prompt opener
   "needsApproval", // marker present in any leaked tool definition body
   "ANTHROPIC_API_KEY",
+  // Dr Kyana's personal WhatsApp number. Removed from the patient site
+  // deliberately (publishing it invites patient contact outside any consent,
+  // record, or audit trail); it now lives only as the DR_KYANA_WHATSAPP
+  // Worker secret for the admin-initiated escalation flow. This sentinel makes
+  // a re-introduction into a client bundle fail the build rather than ship.
+  "8801614369673",
 ];
 
 const CODE_EXT = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs"]);

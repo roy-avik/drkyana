@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { OtpStep } from '../components/OtpStep';
+import { ConsentPanel } from '../components/ConsentPanel';
 import {
   PatientRecords,
   type AppointmentView,
@@ -95,7 +96,7 @@ export function AccountPage() {
 
                 {status === 'error' && (
                   <div className="text-center">
-                    <p className="text-sm text-red-600">
+                    <p className="text-sm text-red">
                       {t('account.error', 'Something went wrong loading your records.')}
                     </p>
                     <button
@@ -148,6 +149,11 @@ export function AccountPage() {
                     lang={lang}
                   />
                 )}
+
+                {/* Consent controls (PDPA 2026) — shown to any verified patient,
+                    including one with no records yet, since they consented at
+                    verification and must be able to withdraw straight away. */}
+                {status === 'ready' && <ConsentPanel t={t} lang={lang} />}
               </div>
 
               <p className="mt-10 text-center text-xs text-muted">

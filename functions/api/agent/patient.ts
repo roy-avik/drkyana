@@ -21,6 +21,7 @@ import {
   streamAgent,
   readSessionCookie,
   stripPatientName,
+  hasConsent,
   type AgentContext,
   type Env,
 } from "@drkyana/server";
@@ -192,6 +193,15 @@ export const onRequestPost = async (ctx: PagesContext): Promise<Response> => {
   // the session row (set by /api/auth/patient/email/verify), never from input.
   if (!session.verifiedEmail) {
     return json({ error: "verification_required" }, 403);
+  }
+
+  // --- Consent gate (PDPA 2026) ---
+  // Every turn goes to Anthropic, so `ai_inference` must be in force RIGHT NOW,
+  // not merely at verification time — a patient who withdraws from /account
+  // stops the receptionist immediately. hasConsent fails closed on a query
+  // error: an unknown consent state must not permit inference.
+  if (!(await hasConsent(env as Env, session.verifiedEmail, "ai_inference"))) {
+    return json({ error: "consent_required" }, 403);
   }
 
   const merged = mergeById(session.messages, incoming);

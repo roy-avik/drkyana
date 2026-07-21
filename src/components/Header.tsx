@@ -12,6 +12,7 @@ const NAV = [
   { href: '/receptionist', key: 'nav.receptionist', en: 'AI receptionist' },
   { href: '/#location', key: 'nav.practice', en: 'Practice' },
   { href: '/#contact', key: 'nav.contact', en: 'Contact' },
+  { href: '/account', key: 'nav.account', en: 'My records' },
 ];
 
 export function Header() {
