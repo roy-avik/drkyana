@@ -111,7 +111,7 @@ cd apps/admin && npm run dev      # next dev
 cd apps/admin && npm run build    # next build --webpack (Serwist needs webpack)
 
 # D1 migrations
-npm run db:migrate:local           # applies 0001_init.sql against the local D1 binding
+npm run db:migrate:local           # applies all pending migrations to the local D1 binding
 npm run db:migrate:remote          # ... against the deployed D1
 
 # Isolation guard against the built bundles

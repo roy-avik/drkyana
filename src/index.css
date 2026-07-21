@@ -9,6 +9,13 @@
   --color-surface: #ffffff;
   --color-surface-alt: #f8fafc;
 
+  /* Semantic status. Values match apps/admin/app/globals.css so the two
+     surfaces speak one language; the full DLS supersedes both later. */
+  --color-red: #dc2626;
+  --color-orange: #ea580c;
+  --color-yellow: #ca8a04;
+  --color-green: #16a34a;
+
   --font-sans: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-fa: "Vazirmatn", "Poppins", sans-serif;
   --font-bn: "Noto Sans Bengali", "Poppins", sans-serif;
@@ -28,6 +35,13 @@
   html[lang="fa"] .tracking-tight,
   html[lang="bn"] .tracking-tight {
     letter-spacing: 0;
+  }
+  /* Persian is RTL. <html dir> stays "ltr" always (flipping it would invert
+     every flex/grid) — the Unicode bidi algorithm handles the glyphs, this
+     just aligns the block. Lives in @layer base so any explicit Tailwind
+     text-align utility still wins. */
+  html[lang="fa"] :is(p, h1, h2, h3, h4, li, dt, dd) {
+    text-align: right;
   }
 }
 
@@ -113,11 +127,6 @@ body.is-ready { opacity: 1; transition: opacity 220ms ease-out; }
   animation: neon-sign 4.2s linear infinite;
   will-change: opacity, text-shadow;
 }
-
-.qc-badge { @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-white; }
-.qc-badge--routine { @apply bg-green-600; }
-.qc-badge--soon { @apply bg-amber-500; }
-.qc-badge--urgent { @apply bg-red-600; }
 
 /* Rendered markdown (assistant chat bubbles + patient-facing prescriptions).
    Tight spacing so it reads like chat, not a document. First/last children

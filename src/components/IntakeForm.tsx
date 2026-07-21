@@ -422,7 +422,7 @@ export function IntakeForm({
       />
 
       {requiredError && (
-        <p className="mt-1 text-xs text-red-600">
+        <p className="mt-1 text-xs text-red">
           {t('intake.form.required_hint', 'This one is required to continue.')}
         </p>
       )}

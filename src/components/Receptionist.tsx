@@ -331,7 +331,7 @@ export function Receptionist() {
                     />
                   )}
                   {error && (
-                    <p className="text-center text-xs text-red-600">
+                    <p className="text-center text-xs text-red">
                       {t('receptionist.submit.error')}
                     </p>
                   )}

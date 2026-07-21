@@ -148,7 +148,7 @@ export function OtpStep({
             type="text"
             inputMode="numeric"
             autoComplete="one-time-code"
-            pattern="\\d{6}"
+            pattern="\d{6}"
             maxLength={6}
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
@@ -185,7 +185,7 @@ export function OtpStep({
         </>
       )}
       {errorKey && (
-        <p className="text-xs text-red-600">{resolveErrorMessage(errorKey)}</p>
+        <p className="text-xs text-red">{resolveErrorMessage(errorKey)}</p>
       )}
     </div>
   );

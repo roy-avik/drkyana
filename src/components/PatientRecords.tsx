@@ -4,9 +4,10 @@ import { renderMarkdown } from '../lib/markdown';
 // ---------------------------------------------------------------------------
 // Read-only view of a returning patient's appointments + prescriptions, shown
 // on /account. Data comes from GET /api/patient/records (already scoped to the
-// signed-in patient by the session cookie). Prescription bodies render as
-// whitespace-preserving TEXT (never dangerouslySetInnerHTML) — no markdown
-// dependency, no XSS surface.
+// signed-in patient by the session cookie). Prescription bodies render through
+// renderMarkdown, which HTML-escapes its input BEFORE applying the markdown
+// grammar — so the dangerouslySetInnerHTML below cannot inject markup. Keep it
+// that way: never pass unescaped HTML through here.
 // ---------------------------------------------------------------------------
 
 export interface AppointmentView {
@@ -66,7 +67,7 @@ function apptChipClass(status: string): string {
       return 'bg-green/10 text-green';
     case 'cancelled':
     case 'no_show':
-      return 'bg-red-100 text-red-700';
+      return 'bg-red/10 text-red';
     default: // proposed
       return 'bg-ink/5 text-muted';
   }

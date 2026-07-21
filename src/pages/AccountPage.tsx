@@ -95,7 +95,7 @@ export function AccountPage() {
 
                 {status === 'error' && (
                   <div className="text-center">
-                    <p className="text-sm text-red-600">
+                    <p className="text-sm text-red">
                       {t('account.error', 'Something went wrong loading your records.')}
                     </p>
                     <button
