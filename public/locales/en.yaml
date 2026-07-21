@@ -50,9 +50,9 @@ contact.title: "Get in touch"
 contact.intro: "Appointments, questions, or a second opinion — pick whichever channel suits you."
 contact.email: "Email"
 contact.instagram: "Instagram"
-contact.whatsapp: "WhatsApp"
+contact.clinic: "Clinic"
 contact.scan_ig: "Scan · @drkyana"
-contact.scan_wa: "Scan to chat"
+contact.clinic_note: "Appointments & documents"
 
 footer.copy: "© 2026 Dr. Kyana · Dental Surgery · Dhaka"
 
@@ -74,7 +74,7 @@ receptionist.privacy: "Your messages are processed by an AI service (Anthropic's
 intake.consent.message: "To help Dr Kyana prepare the right care, I'll ask a few questions, including about your health."
 intake.consent.health: "Your messages — including the health details you share — are processed by our AI provider (Anthropic's Claude) to handle your request, and are shared only with Dr Kyana's team. By continuing you agree to this. You can instead message Dr Kyana directly."
 intake.consent.accept: "I agree, continue"
-intake.escape: "Just message Dr Kyana directly"
+intake.escape: "Email the clinic instead"
 receptionist.start_button: "Describe your problem"
 receptionist.submit.error: "Could not submit. Please try again."
 

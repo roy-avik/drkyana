@@ -137,7 +137,7 @@ python3 scripts/locales.py check
 npm run db:migrate:local | :remote         # apply migrations
 ```
 
-Python deps: `pip install pillow numpy` (image script only).
+Python deps: `pip install "pillow==12.3.0"` (image script only; pinned — see the CI note).
 
 ## Provisioning (Cloudflare account)
 
@@ -160,7 +160,8 @@ Persian is RTL. **Do not set `dir="rtl"` on `<html>`** — it flips every flex/g
 
 - **Practitioner:** Dr Kyana (English handle `@drkyana`; Persian کیانا / Bengali কিয়ানা). First name only.
 - **Email:** `kyanalotfi96@gmail.com` (personal/notify) and `care@drkyana.com` (clinic, GoDaddy-hosted; the agent *sends* as this via Cloudflare Email Service).
-- **Instagram:** [@drkyana](https://instagram.com/drkyana) · **WhatsApp:** `+8801614369673` → `https://wa.me/8801614369673`
+- **Instagram:** [@drkyana](https://instagram.com/drkyana)
+- **WhatsApp:** Dr Kyana's number is **not published on the patient site** (personal number; public exposure invites contact outside any consent, record, or audit trail). It is held as the `DR_KYANA_WHATSAPP` Worker secret for the future admin-initiated escalation flow, and `scripts/check-isolation.mjs` fails the build if it appears in a client bundle.
 - **Practice model:** freelance across multiple Dhaka chambers; location set per booking; no fixed address.
 - **Brand color** `#0f4c81`, accent `#3b82f6`, ink `#0f172a`, muted `#475569`, surfaces `#ffffff`/`#f8fafc` (Tailwind `@theme` in `src/index.css`).
 - **Typography:** Poppins (Latin), Vazirmatn (Persian), Noto Sans Bengali.

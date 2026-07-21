@@ -118,7 +118,7 @@ npm run db:migrate:remote          # ... against the deployed D1
 node scripts/check-isolation.mjs --dist
 ```
 
-Python deps for the image script only: `pip install pillow numpy`. The locale linter is stdlib-only.
+Python deps for the image script only: `pip install "pillow==12.3.0"` (pinned: `--check` compares assets byte-for-byte, so a Pillow bump needs the assets regenerated in the same commit). The locale linter is stdlib-only.
 
 ---
 
@@ -196,7 +196,6 @@ python scripts/optimize_images.py --check    # CI gate: exits 1 if outputs are s
 |---|---|---|
 | `assets/photo.jpg` | `public/assets/photo.jpg` | Resize to 1024 px wide, q82 progressive JPEG |
 | `assets/insta-qr.png` | `public/assets/insta-qr.png` | Re-encode as optimised PNG. No resize — the `@drkyana` handle stays pixel-exact |
-| `assets/whatsapp-qr.jpg` | `public/assets/whatsapp-qr.png` | Auto-crop the caption band, resize to 360 px, PNG |
 
 Both source and optimised files are committed.
 
