@@ -24,6 +24,7 @@
 import type { Locale } from "@drkyana/types";
 import type { Env } from "../bindings";
 import { sendSmtpEmail } from "../smtp";
+import { buildConsentInserts } from "../consent";
 
 const CODE_TTL_SECONDS = 600;          // 10 minutes
 const MAX_VERIFY_ATTEMPTS = 5;
@@ -47,6 +48,13 @@ export interface VerifyOtpInput {
   sessionId: string;
   email: string;
   code: string;
+  /**
+   * Locale the consent notice was displayed in. Recorded on the consent rows
+   * so we know which translation the patient actually read.
+   */
+  locale?: string;
+  /** Hashed IP, recorded alongside consent as evidence of the grant. */
+  ipHash?: string | null;
 }
 
 export type VerifyOtpResult =
@@ -228,7 +236,7 @@ export async function requestOtp(
  */
 export async function verifyOtp(
   env: Env,
-  { sessionId, email, code }: VerifyOtpInput,
+  { sessionId, email, code, locale, ipHash }: VerifyOtpInput,
 ): Promise<VerifyOtpResult> {
   const normalised = normaliseEmail(email);
   const now = Math.floor(Date.now() / 1000);
@@ -265,11 +273,18 @@ export async function verifyOtp(
 
   if (expected !== row.code_hash) return { ok: false, error: "invalid_code" };
 
-  // Mark consumed + stamp the session. Verification now happens BEFORE the
-  // patient sends any chat message, so the session row may not exist yet — use
-  // an UPSERT (not a bare UPDATE) so the verified state is recorded either way.
-  // The later message-save in the agent endpoint does ON CONFLICT DO UPDATE on
-  // `messages`/`locale` only, so it never clobbers `verified_email`.
+  // Mark consumed + stamp the session + RECORD CONSENT, atomically.
+  //
+  // Verification now happens BEFORE the patient sends any chat message, so the
+  // session row may not exist yet — use an UPSERT (not a bare UPDATE) so the
+  // verified state is recorded either way. The later message-save in the agent
+  // endpoint does ON CONFLICT DO UPDATE on `messages`/`locale` only, so it
+  // never clobbers `verified_email`.
+  //
+  // Consent rows go in the SAME batch (PDPA 2026): the consent gate the patient
+  // accepted is what unlocked this verification, so a verified session must
+  // never exist without the matching consent record. Splitting these into two
+  // writes would allow exactly that on a partial failure.
   await env.DB.batch([
     env.DB.prepare(
       "UPDATE email_otps SET consumed_at = ? WHERE id = ?",
@@ -280,6 +295,11 @@ export async function verifyOtp(
         "ON CONFLICT(id) DO UPDATE SET verified_email = excluded.verified_email, " +
         "email_verified_at = excluded.email_verified_at, updated_at = excluded.updated_at",
     ).bind(sessionId, normalised, now, now, now),
+    ...(await buildConsentInserts(
+      env,
+      { sessionId, email: normalised, locale: locale ?? "en", ipHash },
+      now,
+    )),
   ]);
 
   return { ok: true, verifiedEmail: normalised };

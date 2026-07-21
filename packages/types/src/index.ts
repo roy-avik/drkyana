@@ -16,6 +16,9 @@ export * from "./dls";
 // View DSL — declarative admin views rendered by MCP Apps (docs/view-dsl.md).
 export * from "./view-dsl";
 
+// Patient consent scopes + policy version (Bangladesh PDPA 2026).
+export * from "./consent";
+
 /**
  * Placeholder the receptionist agent uses in place of the patient's real name.
  * The name is PII and never reaches the LLM: the server strips it from anything

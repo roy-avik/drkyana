@@ -11,7 +11,12 @@ export interface D1PreparedStatement {
   bind(...values: unknown[]): D1PreparedStatement;
   all<T = Record<string, unknown>>(): Promise<{ results: T[] }>;
   first<T = Record<string, unknown>>(col?: string): Promise<T | null>;
-  run(): Promise<{ success: boolean }>;
+  /**
+   * `meta.changes` is how D1 reports affected-row counts — needed to tell a
+   * conditional UPDATE that matched from one that silently matched nothing
+   * (e.g. withdrawing a consent that was not in force).
+   */
+  run(): Promise<{ success: boolean; meta?: { changes?: number } }>;
 }
 export interface D1Database {
   prepare(query: string): D1PreparedStatement;
