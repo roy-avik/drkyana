@@ -118,7 +118,7 @@ npm run db:migrate:remote          # ... against the deployed D1
 node scripts/check-isolation.mjs --dist
 ```
 
-Python deps for the image script only: `pip install "pillow==12.3.0"` (pinned: `--check` compares assets byte-for-byte, so a Pillow bump needs the assets regenerated in the same commit). The locale linter is stdlib-only.
+Python deps for the image script only: `pip install pillow`. The locale linter is stdlib-only.
 
 ---
 

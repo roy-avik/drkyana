@@ -137,7 +137,7 @@ python3 scripts/locales.py check
 npm run db:migrate:local | :remote         # apply migrations
 ```
 
-Python deps: `pip install "pillow==12.3.0"` (image script only; pinned — see the CI note).
+Python deps: `pip install pillow` (image script only).
 
 ## Provisioning (Cloudflare account)
 

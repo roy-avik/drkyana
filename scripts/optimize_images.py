@@ -88,6 +88,43 @@ def _digest(path: Path) -> str:
     return h.hexdigest()
 
 
+# Max per-channel difference tolerated between the committed output and a fresh
+# encode. JPEG is lossy and its encoder is not bit-identical across libjpeg
+# builds, so a couple of levels of drift is normal and imperceptible. PNG is
+# lossless, so its pixels must match exactly.
+_PIXEL_TOLERANCE = {".jpg": 2, ".jpeg": 2, ".png": 0}
+
+
+def _pixels_differ(a: Path, b: Path) -> str | None:
+    """Compare two encoded images by their DECODED pixels.
+
+    WHY not compare file bytes: the encoders are not reproducible across
+    platforms. Pillow 12.3.0 on Windows and the same 12.3.0 on Linux emit
+    different PNG streams for identical pixels (different zlib build), so a
+    byte comparison fails in CI for a file that is perfectly up to date —
+    which is exactly what it did here.
+
+    What this check is actually for is catching "someone changed assets/ and
+    forgot to regenerate public/assets/". A changed source moves the pixels, so
+    comparing pixels catches that while ignoring encoder noise.
+
+    Returns a human-readable reason, or None if they match.
+    """
+    with Image.open(a) as ia, Image.open(b) as ib:
+        ia = ia.convert("RGBA")
+        ib = ib.convert("RGBA")
+        if ia.size != ib.size:
+            return f"size {ia.size} != {ib.size}"
+        tolerance = _PIXEL_TOLERANCE.get(a.suffix.lower(), 0)
+        worst = max(
+            (abs(pa - pb) for pa, pb in zip(ia.tobytes(), ib.tobytes())),
+            default=0,
+        )
+        if worst > tolerance:
+            return f"pixels differ (max channel delta {worst} > {tolerance})"
+    return None
+
+
 def run(check_only: bool = False) -> int:
     if not SRC.exists():
         print(f"missing source dir: {SRC}", file=sys.stderr)
@@ -104,13 +141,12 @@ def run(check_only: bool = False) -> int:
             if not dst.exists():
                 stale.append(f"{dst_name}: missing")
                 continue
-            before = _digest(dst)
             tmp = dst.with_suffix(dst.suffix + ".check")
             fn(src, tmp)
-            after = _digest(tmp)
+            reason = _pixels_differ(dst, tmp)
             tmp.unlink(missing_ok=True)
-            if before != after:
-                stale.append(f"{dst_name}: stale")
+            if reason:
+                stale.append(f"{dst_name}: stale — {reason}")
             continue
         print(f"  {src_name}  ->  {dst.relative_to(ROOT)}")
         fn(src, dst)

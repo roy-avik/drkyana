@@ -29,12 +29,8 @@ jobs:
         with:
           python-version: '3.12'
 
-      # Pinned: optimize_images.py --check compares the committed asset byte-for
-      # byte against a fresh encode, so an unpinned Pillow turns a compression
-      # change in a new release into a red build on an unrelated PR. Bumping
-      # this pin means regenerating the assets in the same commit.
       - name: Install Python deps
-        run: pip install "pillow==12.3.0"
+        run: pip install pillow
 
       - name: Lint locales
         run: python scripts/locales.py check
