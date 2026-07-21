@@ -29,7 +29,7 @@
  * AUTH (remote only): wrangler reads CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID
  * from the environment (set as Pages build env vars). No token lives in the repo.
  */
-import { readdirSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
 const DB = "drkyana";
@@ -58,12 +58,46 @@ if (!local) {
 }
 
 // --- wrangler helpers ---------------------------------------------------
+
+/** Turn a wrangler failure into a legible, actionable message and exit 1. */
+function failWithDiagnosis(err) {
+  const out = `${err?.stdout ?? ""}${err?.stderr ?? ""}`;
+  // Cloudflare API auth failure (missing/expired token, or a token lacking the
+  // D1 permission). This is the failure a Pages build hits when CLOUDFLARE_API_TOKEN
+  // is unset or under-scoped — the raw execFileSync stack trace buries it.
+  const isAuth = /Authentication error|code:\s*10000|\b10000\b/.test(out);
+  console.error("\n[migrate] wrangler could not reach the D1 API.\n");
+  if (isAuth) {
+    console.error(
+      "  Cause: Cloudflare API authentication failed (code 10000).\n\n" +
+        "  The remote migrate runs `wrangler d1 execute --remote`, which needs an\n" +
+        "  API token. On a Pages build that comes from the build environment\n" +
+        "  variables, NOT from an interactive login. Check, in the Pages project\n" +
+        "  → Settings → Variables and Secrets (Production):\n\n" +
+        "    • CLOUDFLARE_API_TOKEN — set, not expired, and carrying the\n" +
+        "        \x1b[1mAccount → D1 → Edit\x1b[0m permission on this account.\n" +
+        "        A token scoped only to Pages/Workers will fail here with 10000.\n" +
+        "    • CLOUDFLARE_ACCOUNT_ID — the account that owns the `drkyana` D1.\n\n" +
+        "  Create/repair the token at dash.cloudflare.com → My Profile → API Tokens\n" +
+        "  (or use the 'Edit Cloudflare Workers' template, then add D1 → Edit).\n",
+    );
+  } else {
+    // Some other wrangler failure — surface CF's own error text, not our stack.
+    console.error(out.trim() || String(err?.message ?? err));
+  }
+  process.exit(1);
+}
+
 function wrangler(args) {
   // --yes so the CF build auto-installs wrangler via npx without prompting.
-  return execFileSync(npx, ["--yes", "wrangler", ...args], {
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "inherit"],
-  });
+  try {
+    return execFileSync(npx, ["--yes", "wrangler", ...args], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+  } catch (err) {
+    failWithDiagnosis(err);
+  }
 }
 const sql = (command) =>
   wrangler(["d1", "execute", DB, target, "--json", "--command", command]);
@@ -94,6 +128,33 @@ const initialized = () =>
   rows(sql("SELECT 1 AS x FROM sqlite_master WHERE type='table' AND name='patients' LIMIT 1"))
     .length > 0;
 
+/** Tables/columns a migration creates, parsed from its SQL. */
+function declaredObjects(file) {
+  const sqlText = readFileSync(`${DIR}/${file}`, "utf8");
+  const tables = [...sqlText.matchAll(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([A-Za-z_][\w]*)/gi)]
+    .map((m) => m[1]);
+  const columns = [
+    ...sqlText.matchAll(/ALTER\s+TABLE\s+([A-Za-z_][\w]*)\s+ADD\s+COLUMN\s+([A-Za-z_][\w]*)/gi),
+  ].map((m) => ({ table: m[1], column: m[2] }));
+  return { tables, columns };
+}
+
+/** Is every object this migration declares already present in the DB? */
+function alreadyApplied(file) {
+  const { tables, columns } = declaredObjects(file);
+  if (tables.length === 0 && columns.length === 0) return false; // can't prove it — don't assume
+  for (const t of tables) {
+    if (rows(sql(`SELECT 1 AS x FROM sqlite_master WHERE type='table' AND name='${t}' LIMIT 1`)).length === 0) {
+      return false;
+    }
+  }
+  for (const { table, column } of columns) {
+    const cols = rows(sql(`PRAGMA table_info('${table}')`)).map((r) => r.name);
+    if (!cols.includes(column)) return false;
+  }
+  return true;
+}
+
 if (applied.size === 0 && initialized()) {
   if (local) {
     // A local DB predating this tracking table was built by the old script,
@@ -107,14 +168,36 @@ if (applied.size === 0 && initialized()) {
     process.exit(1);
   }
   // Remote first run against a DB initialized out-of-band, before this
-  // automation existed: ADOPT it — record current migrations as applied WITHOUT
+  // automation existed: ADOPT it — record migrations as applied WITHOUT
   // re-running them (0001's CREATE TABLEs / the ALTERs would error on re-run).
-  // A truly fresh DB has no `patients` table and falls through to run everything.
-  for (const f of files) sql(`INSERT OR IGNORE INTO applied_migrations (name) VALUES ('${f}')`);
+  //
+  // CRITICAL: adopt only migrations we can PROVE are already applied, and stop
+  // at the first one we cannot. The original version adopted every file on
+  // disk, which assumed the live DB was at the latest migration. That
+  // assumption broke the moment a migration merged before the automation was
+  // switched on: prod was missing 0007 (admin_actions, merged 2026-07-05) and
+  // 0008 (consents), and blanket adoption would have recorded both as applied
+  // while their tables did not exist — masking the gap permanently instead of
+  // fixing it. Stopping at the first unprovable migration means the rest fall
+  // through and actually run.
+  const adoptable = [];
+  for (const f of files) {
+    if (!alreadyApplied(f)) break;
+    adoptable.push(f);
+  }
+  for (const f of adoptable) {
+    sql(`INSERT OR IGNORE INTO applied_migrations (name) VALUES ('${f}')`);
+    applied.add(f);
+  }
+  const remaining = files.length - adoptable.length;
   console.log(
-    `[migrate] adopted existing remote DB — recorded ${files.length} migration(s) as applied (no SQL re-run).`,
+    `[migrate] adopted existing remote DB — recorded ${adoptable.length} migration(s) as already applied` +
+      (remaining
+        ? `; ${remaining} genuinely pending, applying now.`
+        : " (no SQL re-run)."),
   );
-  process.exit(0);
+  // Deliberately fall THROUGH rather than exiting: anything we could not prove
+  // was already applied is real pending work and must actually run.
 }
 
 const pending = files.filter((f) => !applied.has(f));
