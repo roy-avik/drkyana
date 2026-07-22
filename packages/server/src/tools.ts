@@ -45,6 +45,15 @@ export interface ToolSpec<TArgs = unknown, TResult = unknown> {
    * by view tools, whose ViewDocument payload is for rendering, not reasoning.
    */
   modelSummary?(result: TResult): string;
+  /**
+   * Mark a READ tool as accessing one patient's record (memory, intake detail,
+   * transcript). Successful calls are logged to admin_actions with
+   * kind='read' — the PHI-access audit (Phase 0.8): WHO looked at WHICH
+   * record, never what it said. Deliberately NOT set on queue/list views
+   * (list_intakes, appointments) — logging every glance at the queue would
+   * bury the record-level accesses the audit exists to answer for.
+   */
+  phiRead?: boolean;
 }
 
 /** Identity helper for type inference when declaring a tool. */
@@ -91,11 +100,15 @@ export function toAiSdkTools(registry: ToolRegistry, ctx: AgentContext): ToolSet
           ...common,
           execute: async (args: unknown) => {
             const result = await execute(args, ctx);
-            // Cross-session activity log: successful ADMIN writes are
-            // recorded (fire-and-forget) so other sessions/surfaces can see
-            // what happened here. Soft errors ({ error }) don't log.
+            // Activity + PHI-access log, fire-and-forget. Successful ADMIN
+            // writes are recorded (kind='write' — the cross-session feed);
+            // successful record-level READS of patient data (spec.phiRead)
+            // are recorded as kind='read' — the compliance audit. Soft
+            // errors ({ error }) don't log: nothing happened.
+            const shouldLog =
+              spec.category !== "read" || spec.phiRead === true;
             if (
-              spec.category !== "read" &&
+              shouldLog &&
               ctx.caller.kind === "admin" &&
               !(result && typeof result === "object" && "error" in result)
             ) {
@@ -105,6 +118,7 @@ export function toAiSdkTools(registry: ToolRegistry, ctx: AgentContext): ToolSet
                   surface: "agent",
                   tool: spec.name,
                   args,
+                  kind: spec.category === "read" ? "read" : "write",
                 }),
               );
             }

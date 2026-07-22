@@ -181,16 +181,19 @@ async function callTool(
     };
   }
 
-  // Cross-session activity log: successful writes from MCP hosts (Claude /
+  // Activity + PHI-access log: successful writes from MCP hosts (Claude /
   // ChatGPT apps — model calls AND clicks inside rendered views) land in
-  // admin_actions so other sessions can see them.
-  if (spec.category !== "read" && ctx.caller.kind === "admin") {
+  // admin_actions as kind='write'; record-level reads of patient data
+  // (spec.phiRead) land as kind='read' — the compliance audit covers this
+  // surface too, since an MCP host reads the same records the console does.
+  if ((spec.category !== "read" || spec.phiRead === true) && ctx.caller.kind === "admin") {
     ctx.waitUntil(
       recordAdminAction(ctx.env, {
         actor: ctx.caller.email,
         surface: "mcp",
         tool: name,
         args: parsed.data,
+        kind: spec.category === "read" ? "read" : "write",
       }),
     );
   }

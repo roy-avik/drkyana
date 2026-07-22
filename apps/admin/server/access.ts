@@ -77,8 +77,16 @@ function accessConfig(): { teamDomain: string; aud: string } | null {
   return { teamDomain, aud };
 }
 
-/** Is the explicit local-dev bypass enabled? Must be opt-in, never the default. */
+/**
+ * Is the explicit local-dev bypass enabled? Must be opt-in, never the default —
+ * and STRUCTURALLY impossible in production (Phase 0.8): `next build` inlines
+ * NODE_ENV="production" into the deployed worker, so this function is compiled
+ * to `false` there no matter what env vars are set. Before this gate,
+ * ADMIN_DEV_OPEN=1 was a live env-flag path to all PHI on a deployed worker;
+ * now the flag only works under `next dev`.
+ */
 function devOpenEnabled(): boolean {
+  if (process.env.NODE_ENV === "production") return false;
   let env: CloudflareEnv | undefined;
   try {
     env = getCloudflareContext().env;

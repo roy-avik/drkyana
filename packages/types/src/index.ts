@@ -372,13 +372,21 @@ export interface ToolInvocationView {
 // Cross-session activity log (admin_actions — migration 0007)
 // ---------------------------------------------------------------------------
 
-/** Where a recorded admin write originated. */
+/** Where a recorded admin action originated. */
 export type AdminActionSurface = "agent" | "mcp" | "app-view";
+
+/**
+ * What kind of action was recorded. `write` = a state change (the cross-session
+ * activity feed). `read` = a logged PHI access (compliance) — who viewed which
+ * patient's data. Migration 0009 defaults existing rows to `write`.
+ */
+export type AdminActionKind = "write" | "read";
 
 export interface AdminActionRow {
   id: string;
   actor: string;
   surface: AdminActionSurface;
+  kind: AdminActionKind;
   tool: string;
   /** Filtered args: short primitives only (ids/statuses) — never bodies. */
   detail: Record<string, unknown>;

@@ -51,10 +51,12 @@ export const POST = withAccess(async (req, identity) => {
 
   try {
     const result = await spec.execute(parsed.data, agentCtx);
-    // Cross-session activity log: in-app view clicks that WRITE are recorded
-    // so other sessions (incl. MCP hosts) can see them.
+    // Activity + PHI-access log: in-app view clicks that WRITE are recorded
+    // (kind='write') so other sessions see them; clicks that open one
+    // patient's record (spec.phiRead) are recorded as kind='read' for the
+    // compliance audit.
     if (
-      spec.category !== "read" &&
+      (spec.category !== "read" || spec.phiRead === true) &&
       !(result && typeof result === "object" && "error" in result)
     ) {
       ctx.waitUntil(
@@ -63,6 +65,7 @@ export const POST = withAccess(async (req, identity) => {
           surface: "app-view",
           tool: body.tool!,
           args: parsed.data,
+          kind: spec.category === "read" ? "read" : "write",
         }),
       );
     }

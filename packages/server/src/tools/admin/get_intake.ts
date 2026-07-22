@@ -23,6 +23,7 @@ export const getIntakeTool = defineTool({
     "history, logistics, triage, and status. Use before drafting a note, " +
     "referral, certificate, or follow-up for that visit.",
   category: "read",
+  phiRead: true,
   inputSchema,
   async execute(
     args,

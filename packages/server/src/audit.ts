@@ -9,11 +9,11 @@
  * enum-ish strings). Document bodies, notes, and anything long never enter
  * the log — the log answers WHO did WHAT to WHICH record, not what it said.
  */
-import type { AdminActionRow, AdminActionSurface } from "@drkyana/types";
+import type { AdminActionRow, AdminActionSurface, AdminActionKind } from "@drkyana/types";
 import type { Env } from "./bindings";
 
 export type ActionSurface = AdminActionSurface;
-export type { AdminActionRow };
+export type { AdminActionRow, AdminActionKind };
 
 const MAX_DETAIL_VALUE = 80;
 
@@ -36,16 +36,19 @@ export async function recordAdminAction(
     surface: ActionSurface;
     tool: string;
     args?: unknown;
+    /** 'write' (default) = a state change; 'read' = a logged PHI access. */
+    kind?: AdminActionKind;
   },
 ): Promise<void> {
   try {
     await env.DB.prepare(
-      "INSERT INTO admin_actions (id, actor, surface, tool, detail, at) VALUES (?, ?, ?, ?, ?, unixepoch())",
+      "INSERT INTO admin_actions (id, actor, surface, kind, tool, detail, at) VALUES (?, ?, ?, ?, ?, ?, unixepoch())",
     )
       .bind(
         `act_${crypto.randomUUID()}`,
         entry.actor,
         entry.surface,
+        entry.kind ?? "write",
         entry.tool,
         JSON.stringify(filterActionDetail(entry.args)),
       )
@@ -65,17 +68,23 @@ export async function recordAdminAction(
 export async function listAdminActions(
   env: Env,
   limit = 20,
+  /** Filter by kind. Defaults to 'write' so the activity feed stays about state
+   *  changes; pass 'read' for the PHI-access audit, or null for everything. */
+  kind: AdminActionKind | null = "write",
 ): Promise<AdminActionRow[]> {
   try {
+    const where = kind ? "WHERE kind = ?" : "";
+    const binds: unknown[] = kind ? [kind, Math.min(Math.max(limit, 1), 100)] : [Math.min(Math.max(limit, 1), 100)];
     const { results } = await env.DB.prepare(
-      "SELECT * FROM admin_actions ORDER BY at DESC LIMIT ?",
+      `SELECT * FROM admin_actions ${where} ORDER BY at DESC LIMIT ?`,
     )
-      .bind(Math.min(Math.max(limit, 1), 100))
+      .bind(...binds)
       .all<Record<string, unknown>>();
     return (results ?? []).map((r) => ({
       id: String(r.id),
       actor: String(r.actor),
       surface: (r.surface as ActionSurface) ?? "agent",
+      kind: (r.kind as AdminActionKind) ?? "write",
       tool: String(r.tool),
       detail: safeParse(r.detail),
       at: Number(r.at ?? 0),

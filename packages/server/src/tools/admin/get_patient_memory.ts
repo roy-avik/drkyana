@@ -1,10 +1,11 @@
 /**
  * get_patient_memory — read a patient's longitudinal record: the narrative
  * `summary` plus STRUCTURED `memory` (conditions/allergies/medications/etc.) for
- * continuity across visits. Reads of patient memory should be access-logged in a
- * later phase (see docs "Security & compliance").
+ * continuity across visits.
  *
- * category 'read'.
+ * category 'read', phiRead: successful calls are access-logged to
+ * admin_actions with kind='read' (Phase 0.8 — who read which record, from
+ * every surface: agent loop, MCP hosts, view clicks).
  */
 import { z } from "zod";
 import { defineTool } from "../../tools";
@@ -23,6 +24,7 @@ export const getPatientMemoryTool = defineTool({
     "memory (conditions, allergies, medications, recurring complaints, flags). " +
     "Use it for continuity when drafting clinical documents.",
   category: "read",
+  phiRead: true,
   inputSchema,
   async execute(
     args,
