@@ -69,6 +69,22 @@ export interface SendEmailBinding {
 }
 
 /**
+ * Service-binding RPC surface of the drkyana-ops Worker's `EmailSender`
+ * entrypoint (apps/ops). Lets the webpack-built admin Worker send SMTP mail to
+ * arbitrary patient addresses WITHOUT bundling worker-mailer — the ops Worker
+ * (esbuild) hosts the socket work; this is just a typed RPC stub. Reachable
+ * only through the binding, never via public HTTP.
+ */
+export interface OpsEmailService {
+  sendPatientEmail(args: {
+    to: string;
+    subject: string;
+    text: string;
+    attachment?: { filename: string; contentBase64: string; mimeType: string };
+  }): Promise<{ ok: true; to: string } | { ok: false; error: string }>;
+}
+
+/**
  * Workers AI binding (`AI`). Used ONLY for embeddings here (Anthropic has no
  * embeddings API): the KB query is embedded with a multilingual 1024-dim model
  * (`@cf/baai/bge-m3`) whose dimensions match the `drkyana-kb` Vectorize index.
@@ -100,6 +116,8 @@ export interface Env {
   AI: Ai;
   // email
   EMAIL: SendEmailBinding;
+  /** Optional: drkyana-ops EmailSender service binding (admin Worker only). */
+  OPS?: OpsEmailService;
   // secrets
   ANTHROPIC_API_KEY: string;
   PATIENT_AGENT_TOKEN: string;

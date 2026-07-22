@@ -1,13 +1,14 @@
 /**
- * send_receptionist_email — send an email as receptionist@drkyana.com via the
- * Cloudflare Email Service `send_email` binding (From = RECEPTIONIST_FROM).
+ * send_receptionist_email — send an email as the clinic (From =
+ * RECEPTIONIST_FROM) to ANY recipient, patients included.
  *
  * EXTERNAL action: needsApproval (default) — Dr Kyana approves the recipient,
  * subject, and body before anything is sent ("agent drafts; the dentist sends").
  *
- * Delegates message construction + sending to the shared `sendEmail` helper
- * (src/email.ts), which always sets From to the verified RECEPTIONIST_FROM —
- * never a model-supplied sender.
+ * Delivery goes through `deliverPatientEmail` (src/patient_email.ts): the
+ * Cloudflare EMAIL binding first, SMTP via the drkyana-ops service binding as
+ * fallback — so patient addresses work even before the sending domain is
+ * onboarded. From is always the verified clinic identity, never model-supplied.
  *
  * category 'external'.
  */
@@ -15,7 +16,7 @@ import { z } from "zod";
 import { defineTool } from "../../tools";
 import type { AgentContext } from "../../context";
 import { assertAdmin } from "../../context";
-import { sendEmail } from "../../email";
+import { deliverPatientEmail } from "../../patient_email";
 
 const inputSchema = z.object({
   to: z.string().email().describe("Recipient email address."),
@@ -34,10 +35,10 @@ export const sendReceptionistEmailTool = defineTool({
   async execute(
     args,
     ctx: AgentContext,
-  ): Promise<{ ok: true; to: string } | { error: string }> {
+  ): Promise<{ ok: true; to: string; transport: string } | { error: string }> {
     assertAdmin(ctx);
-    const res = await sendEmail(ctx.env, args);
+    const res = await deliverPatientEmail(ctx.env, args);
     if (!res.ok) return { error: res.error };
-    return { ok: true, to: res.to };
+    return { ok: true, to: res.to, transport: res.transport };
   },
 });

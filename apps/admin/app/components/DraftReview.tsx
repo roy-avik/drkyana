@@ -47,15 +47,19 @@ export default function DraftReview({ initial }: { initial: DraftRow }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        // The route returns the transport errors on a failed delivery — show
+        // them, because "why didn't this send" must be answerable from here.
+        const err = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(err?.error ?? `HTTP ${res.status}`);
+      }
       const data = (await res.json()) as {
         draft: DraftRow;
-        stubbed?: boolean;
-        note?: string;
+        transport?: string;
       };
       setDraft(data.draft);
-      if (data.stubbed) {
-        setNotice(data.note ?? "Marked sent (delivery pipeline pending).");
+      if (action === "send") {
+        setNotice(`Sent to the patient with the PDF attached (via ${data.transport ?? "email"}).`);
       } else {
         setNotice("Draft approved.");
       }
@@ -154,9 +158,9 @@ export default function DraftReview({ initial }: { initial: DraftRow }) {
       <div className="card space-y-2">
         <h2 className="text-sm font-semibold">Review actions</h2>
         <p className="text-xs text-muted">
-          Drafts are agent-generated. Nothing is sent until you approve. The send
-          pipeline (PDF + email) is wired in a later phase — &ldquo;Send&rdquo; currently
-          records the action only.
+          Drafts are agent-generated. Nothing is sent until you approve.
+          &ldquo;Send&rdquo; compiles the PDF and emails it to the patient&rsquo;s
+          verified address; the draft is only marked sent if delivery succeeds.
         </p>
         <div className="flex gap-2">
           <button

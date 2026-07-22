@@ -35,6 +35,13 @@
   "send_email": [
     { "name": "EMAIL", "remote": true }
   ],
+  // drkyana-ops EmailSender entrypoint (SMTP to arbitrary patient addresses).
+  // A NAMED entrypoint: reachable only through this binding, never public HTTP.
+  // Exists because this Worker's webpack build can't bundle worker-mailer —
+  // see packages/server/src/patient_email.ts for the transport story.
+  "services": [
+    { "binding": "OPS", "service": "drkyana-ops", "entrypoint": "EmailSender" }
+  ],
   "vars": {
     "RECEPTIONIST_FROM": "care@drkyana.com",
     "DR_KYANA_NOTIFY_EMAIL": "kyanalotfi96@gmail.com"

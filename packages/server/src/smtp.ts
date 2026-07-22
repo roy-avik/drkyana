@@ -28,11 +28,18 @@ export interface SmtpEmailArgs {
   to: string;
   subject: string;
   text: string;
+  /** Optional file attachment; content must be base64 (worker-mailer emits it
+   *  verbatim under Content-Transfer-Encoding: base64). */
+  attachment?: {
+    filename: string;
+    contentBase64: string;
+    mimeType: string;
+  };
 }
 
 export async function sendSmtpEmail(
   env: Env,
-  { to, subject, text }: SmtpEmailArgs,
+  { to, subject, text, attachment }: SmtpEmailArgs,
 ): Promise<{ ok: true; to: string } | { ok: false; error: string }> {
   const from = env.SMTP_USER || env.RECEPTIONIST_FROM;
   const password = env.SMTP_PASSWORD;
@@ -61,6 +68,17 @@ export async function sendSmtpEmail(
         to,
         subject,
         text,
+        ...(attachment
+          ? {
+              attachments: [
+                {
+                  filename: attachment.filename,
+                  content: attachment.contentBase64,
+                  mimeType: attachment.mimeType,
+                },
+              ],
+            }
+          : {}),
       },
     );
     return { ok: true, to };
