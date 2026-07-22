@@ -27,6 +27,7 @@ export const listPatientTranscriptsTool = defineTool({
     "List a patient's past chat conversations (most recent first), with message " +
     "counts and any rolling summary. Use get_transcript to read one in full.",
   category: "read",
+  phiRead: true,
   inputSchema,
   async execute(
     args,

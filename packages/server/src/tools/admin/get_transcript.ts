@@ -38,6 +38,7 @@ export const getTranscriptTool = defineTool({
     "Read one chat conversation (by session id) as a list of role/text turns. " +
     "Use after list_patient_transcripts to review what a patient said.",
   category: "read",
+  phiRead: true,
   inputSchema,
   async execute(
     args,

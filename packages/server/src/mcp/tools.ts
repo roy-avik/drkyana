@@ -79,6 +79,9 @@ export const openIntakeTool = defineTool({
     "Open one intake as an interactive detail view (full record, medical history, " +
     "appointments, status form).",
   category: "read",
+  // Opening one patient's full record is a PHI access — audit-logged as
+  // kind='read' from every surface (agent loop, MCP host, view click).
+  phiRead: true,
   inputSchema: z.object({ intakeId: z.string().min(1) }),
   modelSummary: summarize,
   async execute(args, ctx: AgentContext) {
@@ -127,6 +130,9 @@ export const openDraftTool = defineTool({
     "Open one draft in the interactive review view (rendered markdown, citations, " +
     "edit + approve/send actions).",
   category: "read",
+  // A draft is a clinical document about one patient — opening it is a PHI
+  // access, audit-logged as kind='read'.
+  phiRead: true,
   inputSchema: z.object({ draftId: z.string().min(1) }),
   modelSummary: summarize,
   async execute(args, ctx: AgentContext) {
