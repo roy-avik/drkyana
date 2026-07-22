@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from '../router';
 
 // Consent control for the signed-in patient (PDPA 2026). The law requires that
 // withdrawing consent be as easy as giving it, so this is a real control, not
@@ -107,8 +108,11 @@ export function ConsentPanel({
       <p className="mt-1 text-xs text-muted">
         {t(
           'consent.subheading',
-          'You can change these at any time. Withdrawing takes effect immediately.',
-        )}
+          'You can change these at any time. Changes take effect from your next message.',
+        )}{' '}
+        <Link to="/privacy" className="underline underline-offset-2 hover:text-ink">
+          {t('legal.privacy.link_label', 'Privacy Notice')}
+        </Link>
       </p>
 
       <ul className="mt-4 flex flex-col gap-3">

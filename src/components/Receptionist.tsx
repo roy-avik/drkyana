@@ -9,6 +9,7 @@ import { PATIENT_NAME_TOKEN } from '@drkyana/types';
 import { useTranslation } from '../i18n/useTranslation';
 import { CLINIC_EMAIL } from './Contact';
 import { IntakeForm } from './IntakeForm';
+import { LegalLine } from './LegalLine';
 import { OtpStep } from './OtpStep';
 import { Link } from '../router';
 import { renderMarkdown } from '../lib/markdown';
@@ -246,6 +247,15 @@ export function Receptionist() {
                 <p className="max-w-md text-center text-xs text-muted">
                   {t('intake.consent.health')}
                 </p>
+                {/* Terms + Privacy links with the exact policy version the
+                    consent rows will record — the gate must show what is
+                    being agreed to, not just assert that something is. */}
+                <LegalLine
+                  t={t}
+                  templateKey="intake.consent.legal"
+                  fallback="By continuing you accept the {terms} and acknowledge the {privacy}."
+                  className="max-w-md text-center text-xs text-muted"
+                />
                 <div className="flex flex-col items-stretch gap-2 sm:flex-row">
                   <button
                     type="button"

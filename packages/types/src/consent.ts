@@ -32,11 +32,15 @@ export const CONSENT_SCOPES_AT_VERIFY: readonly ConsentScope[] = [
 ] as const;
 
 /**
- * Bump whenever the consent wording changes in any locale. Recorded on every
- * row, so "which text did this patient agree to" is answerable after an edit.
- * Date-based because that is how a regulator will ask the question.
+ * Bump whenever the consent wording OR the published legal pages
+ * (/terms, /privacy, /support — the locale `legal.*` keys) change. Recorded on
+ * every consent row, so "which text did this patient agree to" is answerable
+ * after an edit. Date-based because that is how a regulator will ask.
+ *
+ * 2026-07-23: first version with the full published Terms/Privacy/Support
+ * pages behind it (counsel-agent reviewed).
  */
-export const CONSENT_POLICY_VERSION = "2026-07-22";
+export const CONSENT_POLICY_VERSION = "2026-07-23";
 
 export interface ConsentRow {
   id: string;

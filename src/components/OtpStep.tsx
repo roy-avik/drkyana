@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { LegalLine } from './LegalLine';
 
 /**
  * Email OTP verification step.
@@ -190,6 +191,16 @@ export function OtpStep({
       {errorKey && (
         <p className="text-xs text-red">{resolveErrorMessage(errorKey)}</p>
       )}
+      {/* Verifying RECORDS the consents (they are written in the same D1 batch
+          that marks the session verified — see verifyOtp), so the legal line
+          must be visible here too: /account reaches this step without ever
+          passing the receptionist's consent gate. */}
+      <LegalLine
+        t={t}
+        templateKey="receptionist.otp.legal"
+        fallback="Verifying your email records your consent as described in the {privacy} and your acceptance of the {terms}."
+        className="text-xs text-muted"
+      />
     </div>
   );
 }
