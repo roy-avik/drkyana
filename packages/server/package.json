@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./otp": "./src/lib/mail_otp.ts"
+    "./otp": "./src/lib/mail_otp.ts",
+    "./smtp": "./src/smtp.ts"
   },
   "types": "./src/index.ts",
   "dependencies": {

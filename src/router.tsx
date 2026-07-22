@@ -50,13 +50,12 @@ export function RouterProvider({ children }: { children: ReactNode }) {
 
   const navigate = useCallback((to: string) => {
     const url = new URL(to, window.location.origin);
-    const samePage = url.pathname === window.location.pathname;
     window.history.pushState({}, '', url);
     setPath(url.pathname);
-    // Same-page hash links don't trigger a re-render that would scroll, so do it
-    // here; cross-page navigation scrolls after the new page mounts.
-    if (samePage) applyScroll(url.hash);
-    else applyScroll(url.hash);
+    // applyScroll waits a frame, which covers both cases: same-page hash links
+    // (no re-render happens) and cross-page navigation (the new page has
+    // mounted by the time the frame fires).
+    applyScroll(url.hash);
   }, []);
 
   return (

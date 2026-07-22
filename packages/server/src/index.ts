@@ -38,7 +38,15 @@ export {
 export { embedQuery, embedTexts, EMBEDDING_MODEL, EMBEDDING_DIM } from "./embeddings";
 
 // Email helper (Cloudflare Email Service `send_email` binding). Server-only.
-export { sendEmail, buildRawEmail, type SendEmailArgs } from "./email";
+export { sendEmail, buildRawEmail, type SendEmailArgs, type EmailAttachment } from "./email";
+
+// Patient-bound email: binding first, SMTP-via-ops RPC fallback. Safe in the
+// barrel — it never imports worker-mailer (the ops Worker hosts the sockets).
+export {
+  deliverPatientEmail,
+  type PatientEmailArgs,
+  type PatientEmailResult,
+} from "./patient_email";
 
 // Patient consent (PDPA 2026). Pure D1 + Web Crypto — no sockets, so it is
 // safe in the barrel and importable from the patient Pages Functions, which is

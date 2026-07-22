@@ -61,6 +61,11 @@ jobs:
       - name: Build patient
         run: npm run build
 
+      # Patients load this over Dhaka mobile — the platform limits are far too
+      # generous to protect them, so the budget lives here (150 KB gzip JS).
+      - name: Patient bundle size budget
+        run: node scripts/check-bundle-size.mjs
+
       - name: Build admin (Next.js + Serwist)
         run: npm run build --workspace=@drkyana/admin
 

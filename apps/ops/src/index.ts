@@ -12,9 +12,29 @@
  * There is no PHI here and no public surface: the trigger requires the secret,
  * and there's nothing sensitive in the health output.
  */
+import { WorkerEntrypoint } from "cloudflare:workers";
+import { sendSmtpEmail, type SmtpEmailArgs } from "@drkyana/server/smtp";
 import { ReminderWorkflow, RetentionWorkflow, ScheduledResearchWorkflow, type OpsEnv } from "./workflows";
 
 export { ReminderWorkflow, RetentionWorkflow, ScheduledResearchWorkflow };
+
+/**
+ * EmailSender — SMTP delivery to arbitrary patient addresses, exposed as a
+ * NAMED entrypoint so it is reachable ONLY via a service binding (the admin
+ * Worker binds it as `OPS`), never via public HTTP routing.
+ *
+ * WHY here: the admin app's webpack build cannot bundle worker-mailer (it
+ * imports the `cloudflare:sockets` built-in), so the socket work lives in this
+ * esbuild-bundled Worker — the same reason patient OTP delivery runs on the
+ * Pages side. Uses the same GoDaddy mailbox + SMTP_* secrets as OTP.
+ */
+export class EmailSender extends WorkerEntrypoint<OpsEnv> {
+  async sendPatientEmail(
+    args: SmtpEmailArgs,
+  ): Promise<{ ok: true; to: string } | { ok: false; error: string }> {
+    return sendSmtpEmail(this.env, args);
+  }
+}
 
 const WORKFLOWS: Record<string, keyof OpsEnv> = {
   reminders: "REMINDER_WF",
