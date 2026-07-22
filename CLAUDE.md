@@ -149,7 +149,7 @@ Resources (created): D1 `drkyana`, KV `drkyana` (bind as `KV`), Vectorize `drkya
 - **Admin worker `drkyana-admin`**: paste resource IDs into `apps/admin/wrangler.jsonc`; add the **Workers AI (`AI`)** binding; set `ACCESS_TEAM_DOMAIN`/`ACCESS_AUD`; put Cloudflare Access in front.
 - **MCP connectors (Claude/ChatGPT apps, incl. iOS)**: `/api/mcp` speaks MCP OAuth (DCR + PKCE; sign-in federates to the Access SSO at `/oauth/authorize`). Requires a path-scoped Access **Bypass** app for `/.well-known/*`, `/api/oauth/register`, `/api/oauth/token`, `/api/mcp` (the Worker enforces bearer/Access auth itself). Setup + revocation: `docs/connect-agents.md`.
 - **Email Service**: onboard `drkyana.com` for Email Sending (SPF/DKIM on `cf-bounce.drkyana.com` — root MX stays with GoDaddy). **Known runtime risk:** `packages/server/src/email.ts` calls `EMAIL.send({from,to,raw})`; validate against the `cloudflare:email` `EmailMessage` API when onboarding.
-- **Scheduled reminders**: logic is in `scheduled/reminders.ts`, reachable via `POST /api/cron/reminders`, but OpenNext exposes no `scheduled()` hook — wire a small separate cron Worker (or external scheduler) to call it.
+- **Ops Worker `drkyana-ops`** (`apps/ops`): hosts the scheduled jobs the OpenNext admin worker can't (it exports only `fetch`). Three Cloudflare **Workflows**, each fired by a `schedules` cron on its binding (no `scheduled()` handler needed): `ReminderWorkflow` (03:00 UTC → `runReminders`, the appointment+urgent digest to Dr Kyana), `RetentionWorkflow` (03:30 → `runRetention`, purge spent OTPs + compact idle session transcripts, PDPA), `ScheduledResearchWorkflow` (04:00 → `runScheduledResearch`). Deploy **manually**: `cd apps/ops && npm run deploy` (NOT built by the Pages Git integration). Secrets on this Worker: `ANTHROPIC_API_KEY`, `OPS_TRIGGER_TOKEN` (bearer for the `POST /trigger/<wf>` manual test fire), `IP_HASH_SALT`. `GET /` returns health + each job's last-run record (kept in KV `ops:last:<name>`). The admin `/api/cron/*` routes remain the on-demand triggers.
 - **Anthropic BAA** before any real patient PHI. Test with synthetic patients until then.
 
 ## RTL / Farsi caution (patient site)
@@ -176,7 +176,7 @@ Persian is RTL. **Do not set `dir="rtl"` on `<html>`** — it flips every flex/g
 ## Deferred
 
 - **Radiology regulatory sign-off** (Bangladesh) + R2 image **retention policy** + **Anthropic BAA** — required before real PHI / imaging.
-- **Cron Worker** for scheduled reminders (logic exists; needs a scheduled-handler host).
+- **Full multi-step deep research** (plan → PubMed/KB/web search → synthesize) as its own Workflow — `ScheduledResearchWorkflow` currently runs the single-call `intake_patterns` analysis; the multi-step version is a later enhancement.
 - **Farsi receptionist tuning** — the agent handles FA, but examples/eval are EN+BN-weighted.
 - **Email `EmailMessage` API validation** during Email Service onboarding.
 

@@ -1,0 +1,21 @@
+{
+  "name": "@drkyana/ops",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "cf-typegen": "wrangler types"
+  },
+  "dependencies": {
+    "@drkyana/server": "*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260101.0",
+    "typescript": "^5.7.0",
+    "wrangler": "^4.95.0"
+  },
+  "comment": "SERVER-ONLY scheduled jobs (Cloudflare Workflows). Deploy manually: npm run deploy. Not part of the Pages build."
+}

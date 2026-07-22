@@ -1,111 +1,203 @@
 /**
- * Scheduled reminders (server-only). A plain async function the admin Worker's
- * cron can call (wired separately — see runReminders' callers + the cron note in
- * the report). NOT streamed, no model in the loop: it queries D1 for actionable
- * intakes and emails Dr Kyana a compact digest via the shared `sendEmail` helper.
+ * Scheduled reminders (server-only). A plain async function the ops Worker's
+ * ReminderWorkflow calls on its cron (and the Access-gated POST /api/cron/
+ * reminders route still exposes for on-demand runs). NOT streamed, no model in
+ * the loop: it queries D1 and emails Dr Kyana a compact digest via `sendEmail`.
  *
- * The D1 schema (migrations/0001_init.sql) tracks workflow `status` but has no
- * explicit appointment-date column (scheduling lives downstream in Dr Kyana's
- * head / replies). So v1 reminders surface two follow-up signals:
- *   - `scheduled` intakes she should confirm for the day, and
- *   - urgent (RED/ORANGE) intakes still `new` (uncontacted) — a pending follow-up.
- * If an `appointment_at` column is added later, extend `selectReminders` to also
- * pull next-day appointments; the email path stays the same.
+ * WHAT CHANGED (Phase 0.4): the original version only queried `intakes`, because
+ * it was written before migration 0002 added the `appointments` table — so it
+ * could never actually remind about a booked appointment. It now leads with
+ * upcoming appointments (the real scheduling signal) and keeps the urgent-
+ * uncontacted-intake list as a safety net (a RED/ORANGE intake with no
+ * appointment yet is exactly what must not slip).
  *
- * Best-effort: a failed send is logged into the result, never thrown — the cron
- * should not hard-fail on a transient email error.
+ * AUDIENCE: the digest goes to Dr Kyana (DR_KYANA_NOTIFY_EMAIL), not to
+ * patients. Patient-facing appointment reminders wait for the verified
+ * send-to-any-recipient email path (Phase 0.2 / A1) — the cloudflare:email
+ * binding today only reaches verified destinations.
+ *
+ * Best-effort: a failed send is logged into the result, never thrown — the
+ * scheduled run must not hard-fail on a transient email error.
  */
 import type { Env } from "../bindings";
 import { sendEmail } from "../email";
 
-const DAY = 24 * 60 * 60;
+const HOUR = 60 * 60;
+const DAY = 24 * HOUR;
 
-export interface ReminderItem {
+/** How far ahead to surface appointments (the next two days). */
+const APPOINTMENT_HORIZON_SECONDS = 2 * DAY;
+/** How far back an urgent intake stays on the "still uncontacted" list. */
+const URGENT_LOOKBACK_SECONDS = 3 * DAY;
+/** Cap each section so a backlog can't produce an unbounded email. */
+const SECTION_LIMIT = 50;
+
+export interface AppointmentReminder {
+  kind: "appointment";
+  appointmentId: string;
+  scheduledAt: number;
+  status: string;
+  patientName: string | null;
+  patientPhone: string | null;
+  chamberName: string | null;
+  chamberArea: string | null;
+}
+
+export interface UrgentIntakeReminder {
+  kind: "urgent_intake";
   intakeId: string;
   name: string | null;
   phone: string | null;
   triageLevel: string | null;
-  status: string;
-  reason: "scheduled_followup" | "urgent_uncontacted";
   createdAt: number;
 }
 
+export type ReminderItem = AppointmentReminder | UrgentIntakeReminder;
+
 export interface ReminderRunResult {
   considered: number;
+  appointments: number;
+  urgentIntakes: number;
   emailed: boolean;
   error?: string;
 }
 
-interface RawReminderRow {
+interface RawAppointmentRow {
+  id: string;
+  scheduled_at: number;
+  status: string;
+  patient_name: string | null;
+  patient_phone: string | null;
+  chamber_name: string | null;
+  chamber_area: string | null;
+}
+
+interface RawUrgentRow {
   id: string;
   name: string | null;
   phone: string | null;
   triage_level: string | null;
-  status: string;
   created_at: number;
 }
 
 /**
- * Pull intakes that warrant a reminder. Parameterized, compact (capped), and
- * ordered urgent-first. `now` is injectable for testing/determinism.
+ * Upcoming appointments to prepare/confirm: proposed or confirmed, with a slot
+ * inside the forward horizon. Joined to the patient (name/phone) and, when set,
+ * the chamber (name/area). `now` is injectable for deterministic tests.
  */
-export async function selectReminders(
+export async function selectUpcomingAppointments(
   env: Env,
   now: number = Math.floor(Date.now() / 1000),
-): Promise<ReminderItem[]> {
-  // scheduled intakes (to confirm) OR urgent-but-uncontacted within the last 3 days.
-  const urgentSince = now - 3 * DAY;
+): Promise<AppointmentReminder[]> {
   const { results } = await env.DB.prepare(
-    "SELECT id, name, phone, triage_level, status, created_at FROM intakes " +
-      "WHERE status = 'scheduled' " +
-      "OR (status = 'new' AND triage_level IN ('RED','ORANGE') AND created_at >= ?) " +
-      "ORDER BY CASE triage_level WHEN 'RED' THEN 0 WHEN 'ORANGE' THEN 1 WHEN 'YELLOW' THEN 2 WHEN 'GREEN' THEN 3 ELSE 4 END, created_at DESC " +
-      "LIMIT 50",
+    "SELECT a.id, a.scheduled_at, a.status, " +
+      "p.name AS patient_name, p.phone AS patient_phone, " +
+      "c.name AS chamber_name, c.area AS chamber_area " +
+      "FROM appointments a " +
+      "JOIN patients p ON p.id = a.patient_id " +
+      "LEFT JOIN chambers c ON c.id = a.chamber_id " +
+      "WHERE a.status IN ('proposed','confirmed') " +
+      "AND a.scheduled_at >= ? AND a.scheduled_at < ? " +
+      "ORDER BY a.scheduled_at ASC LIMIT ?",
   )
-    .bind(urgentSince)
-    .all<RawReminderRow>();
+    .bind(now, now + APPOINTMENT_HORIZON_SECONDS, SECTION_LIMIT)
+    .all<RawAppointmentRow>();
 
   return (results ?? []).map((r) => ({
+    kind: "appointment" as const,
+    appointmentId: r.id,
+    scheduledAt: r.scheduled_at,
+    status: r.status,
+    patientName: r.patient_name,
+    patientPhone: r.patient_phone,
+    chamberName: r.chamber_name,
+    chamberArea: r.chamber_area,
+  }));
+}
+
+/**
+ * Urgent intakes that are still uncontacted: RED/ORANGE, status 'new', created
+ * within the lookback window. This is the safety net the old reminder existed
+ * for and is orthogonal to appointments — an urgent intake with no appointment
+ * yet is the case most likely to slip.
+ */
+export async function selectUrgentIntakes(
+  env: Env,
+  now: number = Math.floor(Date.now() / 1000),
+): Promise<UrgentIntakeReminder[]> {
+  const { results } = await env.DB.prepare(
+    "SELECT id, name, phone, triage_level, created_at FROM intakes " +
+      "WHERE status = 'new' AND triage_level IN ('RED','ORANGE') AND created_at >= ? " +
+      "ORDER BY CASE triage_level WHEN 'RED' THEN 0 WHEN 'ORANGE' THEN 1 ELSE 2 END, created_at DESC " +
+      "LIMIT ?",
+  )
+    .bind(now - URGENT_LOOKBACK_SECONDS, SECTION_LIMIT)
+    .all<RawUrgentRow>();
+
+  return (results ?? []).map((r) => ({
+    kind: "urgent_intake" as const,
     intakeId: r.id,
     name: r.name,
     phone: r.phone,
     triageLevel: r.triage_level,
-    status: r.status,
-    reason: r.status === "scheduled" ? "scheduled_followup" : "urgent_uncontacted",
     createdAt: r.created_at,
   }));
 }
 
+/** Both reminder signals, appointments first. `now` injectable for tests. */
+export async function selectReminders(
+  env: Env,
+  now: number = Math.floor(Date.now() / 1000),
+): Promise<ReminderItem[]> {
+  const [appts, urgent] = await Promise.all([
+    selectUpcomingAppointments(env, now),
+    selectUrgentIntakes(env, now),
+  ]);
+  return [...appts, ...urgent];
+}
+
+function fmtSlot(unixSeconds: number): string {
+  // Dhaka is UTC+6, fixed (no DST) — safe to format the digest in local time.
+  const d = new Date((unixSeconds + 6 * HOUR) * 1000);
+  const date = d.toISOString().slice(0, 10);
+  const time = d.toISOString().slice(11, 16);
+  return `${date} ${time} (Dhaka)`;
+}
+
 function buildDigestBody(items: ReminderItem[]): string {
-  const scheduled = items.filter((i) => i.reason === "scheduled_followup");
-  const urgent = items.filter((i) => i.reason === "urgent_uncontacted");
+  const appts = items.filter((i): i is AppointmentReminder => i.kind === "appointment");
+  const urgent = items.filter((i): i is UrgentIntakeReminder => i.kind === "urgent_intake");
   const lines: string[] = ["Daily clinic reminders from your receptionist.", ""];
 
+  if (appts.length) {
+    lines.push(`Upcoming appointments (${appts.length}):`);
+    for (const a of appts) {
+      const where = a.chamberName ? ` @ ${a.chamberName}${a.chamberArea ? `, ${a.chamberArea}` : ""}` : "";
+      lines.push(
+        `  • ${fmtSlot(a.scheduledAt)} — ${a.patientName ?? "Unknown"}` +
+          `${a.patientPhone ? ` (${a.patientPhone})` : ""}${where} [${a.status}]`,
+      );
+    }
+    lines.push("");
+  }
+
   if (urgent.length) {
-    lines.push(`URGENT — still uncontacted (${urgent.length}):`);
-    for (const i of urgent) {
+    lines.push(`Urgent — still uncontacted (${urgent.length}):`);
+    for (const u of urgent) {
       lines.push(
-        `  • [${i.triageLevel}] ${i.name ?? "Unknown"}` +
-          `${i.phone ? ` — ${i.phone}` : ""} (intake ${i.intakeId})`,
+        `  • [${u.triageLevel}] ${u.name ?? "Unknown"}` +
+          `${u.phone ? ` — ${u.phone}` : ""} (intake ${u.intakeId})`,
       );
     }
     lines.push("");
   }
-  if (scheduled.length) {
-    lines.push(`Scheduled to confirm (${scheduled.length}):`);
-    for (const i of scheduled) {
-      lines.push(
-        `  • ${i.name ?? "Unknown"}${i.phone ? ` — ${i.phone}` : ""} (intake ${i.intakeId})`,
-      );
-    }
-    lines.push("");
-  }
+
   lines.push("Open the practice console to act on these.");
   return lines.join("\n");
 }
 
 /**
- * Run the reminder pass: select actionable intakes and email Dr Kyana a digest.
+ * Run the reminder pass: select actionable items and email Dr Kyana a digest.
  * No-op (no email) when there's nothing to remind about. Never throws.
  */
 export async function runReminders(
@@ -116,13 +208,26 @@ export async function runReminders(
   try {
     items = await selectReminders(env, now);
   } catch (e) {
-    return { considered: 0, emailed: false, error: e instanceof Error ? e.message : "query failed" };
+    return {
+      considered: 0,
+      appointments: 0,
+      urgentIntakes: 0,
+      emailed: false,
+      error: e instanceof Error ? e.message : "query failed",
+    };
   }
 
-  if (items.length === 0) return { considered: 0, emailed: false };
+  const appointments = items.filter((i) => i.kind === "appointment").length;
+  const urgentIntakes = items.length - appointments;
+
+  if (items.length === 0) {
+    return { considered: 0, appointments: 0, urgentIntakes: 0, emailed: false };
+  }
 
   const to = env.DR_KYANA_NOTIFY_EMAIL;
-  if (!to) return { considered: items.length, emailed: false, error: "no notify address" };
+  if (!to) {
+    return { considered: items.length, appointments, urgentIntakes, emailed: false, error: "no notify address" };
+  }
 
   const res = await sendEmail(env, {
     to,
@@ -130,7 +235,11 @@ export async function runReminders(
     body: buildDigestBody(items),
   });
 
-  return res.ok
-    ? { considered: items.length, emailed: true }
-    : { considered: items.length, emailed: false, error: res.error };
+  return {
+    considered: items.length,
+    appointments,
+    urgentIntakes,
+    emailed: res.ok,
+    error: res.ok ? undefined : res.error,
+  };
 }

@@ -82,9 +82,22 @@ export {
 export {
   runReminders,
   selectReminders,
+  selectUpcomingAppointments,
+  selectUrgentIntakes,
   type ReminderItem,
+  type AppointmentReminder,
+  type UrgentIntakeReminder,
   type ReminderRunResult,
 } from "./scheduled/reminders";
+
+// Data retention pass (cron-driven; PDPA). Purges spent OTPs + compacts idle
+// session transcripts. Server-only.
+export {
+  runRetention,
+  DEFAULT_RETENTION,
+  type RetentionConfig,
+  type RetentionResult,
+} from "./scheduled/retention";
 
 // Deep-research inference runs (plan item 5) — cron + clinician-initiated. Server-only.
 export {

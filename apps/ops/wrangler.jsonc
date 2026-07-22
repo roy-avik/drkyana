@@ -1,0 +1,68 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "drkyana-ops",
+  "main": "src/index.ts",
+  // Workflow `schedules` support needs a recent runtime + Wrangler (the feature
+  // shipped 2026-06-02). Keep this date current when bumping Wrangler.
+  "compatibility_date": "2026-07-13",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+
+  // The three scheduled jobs. Each `schedules` cron creates a Workflow instance
+  // automatically — no top-level triggers.crons and no scheduled() handler
+  // needed (the reason this Worker exists: the OpenNext admin worker can't host
+  // a scheduled handler). Times are UTC; Dhaka is UTC+6, so 03:00 UTC = 09:00.
+  // Staggered so they don't contend for the same minute.
+  "workflows": [
+    {
+      "binding": "REMINDER_WF",
+      "name": "drkyana-reminders",
+      "class_name": "ReminderWorkflow",
+      "schedules": ["0 3 * * *"]
+    },
+    {
+      "binding": "RETENTION_WF",
+      "name": "drkyana-retention",
+      "class_name": "RetentionWorkflow",
+      "schedules": ["30 3 * * *"]
+    },
+    {
+      "binding": "RESEARCH_WF",
+      "name": "drkyana-research",
+      "class_name": "ScheduledResearchWorkflow",
+      "schedules": ["0 4 * * *"]
+    }
+  ],
+
+  // Same data plane as the admin worker (shared account resources).
+  "d1_databases": [
+    { "binding": "DB", "database_name": "drkyana", "database_id": "d7825979-7ab9-4cc3-8e97-5ba1e31eb686" }
+  ],
+  "kv_namespaces": [
+    { "binding": "KV", "id": "cfe12f92e1ad489297da35c1b9cae74a" }
+  ],
+  "vectorize": [
+    { "binding": "VECTORIZE", "index_name": "drkyana-kb" }
+  ],
+  "r2_buckets": [
+    { "binding": "R2", "bucket_name": "drkyana-media" }
+  ],
+  "ai": { "binding": "AI" },
+  // Cloudflare Email Service — the reminder digest to Dr Kyana goes as
+  // care@drkyana.com (a verified destination, so it works pre-onboarding).
+  "send_email": [
+    { "name": "EMAIL", "remote": true }
+  ],
+  "vars": {
+    "RECEPTIONIST_FROM": "care@drkyana.com",
+    "DR_KYANA_NOTIFY_EMAIL": "kyanalotfi96@gmail.com"
+  }
+
+  // Secrets (never commit) — set with `wrangler secret put` on this Worker:
+  //   ANTHROPIC_API_KEY   — the ScheduledResearchWorkflow's Sonnet call.
+  //   OPS_TRIGGER_TOKEN    — bearer for POST /trigger/<wf> (manual test fire).
+  //   IP_HASH_SALT         — present so shared server helpers that read it don't
+  //                          see undefined (retention/reminders don't need it).
+  // Deploy: `npm run deploy` in apps/ops (wrangler deploy). NOT auto-deployed by
+  // the Pages Git integration — that only builds the patient site.
+}
