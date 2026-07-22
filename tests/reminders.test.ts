@@ -1,24 +1,39 @@
 import { describe, it, expect } from 'vitest';
-import { selectReminders, runReminders } from '../packages/server/src/scheduled/reminders';
+import {
+  selectUpcomingAppointments,
+  selectUrgentIntakes,
+  selectReminders,
+  runReminders,
+} from '../packages/server/src/scheduled/reminders';
 import type { Env } from '../packages/server/src/bindings';
 import { fakeD1 } from './helpers/d1';
 
-// The reminder pass is the only proactive contact the practice makes. It must
-// never throw (it runs unattended) and must never widen its own time window.
-//
-// NOTE: these pin the CURRENT intakes-based query. Phase 0.1/0.4 rewrites
-// selectReminders to read `appointments` — these tests are the regression net
-// for that change, and the table assertions are expected to be updated with it.
+// The reminder pass is the only proactive contact the practice makes. Phase 0.4
+// rewrote it to read the `appointments` table (the original only queried
+// `intakes`, so it could never remind about a booked slot) while keeping the
+// urgent-uncontacted-intake list as a safety net. It must never throw (it runs
+// unattended) and must never widen its own windows.
 
-const DAY = 24 * 60 * 60;
+const HOUR = 60 * 60;
+const DAY = 24 * HOUR;
 const NOW = 1_700_000_000;
 
-const row = (over: Partial<Record<string, unknown>> = {}) => ({
+const apptRow = (over: Partial<Record<string, unknown>> = {}) => ({
+  id: 'a1',
+  scheduled_at: NOW + HOUR,
+  status: 'confirmed',
+  patient_name: 'Rahim',
+  patient_phone: '01711',
+  chamber_name: 'Gulshan Chamber',
+  chamber_area: 'Gulshan',
+  ...over,
+});
+
+const urgentRow = (over: Partial<Record<string, unknown>> = {}) => ({
   id: 'i1',
-  name: 'Rahim',
-  phone: '01711',
+  name: 'Karim',
+  phone: '01822',
   triage_level: 'RED',
-  status: 'new',
   created_at: NOW - 100,
   ...over,
 });
@@ -26,90 +41,132 @@ const row = (over: Partial<Record<string, unknown>> = {}) => ({
 const envWith = (db: unknown, extra: Partial<Env> = {}) =>
   ({ DB: db, DR_KYANA_NOTIFY_EMAIL: 'dr@example.com', ...extra }) as unknown as Env;
 
-describe('selectReminders', () => {
-  it('binds the urgent window as a parameter, never interpolated', () => {
-    const d1 = fakeD1([]);
-    return selectReminders(envWith(d1.DB), NOW).then(() => {
-      const q = d1.onlyQuery();
-      expect(q.params).toEqual([NOW - 3 * DAY]);
-      expect(q.sql).toContain('?');
-      // A literal timestamp in the SQL would mean it was interpolated.
-      expect(q.sql).not.toContain(String(NOW - 3 * DAY));
+describe('selectUpcomingAppointments', () => {
+  it('queries the appointments table, joined to patient and chamber', async () => {
+    const d1 = fakeD1();
+    d1.whenAll('FROM appointments', [apptRow()]);
+    const items = await selectUpcomingAppointments(envWith(d1.DB), NOW);
+    const q = d1.find('FROM appointments')!;
+    expect(q.sql).toContain('JOIN patients');
+    expect(q.sql).toContain('LEFT JOIN chambers');
+    expect(items[0]).toEqual({
+      kind: 'appointment',
+      appointmentId: 'a1',
+      scheduledAt: NOW + HOUR,
+      status: 'confirmed',
+      patientName: 'Rahim',
+      patientPhone: '01711',
+      chamberName: 'Gulshan Chamber',
+      chamberArea: 'Gulshan',
     });
   });
 
-  it('honours the injected `now` rather than wall-clock time', async () => {
-    const d1 = fakeD1([]);
-    await selectReminders(envWith(d1.DB), 42);
-    expect(d1.onlyQuery().params).toEqual([42 - 3 * DAY]);
+  it('binds a forward 2-day window and only proposed/confirmed, parameterized', async () => {
+    const d1 = fakeD1();
+    d1.whenAll('FROM appointments', []);
+    await selectUpcomingAppointments(envWith(d1.DB), NOW);
+    const q = d1.find('FROM appointments')!;
+    expect(q.sql).toContain("status IN ('proposed','confirmed')");
+    // window = [now, now + 2 days); limit 50.
+    expect(q.params).toEqual([NOW, NOW + 2 * DAY, 50]);
+    expect(q.sql).not.toContain(String(NOW));
   });
 
-  it('caps the result set so a backlog cannot produce an unbounded email', async () => {
-    const d1 = fakeD1([]);
-    await selectReminders(envWith(d1.DB), NOW);
-    expect(d1.onlyQuery().sql).toContain('LIMIT 50');
+  it('honours injected `now`', async () => {
+    const d1 = fakeD1();
+    d1.whenAll('FROM appointments', []);
+    await selectUpcomingAppointments(envWith(d1.DB), 42);
+    expect(d1.find('FROM appointments')!.params).toEqual([42, 42 + 2 * DAY, 50]);
   });
 
-  it('derives reason from status: scheduled -> followup, otherwise urgent', async () => {
-    const d1 = fakeD1([row({ id: 'a', status: 'scheduled' }), row({ id: 'b', status: 'new' })]);
-    const items = await selectReminders(envWith(d1.DB), NOW);
-    expect(items.map((i) => [i.intakeId, i.reason])).toEqual([
-      ['a', 'scheduled_followup'],
-      ['b', 'urgent_uncontacted'],
-    ]);
+  it('tolerates a null chamber (LEFT JOIN) and null phone', async () => {
+    const d1 = fakeD1();
+    d1.whenAll('FROM appointments', [apptRow({ chamber_name: null, chamber_area: null, patient_phone: null })]);
+    const [item] = await selectUpcomingAppointments(envWith(d1.DB), NOW);
+    expect(item.chamberName).toBeNull();
+    expect(item.patientPhone).toBeNull();
+  });
+});
+
+describe('selectUrgentIntakes', () => {
+  it('selects only RED/ORANGE new intakes within the 3-day lookback, RED first', async () => {
+    const d1 = fakeD1();
+    d1.whenAll('FROM intakes', [urgentRow()]);
+    await selectUrgentIntakes(envWith(d1.DB), NOW);
+    const q = d1.find('FROM intakes')!;
+    expect(q.sql).toContain("status = 'new'");
+    expect(q.sql).toContain("triage_level IN ('RED','ORANGE')");
+    expect(q.sql).toContain('WHEN \'RED\' THEN 0');
+    expect(q.params).toEqual([NOW - 3 * DAY, 50]);
   });
 
-  it('maps snake_case columns onto the domain shape', async () => {
-    const d1 = fakeD1([row()]);
-    const [item] = await selectReminders(envWith(d1.DB), NOW);
+  it('maps columns onto the urgent-intake shape', async () => {
+    const d1 = fakeD1();
+    d1.whenAll('FROM intakes', [urgentRow()]);
+    const [item] = await selectUrgentIntakes(envWith(d1.DB), NOW);
     expect(item).toEqual({
+      kind: 'urgent_intake',
       intakeId: 'i1',
-      name: 'Rahim',
-      phone: '01711',
+      name: 'Karim',
+      phone: '01822',
       triageLevel: 'RED',
-      status: 'new',
-      reason: 'urgent_uncontacted',
       createdAt: NOW - 100,
     });
   });
+});
 
-  it('tolerates null name/phone/triage without throwing', async () => {
-    const d1 = fakeD1([row({ name: null, phone: null, triage_level: null })]);
-    const [item] = await selectReminders(envWith(d1.DB), NOW);
-    expect(item.name).toBeNull();
-    expect(item.phone).toBeNull();
+describe('selectReminders', () => {
+  it('returns appointments first, then urgent intakes', async () => {
+    const d1 = fakeD1();
+    d1.whenAll('FROM appointments', [apptRow()]);
+    d1.whenAll('FROM intakes', [urgentRow()]);
+    const items = await selectReminders(envWith(d1.DB), NOW);
+    expect(items.map((i) => i.kind)).toEqual(['appointment', 'urgent_intake']);
   });
 
-  it('returns [] when D1 yields no results array', async () => {
+  it('returns [] when both sources are empty', async () => {
     const d1 = fakeD1();
-    d1.setRows(undefined as never);
+    d1.whenAll('FROM appointments', []);
+    d1.whenAll('FROM intakes', []);
     await expect(selectReminders(envWith(d1.DB), NOW)).resolves.toEqual([]);
   });
 });
 
 describe('runReminders — never throws', () => {
   it('reports a query failure instead of throwing', async () => {
-    const d1 = fakeD1([]);
+    const d1 = fakeD1();
     d1.failNextWith(new Error('D1 exploded'));
     const res = await runReminders(envWith(d1.DB), NOW);
-    expect(res).toEqual({ considered: 0, emailed: false, error: 'D1 exploded' });
+    expect(res.emailed).toBe(false);
+    expect(res.error).toBe('D1 exploded');
+    expect(res.considered).toBe(0);
   });
 
   it('sends nothing when there is nothing to remind about', async () => {
-    const res = await runReminders(envWith(fakeD1([]).DB), NOW);
-    expect(res).toEqual({ considered: 0, emailed: false });
+    const d1 = fakeD1();
+    d1.whenAll('FROM appointments', []);
+    d1.whenAll('FROM intakes', []);
+    const res = await runReminders(envWith(d1.DB), NOW);
+    expect(res).toEqual({ considered: 0, appointments: 0, urgentIntakes: 0, emailed: false });
   });
 
   it('reports a missing notify address rather than failing silently', async () => {
-    const env = envWith(fakeD1([row()]).DB, { DR_KYANA_NOTIFY_EMAIL: undefined });
-    const res = await runReminders(env, NOW);
-    expect(res).toEqual({ considered: 1, emailed: false, error: 'no notify address' });
+    const d1 = fakeD1();
+    d1.whenAll('FROM appointments', [apptRow()]);
+    d1.whenAll('FROM intakes', []);
+    const res = await runReminders(envWith(d1.DB, { DR_KYANA_NOTIFY_EMAIL: undefined }), NOW);
+    expect(res).toEqual({ considered: 1, appointments: 1, urgentIntakes: 0, emailed: false, error: 'no notify address' });
   });
 
-  it('surfaces an email-binding failure as an error, not an exception', async () => {
-    // No EMAIL binding configured -> sendEmail returns {ok:false}, never throws.
-    const res = await runReminders(envWith(fakeD1([row()]).DB), NOW);
-    expect(res.considered).toBe(1);
+  it('counts each section and surfaces an email-binding failure as an error', async () => {
+    // No EMAIL binding -> sendEmail returns {ok:false}, never throws.
+    const d1 = fakeD1();
+    d1.whenAll('FROM appointments', [apptRow(), apptRow({ id: 'a2' })]);
+    d1.whenAll('FROM intakes', [urgentRow()]);
+    const res = await runReminders(envWith(d1.DB), NOW);
+    expect(res.considered).toBe(3);
+    expect(res.appointments).toBe(2);
+    expect(res.urgentIntakes).toBe(1);
     expect(res.emailed).toBe(false);
     expect(res.error).toBeTruthy();
   });

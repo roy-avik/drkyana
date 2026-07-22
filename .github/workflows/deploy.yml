@@ -47,6 +47,9 @@ jobs:
       - name: Typecheck server package
         run: npx tsc -p packages/server/tsconfig.json
 
+      - name: Typecheck ops worker
+        run: npm run typecheck --workspace=@drkyana/ops
+
       - name: Typecheck patient
         run: npm run typecheck
 

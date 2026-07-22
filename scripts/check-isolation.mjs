@@ -27,6 +27,7 @@ const SERVER_ALLOW = [
   /packages[\\/]server[\\/]/,
   /apps[\\/]admin[\\/]app[\\/]api[\\/]/, // Next.js route handlers
   /apps[\\/]admin[\\/]server[\\/]/,
+  /apps[\\/]ops[\\/]/, // drkyana-ops Worker — scheduled jobs, server-only, no client bundle
   /^functions[\\/]/, // Cloudflare Pages Functions (patient server endpoints)
   /\.server\.(ts|tsx|js|mjs)$/,
   /route\.(ts|js)$/, // Next.js route handlers

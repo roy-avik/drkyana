@@ -21,6 +21,9 @@ export function fakeD1<T = Record<string, unknown>>(rows: T[] = []) {
   // first() responses routed by SQL substring, so a function issuing several
   // different single-row queries can be driven precisely.
   const firstBySql: Array<{ match: string; value: unknown }> = [];
+  // all() responses routed by SQL substring, for a function that issues several
+  // different multi-row queries (e.g. reminders: appointments + urgent intakes).
+  const allBySql: Array<{ match: string; value: unknown[] }> = [];
 
   const DB = {
     prepare(sql: string) {
@@ -35,7 +38,8 @@ export function fakeD1<T = Record<string, unknown>>(rows: T[] = []) {
         async all<R = T>(): Promise<{ results: R[] }> {
           if (failWith) throw failWith;
           if (!queries.includes(recorded)) queries.push(recorded);
-          return { results: nextRows as unknown as R[] };
+          const hit = allBySql.find((r) => sql.includes(r.match));
+          return { results: (hit ? hit.value : nextRows) as unknown as R[] };
         },
         async run() {
           if (failWith) throw failWith;
@@ -68,6 +72,10 @@ export function fakeD1<T = Record<string, unknown>>(rows: T[] = []) {
     /** Route a .first() result by SQL substring. Later calls win on tie. */
     whenFirst(match: string, value: unknown) {
       firstBySql.unshift({ match, value });
+    },
+    /** Route a .all() result set by SQL substring. Later calls win on tie. */
+    whenAll(match: string, value: unknown[]) {
+      allBySql.unshift({ match, value });
     },
     failNextWith(e: Error) {
       failWith = e;
