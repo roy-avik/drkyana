@@ -10,12 +10,6 @@ const INSTA_QR = `${import.meta.env.BASE_URL}assets/insta-qr.png`;
 // the number held as a Worker secret — never in this bundle.
 export const CLINIC_EMAIL = 'care@drkyana.com';
 
-const MailIcon = (
-  <svg viewBox="0 0 24 24" aria-hidden="true" className="h-7 w-7">
-    <path fill="#EA4335" d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z" />
-  </svg>
-);
-
 const InstaIcon = (
   <svg viewBox="0 0 24 24" aria-hidden="true" className="h-7 w-7">
     <defs>
@@ -41,18 +35,6 @@ export function Contact() {
   const { t } = useTranslation();
 
   const cards = [
-    <a
-      key="email"
-      href="mailto:kyanalotfi96@gmail.com"
-      className="group flex flex-col items-start gap-4 rounded-2xl bg-white/[0.06] p-6 backdrop-blur-sm ring-1 ring-white/10 transition hover:-translate-y-1 hover:bg-white/[0.1] hover:ring-white/20"
-    >
-      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white">
-        {MailIcon}
-      </div>
-      <h3 className="text-lg font-semibold">{t('contact.email', 'Email')}</h3>
-      <p className="text-sm text-white/80 group-hover:text-white">kyanalotfi96@gmail.com</p>
-    </a>,
-
     <a
       key="instagram"
       href="https://instagram.com/drkyana"

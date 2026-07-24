@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dr Kyana — Schedule (mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --brand:#0f4c81; --accent:#3b82f6; --ink:#0f172a; --muted:#475569;
+    --surface:#ffffff; --surface-2:#f8fafc; --line:#e2e8f0; --line-soft:#eef2f7;
+    /* chambers */
+    --gulshan:#0f4c81;   --gulshan-bg:#e9f0f7;
+    --dhanmondi:#0d9488; --dhanmondi-bg:#e4f4f1;
+    --banani:#7c3aed;    --banani-bg:#f1eafc;
+    --uttara:#b45309;    --uttara-bg:#fbf0e3;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Poppins',system-ui,sans-serif;color:var(--ink);background:var(--surface-2);
+       -webkit-font-smoothing:antialiased;line-height:1.4}
+  .app{display:grid;grid-template-columns:268px 1fr;min-height:100vh}
+
+  /* ---------- Sidebar ---------- */
+  .side{background:var(--surface);border-right:1px solid var(--line);padding:22px 20px;display:flex;flex-direction:column;gap:26px}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand .dot{width:30px;height:30px;border-radius:9px;background:var(--brand);color:#fff;display:grid;place-items:center;font-weight:700;font-size:15px}
+  .brand h1{font-size:16px;font-weight:600;letter-spacing:-.01em}
+  .brand p{font-size:11px;color:var(--muted);font-weight:400}
+
+  .mini h3,.legend h3,.proposed h3{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin-bottom:12px}
+  .mini .mhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;font-weight:600}
+  .mini .mhead span{color:var(--muted);cursor:pointer}
+  .grid7{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+  .grid7 .d{font-size:10px;color:var(--muted);padding:4px 0}
+  .grid7 .n{font-size:12px;padding:5px 0;border-radius:7px;cursor:pointer}
+  .grid7 .n:hover{background:var(--surface-2)}
+  .grid7 .n.dim{color:#cbd5e1}
+  .grid7 .n.today{background:var(--brand);color:#fff;font-weight:600}
+  .grid7 .n.has::after{content:"";display:block;width:4px;height:4px;border-radius:50%;background:var(--accent);margin:2px auto 0}
+
+  .legend ul{list-style:none;display:flex;flex-direction:column;gap:10px}
+  .legend li{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:500}
+  .legend .sw{width:12px;height:12px;border-radius:4px}
+  .legend small{color:var(--muted);font-weight:400;margin-left:auto;font-size:11px}
+
+  .proposed{background:var(--surface-2);border:1px dashed #cbd5e1;border-radius:12px;padding:14px}
+  .proposed h3{margin-bottom:10px}
+  .pcard{background:#fff;border:1px solid var(--line);border-radius:9px;padding:10px 11px}
+  .pcard .pt{font-size:13px;font-weight:600}
+  .pcard .ps{font-size:11px;color:var(--muted);margin:2px 0 9px}
+  .pcard .pb{display:flex;gap:6px}
+  .btn{border:none;border-radius:7px;font-family:inherit;font-size:11px;font-weight:600;padding:6px 10px;cursor:pointer}
+  .btn.primary{background:var(--brand);color:#fff;flex:1}
+  .btn.ghost{background:#fff;border:1px solid var(--line);color:var(--muted);flex:1}
+
+  /* ---------- Main ---------- */
+  .main{display:flex;flex-direction:column;min-width:0}
+  .top{background:var(--surface);border-bottom:1px solid var(--line);padding:16px 24px;display:flex;align-items:center;gap:18px;position:sticky;top:0;z-index:5}
+  .top h2{font-size:18px;font-weight:600;letter-spacing:-.01em}
+  .nav{display:flex;align-items:center;gap:6px}
+  .nav .arw{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;color:var(--muted);font-size:15px;display:grid;place-items:center}
+  .nav .today{height:30px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:0 12px;font-size:12px;font-weight:600;cursor:pointer}
+  .range{font-size:14px;font-weight:500;color:var(--muted);margin-left:4px}
+  .seg{margin-left:auto;display:flex;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:3px}
+  .seg button{border:none;background:transparent;font-family:inherit;font-size:12px;font-weight:600;color:var(--muted);padding:6px 14px;border-radius:6px;cursor:pointer}
+  .seg button.on{background:#fff;color:var(--brand);box-shadow:0 1px 2px rgba(15,23,42,.08)}
+  .new{height:34px;border:none;background:var(--brand);color:#fff;border-radius:9px;padding:0 16px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px}
+
+  .cal{flex:1;overflow:auto;padding:0 0 40px}
+  .dayhead{display:grid;grid-template-columns:60px repeat(7,1fr);position:sticky;top:0;background:var(--surface-2);z-index:3;border-bottom:1px solid var(--line)}
+  .dayhead .gut{}
+  .dayhead .dh{padding:12px 8px;text-align:center;border-left:1px solid var(--line-soft)}
+  .dayhead .dh .dn{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+  .dayhead .dh .dd{font-size:18px;font-weight:600;margin-top:3px}
+  .dayhead .dh.today .dd{color:#fff;background:var(--brand);width:30px;height:30px;border-radius:50%;display:inline-grid;place-items:center;font-size:14px;margin-top:1px}
+
+  .body{display:grid;grid-template-columns:60px repeat(7,1fr)}
+  .gutter{display:flex;flex-direction:column}
+  .gutter .h{height:60px;font-size:10px;color:#94a3b8;text-align:right;padding-right:8px;transform:translateY(-6px)}
+  .col{position:relative;border-left:1px solid var(--line-soft);min-height:600px;
+       background:repeating-linear-gradient(to bottom,transparent 0,transparent 59px,var(--line-soft) 59px,var(--line-soft) 60px)}
+  .col.today{background:linear-gradient(#f7fafd,#f7fafd),repeating-linear-gradient(to bottom,transparent 0,transparent 59px,var(--line-soft) 59px,var(--line-soft) 60px);background-blend-mode:normal}
+
+  /* availability band (rule-derived) */
+  .band{position:absolute;left:3px;right:3px;border-radius:8px;z-index:0;border:1px dashed transparent}
+  .band span{position:absolute;top:5px;left:8px;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;opacity:.7}
+
+  /* appointment cards */
+  .appt{position:absolute;left:5px;right:5px;border-radius:8px;padding:6px 8px;z-index:1;overflow:hidden;cursor:pointer;
+        box-shadow:0 1px 2px rgba(15,23,42,.12);border-left:3px solid}
+  .appt .ti{font-size:11px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .appt .tm{font-size:10px;color:rgba(255,255,255,.85)}
+  .appt.sm{padding:4px 8px}
+  /* proposed: dashed, light, badge */
+  .appt.proposed{background:#fff;border:1px dashed var(--accent);border-left:3px solid var(--accent);box-shadow:0 2px 8px rgba(59,130,246,.18)}
+  .appt.proposed .ti{color:var(--ink)}
+  .appt.proposed .tm{color:var(--muted)}
+  .badge{display:inline-block;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:var(--accent);color:#fff;padding:1px 5px;border-radius:4px;margin-bottom:3px}
+  /* no-show */
+  .appt.noshow{background:#fff;border:1px solid var(--line);border-left:3px solid #cbd5e1;box-shadow:none}
+  .appt.noshow .ti{color:#94a3b8;text-decoration:line-through}
+  .appt.noshow .tm{color:#cbd5e1}
+  .nsflag{font-size:8px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.04em}
+
+  /* now line */
+  .now{position:absolute;left:0;right:0;height:0;border-top:2px solid #ef4444;z-index:2}
+  .now::before{content:"";position:absolute;left:-4px;top:-5px;width:8px;height:8px;border-radius:50%;background:#ef4444}
+
+  .hint{padding:14px 24px;font-size:12px;color:var(--muted);background:var(--surface);border-top:1px solid var(--line)}
+  .hint b{color:var(--ink);font-weight:600}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="side">
+    <div class="brand">
+      <div class="dot">K</div>
+      <div><h1>Dr Kyana</h1><p>Practice console</p></div>
+    </div>
+
+    <div class="mini">
+      <div class="mhead"><span>‹</span>June 2026<span>›</span></div>
+      <div class="grid7">
+        <div class="d">S</div><div class="d">M</div><div class="d">T</div><div class="d">W</div><div class="d">T</div><div class="d">F</div><div class="d">S</div>
+        <div class="n dim">31</div><div class="n has">1</div><div class="n has">2</div><div class="n today">3</div><div class="n has">4</div><div class="n has">5</div><div class="n">6</div>
+        <div class="n">7</div><div class="n">8</div><div class="n">9</div><div class="n">10</div><div class="n">11</div><div class="n">12</div><div class="n">13</div>
+        <div class="n">14</div><div class="n">15</div><div class="n">16</div><div class="n">17</div><div class="n">18</div><div class="n">19</div><div class="n">20</div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <h3>Chambers</h3>
+      <ul>
+        <li><span class="sw" style="background:var(--gulshan)"></span>Gulshan <small>Tue, Fri</small></li>
+        <li><span class="sw" style="background:var(--dhanmondi)"></span>Dhanmondi <small>Wed</small></li>
+        <li><span class="sw" style="background:var(--banani)"></span>Banani <small>Thu</small></li>
+        <li><span class="sw" style="background:var(--uttara)"></span>Uttara <small>Mon</small></li>
+      </ul>
+    </div>
+
+    <div class="proposed">
+      <h3>Proposed by agent · 1</h3>
+      <div class="pcard">
+        <div class="pt">Imran H. — Extraction consult</div>
+        <div class="ps">Wed 3 Jun · 12:00 · Dhanmondi<br/>From intake #2041 (urgent)</div>
+        <div class="pb">
+          <button class="btn primary">Approve</button>
+          <button class="btn ghost">Edit</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <header class="top">
+      <h2>Schedule</h2>
+      <div class="nav">
+        <button class="arw">‹</button>
+        <button class="today">Today</button>
+        <button class="arw">›</button>
+      </div>
+      <span class="range">Jun 1 – 7, 2026</span>
+      <div class="seg">
+        <button>Day</button><button class="on">Week</button><button>Agenda</button>
+      </div>
+      <button class="new">＋ New appointment</button>
+    </header>
+
+    <div class="cal">
+      <!-- day headers -->
+      <div class="dayhead">
+        <div class="gut"></div>
+        <div class="dh"><div class="dn">Sun</div><div class="dd">31</div></div>
+        <div class="dh"><div class="dn">Mon</div><div class="dd">1</div></div>
+        <div class="dh"><div class="dn">Tue</div><div class="dd">2</div></div>
+        <div class="dh today"><div class="dn">Wed</div><div class="dd">3</div></div>
+        <div class="dh"><div class="dn">Thu</div><div class="dd">4</div></div>
+        <div class="dh"><div class="dn">Fri</div><div class="dd">5</div></div>
+        <div class="dh"><div class="dn">Sat</div><div class="dd">6</div></div>
+      </div>
+
+      <!-- grid body -->
+      <div class="body">
+        <!-- time gutter -->
+        <div class="gutter">
+          <div class="h">9 AM</div><div class="h">10 AM</div><div class="h">11 AM</div><div class="h">12 PM</div>
+          <div class="h">1 PM</div><div class="h">2 PM</div><div class="h">3 PM</div><div class="h">4 PM</div>
+          <div class="h">5 PM</div><div class="h">6 PM</div>
+        </div>
+
+        <!-- Sun (empty) -->
+        <div class="col"></div>
+
+        <!-- Mon — Uttara -->
+        <div class="col">
+          <div class="band" style="top:0;height:180px;background:var(--uttara-bg)"><span style="color:var(--uttara)">Uttara</span></div>
+          <div class="appt" style="top:30px;height:60px;background:var(--uttara);border-color:#8a3f06">
+            <div class="ti">Karim R.</div><div class="tm">9:30 · Crown fitting</div>
+          </div>
+        </div>
+
+        <!-- Tue — Gulshan -->
+        <div class="col">
+          <div class="band" style="top:300px;height:240px;background:var(--gulshan-bg)"><span style="color:var(--gulshan)">Gulshan</span></div>
+          <div class="appt sm" style="top:330px;height:50px;background:var(--gulshan);border-color:#0a3a64">
+            <div class="ti">Rahim A.</div><div class="tm">2:30 · Scaling</div>
+          </div>
+          <div class="appt" style="top:420px;height:60px;background:var(--gulshan);border-color:#0a3a64">
+            <div class="ti">Nadia K.</div><div class="tm">4:00 · Root-canal consult</div>
+          </div>
+        </div>
+
+        <!-- Wed (today) — Dhanmondi -->
+        <div class="col today">
+          <div class="band" style="top:60px;height:240px;background:var(--dhanmondi-bg)"><span style="color:var(--dhanmondi)">Dhanmondi</span></div>
+          <div class="appt" style="top:90px;height:60px;background:var(--dhanmondi);border-color:#0a6e64">
+            <div class="ti">Farah S.</div><div class="tm">10:30 · Filling</div>
+          </div>
+          <!-- agent proposed -->
+          <div class="appt proposed" style="top:180px;height:60px">
+            <span class="badge">Proposed</span>
+            <div class="ti">Imran H. · 12:00</div>
+            <div class="tm">Extraction consult</div>
+          </div>
+          <div class="now" style="top:140px"></div>
+        </div>
+
+        <!-- Thu — Banani -->
+        <div class="col">
+          <div class="band" style="top:360px;height:240px;background:var(--banani-bg)"><span style="color:var(--banani)">Banani</span></div>
+          <div class="appt" style="top:390px;height:60px;background:var(--banani);border-color:#5b21b6">
+            <div class="ti">Sadia M.</div><div class="tm">3:30 · Whitening</div>
+          </div>
+          <div class="appt sm noshow" style="top:480px;height:50px">
+            <div class="nsflag">No-show</div>
+            <div class="ti">Tanvir I.</div>
+          </div>
+        </div>
+
+        <!-- Fri — Gulshan -->
+        <div class="col">
+          <div class="band" style="top:300px;height:180px;background:var(--gulshan-bg)"><span style="color:var(--gulshan)">Gulshan</span></div>
+          <div class="appt sm" style="top:330px;height:50px;background:var(--gulshan);border-color:#0a3a64">
+            <div class="ti">Mitu R.</div><div class="tm">2:30 · Cleaning</div>
+          </div>
+        </div>
+
+        <!-- Sat (empty) -->
+        <div class="col"></div>
+      </div>
+    </div>
+
+    <div class="hint">
+      <b>Reading the week:</b> soft dashed bands are rule-derived <b>availability</b> (where Dr Kyana is that day) · solid cards are confirmed <b>appointments</b>, colored by chamber · the dashed blue card is an <b>agent proposal</b> awaiting approval · the muted strikethrough is a <b>no-show</b>. One timezone (Dhaka) — no conversions.
+    </div>
+  </div>
+</div>
+</body>
+</html>
