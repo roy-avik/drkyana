@@ -7,8 +7,12 @@ ledger — what each phase is, and what has shipped. Update the **Status** and
 **PR** columns as work lands.
 
 **Current focus:** Phase 0 (pre-launch, real PHI under Bangladesh's PDPA 2026)
-is code-complete; the two items below marked ⏳ are the only things between it
-and a clean go-live.
+is **code-complete**. The published legal notice now carries full controller
+identity (BMDC No.) with internal-architecture detail removed. The only
+remaining Phase-0-adjacent item is the operational Email Service domain
+onboarding (dashboard, not code) that flips patient email from the SMTP
+fallback to the first-party binding. 0.11a (widen the PII strip) is a
+non-blocking future task.
 
 ## Phase 0 — launch blockers
 
@@ -28,36 +32,38 @@ and a clean go-live.
 
 ### 0.11 — controller identity + privacy-notice disclosure (the last blocker)
 
-Two coupled edits to the published legal pages; both bump
-`CONSENT_POLICY_VERSION`. Do them together in one version bump.
+- **Disclosure-reduction — ✅ done (2026-07-23).** The privacy notice no longer
+  names Cloudflare or GoDaddy (genericized to "third-party providers for
+  hosting and email delivery, some outside Bangladesh" — the PDPA-required
+  cross-border disclosure kept as a category). **Anthropic stays named** — the
+  material, consent-relevant processor. Also removed the internal-mechanism
+  wording (name-token placeholder, the SHA-256 fingerprint phrasing, the
+  "salted, hashed" IP and "enterprise sign-in" details) in favour of standard
+  privacy language, without weakening any required substance. The "what the AI
+  processes" line stays **truthful**: today only the name is withheld from the
+  model, so the notice does not claim contact details are withheld — it may
+  only be narrowed *after* 0.11a lands.
 
-1. **BMDC registration number.** Privacy §1 currently says "a dental surgeon
-   registered with the Bangladesh Medical & Dental Council". Counsel finding #5
-   wants the **full registered name + BMDC registration number** for
-   PDPA-grade controller identifiability. Blocked on the practice providing it.
+- **BMDC registration number — ✅ done (2026-07-25).** Privacy §1 now names the
+  **BMDC Registration No.** in all three locales. The number is a verifiable
+  public-register identifier, so it satisfies PDPA controller-identifiability on
+  its own — the practitioner's legal name is deliberately NOT printed (practice
+  decision, privacy). This is the go-live version of the notice;
+  `CONSENT_POLICY_VERSION` bumped to `2026-07-25`.
 
-2. **Reduce internal-architecture disclosure** (user request, 2026-07-23):
-   - Stop naming **Cloudflare** and **GoDaddy**. The *cross-border transfer*
-     disclosure is PDPA-required and stays, but as a category —
-     "infrastructure providers for hosting and email delivery, outside
-     Bangladesh". **Anthropic stays named** — the AI processing is the
-     material, consent-relevant disclosure.
-   - The "what reaches the AI" line stays **truthful**. Today only the name is
-     withheld from the model, so the line correctly says other details reach
-     Anthropic. It may only be narrowed *after* 0.11a below actually widens the
-     redaction — never before.
-
-   **0.11a (enabling code change) — widen the model-bound PII strip.** Today
-   `stripPatientName` (`packages/server/src/pii.ts`) withholds only the patient
-   NAME; phone/age/symptoms reach the model. `submit_intake` already reads
-   email + name from `ctx.caller` (server context), not from model args — do
-   the same for **phone** so the number is client-held and never enters the
-   model path. Age and symptoms MUST reach the model (triage needs them) and
-   stay disclosed. Once phone is withheld, the disclosure can honestly read
-   "your name and contact details are withheld from the AI; the symptoms, age
-   and history you describe do reach it." This is the `redactForModel` idea
-   from Phase 3, pulled forward because it lets the disclosure shrink truthfully
-   rather than by omission.
+- **0.11a — widen the model-bound PII strip (⏳ future task).** Today
+  `stripPatientName` (`packages/server/src/pii.ts`) withholds only the patient
+  NAME from the model; phone/age/symptoms reach Anthropic, which is why the
+  notice must currently say so. `submit_intake` already reads email + name from
+  `ctx.caller` (server context), not from model args — do the same for
+  **phone** so the number is client-held and never enters the model path. Age
+  and symptoms MUST reach the model (triage needs them) and stay disclosed.
+  Once phone is withheld, the disclosure can honestly narrow to "your name and
+  contact details are withheld from the AI; the symptoms, age and history you
+  describe do reach it." This is the `redactForModel` idea from Phase 3, pulled
+  forward because it lets the disclosure shrink truthfully rather than by
+  omission. **A future task master picks this up** — it is not a blocker for
+  go-live (the current disclosure is already accurate).
 
 ## Phase 1 — design language + component layer
 

@@ -41,7 +41,7 @@ export function LegalLine({
     if (part === '{privacy}') {
       return (
         <Link key={i} to="/privacy" className={linkCls}>
-          {t('legal.privacy.link_label', 'Privacy Notice')}
+          {t('legal.privacy.link_label', 'Privacy Policy')}
         </Link>
       );
     }

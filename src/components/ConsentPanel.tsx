@@ -111,7 +111,7 @@ export function ConsentPanel({
           'You can change these at any time. Changes take effect from your next message.',
         )}{' '}
         <Link to="/privacy" className="underline underline-offset-2 hover:text-ink">
-          {t('legal.privacy.link_label', 'Privacy Notice')}
+          {t('legal.privacy.link_label', 'Privacy Policy')}
         </Link>
       </p>
 
