@@ -1,9 +1,12 @@
 @import "tailwindcss";
 
-/* Brand tokens — match the patient site (calm, considered, modern). */
+/* Brand tokens — match the patient site (calm, considered, modern). Values
+   sourced from the DLS (packages/types/src/dls.ts) — accent is the
+   AA-passing (4.5:1+ on white) working magenta, not the decorative display
+   shade (that's hero-only, patient site). */
 @theme {
   --color-brand: #0f4c81;
-  --color-accent: #3b82f6;
+  --color-accent: #a8006e;
   --color-ink: #0f172a;
   --color-muted: #475569;
   --color-surface: #ffffff;

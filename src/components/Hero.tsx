@@ -18,7 +18,7 @@ export function Hero() {
           <span className="inline-flex items-center rounded-full bg-brand/[0.07] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-brand">
             {t('hero.pill', '✦ Dental Surgeon · Dhaka')}
           </span>
-          <h1 className="neon-heading mt-5 text-4xl font-bold leading-[1.05] tracking-tight text-brand md:text-6xl">
+          <h1 className="hero-heading mt-5 text-4xl font-bold leading-[1.05] tracking-tight text-brand md:text-6xl">
             {t('brand', 'Dr. Kyana')}
           </h1>
           <p className="mt-4 text-xl font-medium text-ink md:text-2xl">

@@ -163,7 +163,7 @@ Persian is RTL. **Do not set `dir="rtl"` on `<html>`** — it flips every flex/g
 - **Instagram:** [@drkyana](https://instagram.com/drkyana)
 - **WhatsApp:** Dr Kyana's number is **not published on the patient site** (personal number; public exposure invites contact outside any consent, record, or audit trail). It is held as the `DR_KYANA_WHATSAPP` Worker secret for the future admin-initiated escalation flow, and `scripts/check-isolation.mjs` fails the build if it appears in a client bundle.
 - **Practice model:** freelance across multiple Dhaka chambers; location set per booking; no fixed address.
-- **Brand color** `#0f4c81`, accent `#3b82f6`, ink `#0f172a`, muted `#475569`, surfaces `#ffffff`/`#f8fafc` (Tailwind `@theme` in `src/index.css`).
+- **Brand color** `#0f4c81`, accent `#a8006e` (AA-passing working magenta; `#ff4fd8` is the decorative display-only shade, hero name), ink `#0f172a`, muted `#475569`, surfaces `#ffffff`/`#f8fafc` (Tailwind `@theme` in `src/index.css`; DLS source of truth `packages/types/src/dls.ts`).
 - **Typography:** Poppins (Latin), Vazirmatn (Persian), Noto Sans Bengali.
 
 ## Out of scope (don't pull in without asking)
