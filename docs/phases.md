@@ -7,8 +7,12 @@ ledger — what each phase is, and what has shipped. Update the **Status** and
 **PR** columns as work lands.
 
 **Current focus:** Phase 0 (pre-launch, real PHI under Bangladesh's PDPA 2026)
-is code-complete; the two items below marked ⏳ are the only things between it
-and a clean go-live.
+is **code-complete**. The published legal notice now carries full controller
+identity (BMDC No.) with internal-architecture detail removed. The only
+remaining Phase-0-adjacent item is the operational Email Service domain
+onboarding (dashboard, not code) that flips patient email from the SMTP
+fallback to the first-party binding. 0.11a (widen the PII strip) is a
+non-blocking future task.
 
 ## Phase 0 — launch blockers
 
@@ -40,12 +44,12 @@ and a clean go-live.
   model, so the notice does not claim contact details are withheld — it may
   only be narrowed *after* 0.11a lands.
 
-- **BMDC registration number — ⏳ open.** Privacy §1 still says "a dental surgeon
-  registered with the Bangladesh Medical & Dental Council". Counsel finding #5
-  wants the **full registered name + BMDC registration number** for PDPA-grade
-  controller identifiability. Blocked on the practice supplying it. This edit
-  will be the definitive go-live version of the notice (bump
-  `CONSENT_POLICY_VERSION` then).
+- **BMDC registration number — ✅ done (2026-07-25).** Privacy §1 now names the
+  **BMDC Registration No.** in all three locales. The number is a verifiable
+  public-register identifier, so it satisfies PDPA controller-identifiability on
+  its own — the practitioner's legal name is deliberately NOT printed (practice
+  decision, privacy). This is the go-live version of the notice;
+  `CONSENT_POLICY_VERSION` bumped to `2026-07-25`.
 
 - **0.11a — widen the model-bound PII strip (⏳ future task).** Today
   `stripPatientName` (`packages/server/src/pii.ts`) withholds only the patient

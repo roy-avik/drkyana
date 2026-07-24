@@ -39,8 +39,10 @@ export const CONSENT_SCOPES_AT_VERIFY: readonly ConsentScope[] = [
  *
  * 2026-07-23: first version with the full published Terms/Privacy/Support
  * pages behind it (counsel-agent reviewed).
+ * 2026-07-25: go-live version — reduced internal-architecture disclosure and
+ * added the BMDC registration number (controller identity, counsel finding #5).
  */
-export const CONSENT_POLICY_VERSION = "2026-07-23";
+export const CONSENT_POLICY_VERSION = "2026-07-25";
 
 export interface ConsentRow {
   id: string;
