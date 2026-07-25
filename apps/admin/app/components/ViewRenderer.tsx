@@ -13,7 +13,7 @@ import type {
   ViewNode,
   VIEW_DSL_VERSION,
 } from "@drkyana/types";
-import { renderMarkdown } from "../lib/markdown";
+import { renderMarkdown } from "@drkyana/types";
 
 /**
  * In-app renderer for View-DSL documents (docs/view-dsl.md) — the agent-loop

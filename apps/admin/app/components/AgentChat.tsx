@@ -8,7 +8,7 @@ import {
   type UIMessage,
 } from "ai";
 import type { ViewDocument } from "@drkyana/types";
-import { renderMarkdown } from "../lib/markdown";
+import { renderMarkdown } from "@drkyana/types";
 import ViewRenderer from "./ViewRenderer";
 
 /**

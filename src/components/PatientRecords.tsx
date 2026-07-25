@@ -1,5 +1,5 @@
 import { Link } from '../router';
-import { renderMarkdown } from '../lib/markdown';
+import { renderMarkdown } from '@drkyana/types';
 
 // ---------------------------------------------------------------------------
 // Read-only view of a returning patient's appointments + prescriptions, shown

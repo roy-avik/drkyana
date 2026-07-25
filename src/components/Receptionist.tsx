@@ -12,7 +12,7 @@ import { IntakeForm } from './IntakeForm';
 import { LegalLine } from './LegalLine';
 import { OtpStep } from './OtpStep';
 import { Link } from '../router';
-import { renderMarkdown } from '../lib/markdown';
+import { renderMarkdown } from '@drkyana/types';
 
 // ---------------------------------------------------------------------------
 // Server-backed AI receptionist.

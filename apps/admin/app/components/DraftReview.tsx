@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { DraftRow } from "@drkyana/types";
-import { renderMarkdown } from "../lib/markdown";
+import { renderMarkdown } from "@drkyana/types";
 import { DRAFT_STATUS_LABEL, fmtDate } from "../lib/format";
 
 export default function DraftReview({ initial }: { initial: DraftRow }) {

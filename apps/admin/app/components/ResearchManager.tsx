@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { AgentRunRow } from "@drkyana/types";
 import { fmtDate } from "../lib/format";
-import { renderMarkdown } from "../lib/markdown";
+import { renderMarkdown } from "@drkyana/types";
 
 /**
  * Research log — deep-research inference runs (plan item 5). Lists recent runs

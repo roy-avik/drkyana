@@ -1,9 +1,12 @@
 /**
- * Tiny, dependency-free markdown → HTML renderer for draft review.
- * Supports headings, bold, italic, inline code, links, unordered/ordered lists,
- * and paragraphs. Output is escaped first, so it is safe to inject. This is
- * deliberately minimal — drafts are short clinical documents, not arbitrary
- * rich content. Swap for a full parser later if needed.
+ * Tiny, dependency-free markdown → HTML renderer shared by the patient site
+ * (chat replies, prescriptions) and the admin app (drafts, agent chat,
+ * research output, MCP view markdown blocks). Supports headings, bold,
+ * italic, inline code, links, unordered/ordered lists, GFM tables, and
+ * paragraphs. The input is HTML-escaped FIRST, so the output is safe to
+ * inject via dangerouslySetInnerHTML. Deliberately minimal — the content
+ * this renders is always short (chat replies, prescriptions, clinical
+ * drafts), never arbitrary rich content.
  */
 function escapeHtml(s: string): string {
   return s
