@@ -29,12 +29,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Small component shortcuts (kept lightweight). */
+/* Small component shortcuts (kept lightweight). min-h-11 (44px) on
+   buttons/inputs — this is a phone PWA (Apple HIG minimum touch target;
+   Phase 1 design-language decision, see docs/phases.md). */
 @layer components {
   .btn,
   .btn-primary,
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors;
   }
   .btn-primary {
     @apply bg-brand text-white hover:bg-brand/90 disabled:opacity-50;
@@ -49,7 +51,7 @@ body {
     @apply mb-1 block text-xs font-medium text-muted;
   }
   .input {
-    @apply w-full rounded-lg border border-ink/15 bg-white px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20;
+    @apply min-h-11 w-full rounded-lg border border-ink/15 bg-white px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20;
   }
   .chip {
     @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold;

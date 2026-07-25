@@ -49,6 +49,16 @@ export default function AppointmentsPanel({
   const [busy, setBusy] = useState(false);
   const [events, setEvents] = useState<Record<string, AppointmentEventRow[]>>({});
 
+  // Inline reschedule (replaces window.prompt) — id of the appointment being
+  // rescheduled, plus its draft datetime-local value.
+  const [rescheduleId, setRescheduleId] = useState<string | null>(null);
+  const [rescheduleValue, setRescheduleValue] = useState("");
+
+  // Inline cancel/no-show reason (replaces window.prompt) — the target
+  // appointment + status, plus the draft reason text.
+  const [reasonFor, setReasonFor] = useState<{ id: string; status: AppointmentStatus } | null>(null);
+  const [reasonValue, setReasonValue] = useState("");
+
   // create form
   const [slot, setSlot] = useState("");
   const [chamberId, setChamberId] = useState("");
@@ -114,21 +124,34 @@ export default function AppointmentsPanel({
   }
 
   async function setStatus(id: string, status: AppointmentStatus) {
-    let reason: string | undefined;
     if (status === "cancelled" || status === "no_show") {
-      reason = window.prompt(`Reason for ${status}?`) ?? undefined;
-    }
-    await patch(id, { status, reason });
-  }
-
-  async function reschedule(id: string) {
-    const v = window.prompt("New date/time (YYYY-MM-DD HH:MM)");
-    if (!v) return;
-    const ts = toUnix(v.replace(" ", "T"));
-    if (!ts) {
-      window.alert("Could not parse that date/time.");
+      setReasonFor({ id, status });
+      setReasonValue("");
       return;
     }
+    await patch(id, { status });
+  }
+
+  async function confirmReason() {
+    if (!reasonFor) return;
+    const { id, status } = reasonFor;
+    setReasonFor(null);
+    await patch(id, { status, reason: reasonValue || undefined });
+    setReasonValue("");
+  }
+
+  function startReschedule(id: string) {
+    setRescheduleId(id);
+    setRescheduleValue("");
+  }
+
+  async function confirmReschedule() {
+    if (!rescheduleId) return;
+    const ts = toUnix(rescheduleValue);
+    if (!ts) return;
+    const id = rescheduleId;
+    setRescheduleId(null);
+    setRescheduleValue("");
     await patch(id, { scheduledAt: ts, reason: "rescheduled" });
   }
 
@@ -175,7 +198,7 @@ export default function AppointmentsPanel({
                     Confirm
                   </button>
                 )}
-                <button className="btn-ghost" disabled={busy} onClick={() => reschedule(a.id)}>
+                <button className="btn-ghost" disabled={busy} onClick={() => startReschedule(a.id)}>
                   Reschedule
                 </button>
                 {a.status !== "completed" && a.status !== "cancelled" && (
@@ -195,6 +218,49 @@ export default function AppointmentsPanel({
                   {events[a.id] ? "Hide history" : "History"}
                 </button>
               </div>
+              {rescheduleId === a.id && (
+                <div className="mt-2 flex flex-wrap items-end gap-2 rounded-lg border border-dashed border-ink/20 p-2">
+                  <label className="text-xs text-muted">
+                    New date & time
+                    <input
+                      type="datetime-local"
+                      autoFocus
+                      value={rescheduleValue}
+                      onChange={(e) => setRescheduleValue(e.target.value)}
+                      className="input mt-1"
+                    />
+                  </label>
+                  <button
+                    className="btn-primary"
+                    disabled={busy || !rescheduleValue}
+                    onClick={confirmReschedule}
+                  >
+                    Confirm
+                  </button>
+                  <button className="btn-ghost" onClick={() => setRescheduleId(null)}>
+                    Cancel
+                  </button>
+                </div>
+              )}
+              {reasonFor?.id === a.id && (
+                <div className="mt-2 flex flex-wrap items-end gap-2 rounded-lg border border-dashed border-ink/20 p-2">
+                  <label className="min-w-[10rem] flex-1 text-xs text-muted">
+                    Reason for {reasonFor.status === "no_show" ? "no-show" : "cancelling"} (optional)
+                    <input
+                      autoFocus
+                      value={reasonValue}
+                      onChange={(e) => setReasonValue(e.target.value)}
+                      className="input mt-1"
+                    />
+                  </label>
+                  <button className="btn-primary" disabled={busy} onClick={confirmReason}>
+                    Confirm
+                  </button>
+                  <button className="btn-ghost" onClick={() => setReasonFor(null)}>
+                    Cancel
+                  </button>
+                </div>
+              )}
               {events[a.id] && (
                 <ul className="mt-2 space-y-1 border-t border-ink/10 pt-2">
                   {events[a.id].map((ev) => (
@@ -222,7 +288,7 @@ export default function AppointmentsPanel({
               type="datetime-local"
               value={slot}
               onChange={(e) => setSlot(e.target.value)}
-              className="mt-1 w-full rounded border border-ink/20 px-2 py-1 text-sm"
+              className="input mt-1"
             />
           </label>
           <label className="text-xs text-muted">
@@ -230,7 +296,7 @@ export default function AppointmentsPanel({
             <select
               value={chamberId}
               onChange={(e) => setChamberId(e.target.value)}
-              className="mt-1 w-full rounded border border-ink/20 px-2 py-1 text-sm"
+              className="input mt-1"
             >
               <option value="">— select —</option>
               {chambers.map((c) => (
@@ -248,7 +314,7 @@ export default function AppointmentsPanel({
               max={480}
               value={duration}
               onChange={(e) => setDuration(Number(e.target.value) || 30)}
-              className="mt-1 w-full rounded border border-ink/20 px-2 py-1 text-sm"
+              className="input mt-1"
             />
           </label>
           <label className="text-xs text-muted">
@@ -256,7 +322,7 @@ export default function AppointmentsPanel({
             <input
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="mt-1 w-full rounded border border-ink/20 px-2 py-1 text-sm"
+              className="input mt-1"
             />
           </label>
         </div>
