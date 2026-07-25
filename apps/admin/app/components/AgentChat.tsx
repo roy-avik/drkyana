@@ -10,6 +10,7 @@ import {
 import type { ViewDocument } from "@drkyana/types";
 import { renderMarkdown } from "@drkyana/types";
 import ViewRenderer from "./ViewRenderer";
+import { Button, Card, Input } from "@drkyana/ui";
 
 /**
  * Admin agent chat. Streams from /api/agent/admin via useChat.
@@ -229,14 +230,14 @@ function ChatThread({
   return (
     <>
       {offline && (
-        <div className="card border-accent/30 bg-accent/5 text-sm text-ink">
+        <Card className="border-accent/30 bg-accent/5 text-sm text-ink">
           <strong>Assistant coming online.</strong> The agent runtime is being wired up.
-        </div>
+        </Card>
       )}
       {error && !offline && (
-        <div role="alert" className="card border-red/30 bg-red/5 text-sm text-red">{error.message}</div>
+        <Card role="alert" className="border-red/30 bg-red/5 text-sm text-red">{error.message}</Card>
       )}
-      <div className="card min-h-[280px] space-y-3">
+      <Card className="min-h-[280px] space-y-3">
         {messages.length === 0 && !offline && (
           <p className="text-sm text-muted">
             Ask the assistant to book or reschedule an appointment, change an intake&rsquo;s
@@ -277,18 +278,18 @@ function ChatThread({
           </div>
         ))}
         {busy && <p className="text-xs text-muted">Thinking…</p>}
-      </div>
+      </Card>
       <form onSubmit={submit} className="flex gap-2">
-        <input
-          className="input flex-1"
+        <Input
+          className="flex-1"
           placeholder={offline ? "Assistant offline" : "Message the assistant…"}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           disabled={offline || busy}
         />
-        <button type="submit" className="btn-primary" disabled={offline || busy || !input.trim()}>
+        <Button tone="brand" type="submit" disabled={offline || busy || !input.trim()}>
           Send
-        </button>
+        </Button>
       </form>
     </>
   );

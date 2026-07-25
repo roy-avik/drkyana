@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { cardClassName } from "@drkyana/ui";
 
 interface Turn {
   role: string;
@@ -78,7 +79,7 @@ export default function TranscriptPanel({
   if (!patientId && !originatingSessionId) return null;
 
   return (
-    <section className="card">
+    <section className={`${cardClassName} p-4`}>
       <h2 className="mb-3 text-sm font-semibold">Conversation history</h2>
 
       {list.length > 1 && (
