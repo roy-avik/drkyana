@@ -191,7 +191,7 @@ function Form({ node, run }: { node: FormNode; run: RunCall }) {
   return (
     <form onSubmit={submit} className="space-y-2">
       {node.title && <h3 className="text-sm font-semibold">{node.title}</h3>}
-      {error && <p className="text-xs text-red">{error}</p>}
+      {error && <p role="alert" className="text-xs text-red">{error}</p>}
       {node.fields.map((f) => {
         if (f.type === "hidden") return null;
         const value = f.value == null ? "" : String(f.value);

@@ -48,7 +48,7 @@ function RunCard({ run }: { run: AgentRunRow }) {
         </span>
       </div>
       {run.error ? (
-        <p className="mt-2 text-sm text-red">{run.error}</p>
+        <p role="alert" className="mt-2 text-sm text-red">{run.error}</p>
       ) : (
         <>
           <button
@@ -122,7 +122,7 @@ export default function ResearchManager({
       </div>
 
       {error && (
-        <div className="card border-red/30 bg-red/5 text-sm text-red">{error}</div>
+        <div role="alert" className="card border-red/30 bg-red/5 text-sm text-red">{error}</div>
       )}
 
       {runs.length === 0 ? (

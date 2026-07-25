@@ -32,7 +32,8 @@ export default function Nav() {
           <Link
             key={l.href}
             href={l.href}
-            className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+            aria-current={isActive(l.href) ? "page" : undefined}
+            className={`flex min-h-11 items-center whitespace-nowrap rounded-lg px-3 text-sm font-medium transition-colors ${
               isActive(l.href)
                 ? "bg-brand text-white"
                 : "text-muted hover:bg-surface-alt hover:text-ink"

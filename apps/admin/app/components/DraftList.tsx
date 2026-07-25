@@ -58,7 +58,7 @@ export default function DraftList() {
       </div>
 
       {error && (
-        <div className="card border-red/30 bg-red/5 text-sm text-red">{error}</div>
+        <div role="alert" className="card border-red/30 bg-red/5 text-sm text-red">{error}</div>
       )}
 
       {!loading && drafts.length === 0 && !error && (
