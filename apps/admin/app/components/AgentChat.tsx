@@ -105,8 +105,9 @@ function ApprovalCard({
         disabled={done}
       />
       <div className="mt-2 flex gap-2">
-        <button
-          className="btn-primary text-xs"
+        <Button
+          tone="brand"
+          size="sm"
           disabled={done}
           onClick={() => {
             setDone(true);
@@ -114,9 +115,9 @@ function ApprovalCard({
           }}
         >
           Approve
-        </button>
-        <button
-          className="btn-ghost text-xs"
+        </Button>
+        <Button
+          size="sm"
           disabled={done}
           onClick={() => {
             setDone(true);
@@ -124,7 +125,7 @@ function ApprovalCard({
           }}
         >
           Deny
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -371,9 +372,9 @@ export default function AgentChat() {
               ))}
             </select>
           )}
-          <button className="btn-ghost text-xs" onClick={newChat}>
+          <Button size="sm" onClick={newChat}>
             New chat
-          </button>
+          </Button>
         </div>
       </div>
 

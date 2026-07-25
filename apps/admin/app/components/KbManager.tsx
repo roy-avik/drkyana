@@ -204,12 +204,13 @@ export default function KbManager() {
                   {d.source ? ` · ${d.source}` : ""} · {fmtDate(d.updated_at)}
                 </p>
               </div>
-              <button
-                className="btn-ghost py-1 text-xs text-red"
+              <Button
+                size="sm"
+                className="text-red"
                 onClick={() => void remove(d)}
               >
                 Delete
-              </button>
+              </Button>
             </div>
           </li>
         ))}
