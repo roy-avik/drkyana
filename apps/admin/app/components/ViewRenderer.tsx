@@ -14,6 +14,7 @@ import type {
   VIEW_DSL_VERSION,
 } from "@drkyana/types";
 import { renderMarkdown } from "@drkyana/types";
+import { Button, Input, Textarea } from "@drkyana/ui";
 
 /**
  * In-app renderer for View-DSL documents (docs/view-dsl.md) — the agent-loop
@@ -82,14 +83,15 @@ type RunCall = (call: ActionCall, opts?: { refresh?: boolean; confirm?: string }
 function ActionButton({ action, run }: { action: Action; run: RunCall }) {
   const primary = action.tone === "brand" || action.tone === "success";
   return (
-    <button
-      className={`${primary ? "btn-primary" : "btn-ghost"} text-xs`}
+    <Button
+      size="sm"
+      tone={primary ? "brand" : "neutral"}
       onClick={() =>
         run(action.call, { refresh: action.refresh, confirm: action.confirm })
       }
     >
       {action.label}
-    </button>
+    </Button>
   );
 }
 
@@ -206,8 +208,8 @@ function Form({ node, run }: { node: FormNode; run: RunCall }) {
               <>
                 {f.label && <span className="field-label">{f.label}</span>}
                 {f.type === "textarea" ? (
-                  <textarea
-                    className="input min-h-[120px] font-mono text-xs"
+                  <Textarea
+                    className="min-h-[120px] font-mono text-xs"
                     name={f.name}
                     defaultValue={value}
                     required={f.required}
@@ -221,8 +223,7 @@ function Form({ node, run }: { node: FormNode; run: RunCall }) {
                     ))}
                   </select>
                 ) : (
-                  <input
-                    className="input"
+                  <Input
                     type={f.type === "number" ? "number" : "text"}
                     name={f.name}
                     defaultValue={value}
@@ -235,9 +236,9 @@ function Form({ node, run }: { node: FormNode; run: RunCall }) {
           </div>
         );
       })}
-      <button type="submit" className="btn-primary text-xs">
+      <Button type="submit" tone="brand" size="sm">
         {node.submit.label}
-      </button>
+      </Button>
     </form>
   );
 }
