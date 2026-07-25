@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { KbDocRow } from "@drkyana/types";
 import { fmtDate } from "../lib/format";
-import { Button, Card, cardClassName } from "@drkyana/ui";
+import { Button, Card, Textarea, cardClassName } from "@drkyana/ui";
 
 interface FormState {
   title: string;
@@ -162,8 +162,8 @@ export default function KbManager() {
           </div>
           <label>
             <span className="field-label">Reference text *</span>
-            <textarea
-              className="input min-h-40"
+            <Textarea
+              className="min-h-40"
               value={form.text}
               placeholder="Paste the reference content here…"
               onChange={(e) => setForm({ ...form, text: e.target.value })}
