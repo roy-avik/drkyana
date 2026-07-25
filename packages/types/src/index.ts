@@ -13,6 +13,11 @@ export * from "./intake-form";
 // DLS — the Dr Kyana Design Language System (tokens; spec: docs/dls.md).
 export * from "./dls";
 
+// Shared markdown -> HTML renderer (patient chat/prescriptions, admin
+// drafts/agent-chat/research). Was byte-for-byte duplicated in
+// src/lib/markdown.ts and apps/admin/app/lib/markdown.ts.
+export * from "./markdown";
+
 // View DSL — declarative admin views rendered by MCP Apps (docs/view-dsl.md).
 export * from "./view-dsl";
 
