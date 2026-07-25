@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import type { ChamberRow, ChamberScheduleSlot } from "@drkyana/types";
+import { Button, Card, cardClassName } from "@drkyana/ui";
 
 interface FormState {
   id?: string;
@@ -143,18 +144,18 @@ export default function ChamberManager() {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Chambers</h1>
         {!form && (
-          <button className="btn-primary" onClick={startCreate}>
+          <Button tone="brand" onClick={startCreate}>
             + Add chamber
-          </button>
+          </Button>
         )}
       </div>
 
       {error && (
-        <div role="alert" className="card border-red/30 bg-red/5 text-sm text-red">{error}</div>
+        <Card role="alert" className="border-red/30 bg-red/5 text-sm text-red">{error}</Card>
       )}
 
       {form && (
-        <div className="card space-y-3">
+        <Card className="space-y-3">
           <h2 className="text-sm font-semibold">
             {form.id ? "Edit chamber" : "New chamber"}
           </h2>
@@ -253,23 +254,23 @@ export default function ChamberManager() {
           </label>
 
           <div className="flex gap-2">
-            <button className="btn-primary" onClick={() => void save()} disabled={saving}>
+            <Button tone="brand" onClick={() => void save()} disabled={saving}>
               {saving ? "Saving…" : "Save"}
-            </button>
-            <button className="btn-ghost" onClick={() => setForm(null)} disabled={saving}>
+            </Button>
+            <Button onClick={() => setForm(null)} disabled={saving}>
               Cancel
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       )}
 
       {!loading && chambers.length === 0 && !form && (
-        <div className="card text-center text-sm text-muted">No chambers yet.</div>
+        <Card className="text-center text-sm text-muted">No chambers yet.</Card>
       )}
 
       <ul className="space-y-2">
         {chambers.map((c) => (
-          <li key={c.id} className={`card ${c.active ? "" : "opacity-60"}`}>
+          <li key={c.id} className={`${cardClassName} p-4 ${c.active ? "" : "opacity-60"}`}>
             <div className="flex items-start justify-between gap-2">
               <div>
                 <div className="flex items-center gap-2">
