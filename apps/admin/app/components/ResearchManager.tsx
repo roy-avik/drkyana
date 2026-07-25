@@ -131,7 +131,7 @@ export default function ResearchManager({
           first analysis.
         </p>
       ) : (
-        <ul className="space-y-3">
+        <ul className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
           {runs.map((r) => (
             <RunCard key={r.id} run={r} />
           ))}

@@ -57,7 +57,7 @@ export default async function IntakeDetail({
   }));
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 lg:mx-auto lg:max-w-3xl">
       <Link href="/" className="text-sm text-accent hover:underline">
         ← Back to queue
       </Link>

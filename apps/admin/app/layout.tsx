@@ -36,7 +36,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <RegisterPWA />
         <ApplyDlsTokens />
         <Nav />
-        <main id="main-content" className="mx-auto max-w-3xl px-4 py-5 pb-24">
+        <main id="main-content" className="mx-auto max-w-3xl px-4 py-5 pb-24 lg:max-w-5xl">
           {children}
         </main>
       </body>

@@ -125,7 +125,7 @@ export default function IntakeQueue() {
         <Card className="text-center text-sm text-muted">No intakes match.</Card>
       )}
 
-      <ul className="space-y-2">
+      <ul className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
         {intakes.map((i) => (
           <li key={i.id}>
             <Link

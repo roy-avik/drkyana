@@ -62,7 +62,7 @@ export default function DraftList() {
         </Card>
       )}
 
-      <ul className="space-y-2">
+      <ul className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
         {drafts.map((d) => (
           <li key={d.id}>
             <Link
