@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { AppointmentRow, AppointmentEventRow, AppointmentStatus } from "@drkyana/types";
-import { Button, Input } from "@drkyana/ui";
+import { Button, Input, cardClassName } from "@drkyana/ui";
 
 interface ChamberOpt {
   id: string;
@@ -171,7 +171,7 @@ export default function AppointmentsPanel({
   }
 
   return (
-    <section className="card border-emerald-200 bg-emerald-50/40">
+    <section className={`${cardClassName} p-4 border-emerald-200 bg-emerald-50/40`}>
       <h2 className="mb-1 text-sm font-semibold">Confirmed appointment(s)</h2>
       <p className="mb-3 text-xs text-muted">
         What was <strong>granted</strong> — distinct from the requested logistics
