@@ -139,7 +139,7 @@ export function ConsentPanel({
                   disabled={busy === scope}
                   aria-pressed={granted}
                   className={[
-                    'shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition-colors',
+                    'shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition-colors ease-spring',
                     'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
                     'disabled:cursor-not-allowed disabled:opacity-50',
                     granted

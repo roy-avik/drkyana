@@ -130,7 +130,7 @@ export default function IntakeQueue() {
           <li key={i.id}>
             <Link
               href={`/intakes/${i.id}`}
-              className={`${cardClassName} block p-4 transition-colors hover:border-accent/40 ${
+              className={`${cardClassName} block p-4 transition-colors ease-spring hover:border-accent/40 ${
                 i.triage_level === "RED" || i.triage_level === "ORANGE"
                   ? "border-l-4 border-l-red"
                   : ""

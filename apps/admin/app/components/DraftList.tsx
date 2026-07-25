@@ -67,7 +67,7 @@ export default function DraftList() {
           <li key={d.id}>
             <Link
               href={`/drafts/${d.id}`}
-              className={`${cardClassName} block p-4 transition-colors hover:border-accent/40`}
+              className={`${cardClassName} block p-4 transition-colors ease-spring hover:border-accent/40`}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">

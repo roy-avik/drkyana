@@ -33,7 +33,7 @@ export interface InputProps
 export const Input = React.forwardRef<HTMLElement, InputProps>(
   function Input({ className = "", shape = "flat", ...props }, ref) {
     const classes = [
-      "min-h-11 w-full border bg-surface py-2 text-sm text-ink outline-none transition-colors disabled:opacity-50",
+      "min-h-11 w-full border bg-surface py-2 text-sm text-ink outline-none transition-colors ease-spring disabled:opacity-50",
       SHAPE_CLASSES[shape],
       className,
     ]

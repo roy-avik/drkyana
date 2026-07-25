@@ -46,7 +46,7 @@ export function Services() {
         <Carousel>
           {SERVICES.map((s) => (
             <article key={s.key} className="card group min-h-[200px]">
-              <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-brand/[0.08] text-brand transition-colors group-hover:bg-brand/[0.12]">
+              <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-brand/[0.08] text-brand transition-colors ease-spring group-hover:bg-brand/[0.12]">
                 <span className="block h-6 w-6">{s.icon}</span>
               </div>
               <h3 className="text-lg font-semibold text-ink">

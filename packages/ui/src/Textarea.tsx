@@ -17,7 +17,7 @@ export interface TextareaProps
 export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   function Textarea({ className = "", ...props }, ref) {
     const classes = [
-      "w-full rounded-sm border border-ink/15 bg-surface px-3 py-2 text-sm text-ink outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:opacity-50",
+      "w-full rounded-sm border border-ink/15 bg-surface px-3 py-2 text-sm text-ink outline-none transition-colors ease-spring focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:opacity-50",
       className,
     ]
       .filter(Boolean)

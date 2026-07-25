@@ -33,7 +33,7 @@ export default function Nav() {
             key={l.href}
             href={l.href}
             aria-current={isActive(l.href) ? "page" : undefined}
-            className={`flex min-h-11 items-center whitespace-nowrap rounded-lg px-3 text-sm font-medium transition-colors ${
+            className={`flex min-h-11 items-center whitespace-nowrap rounded-lg px-3 text-sm font-medium transition-colors ease-spring ${
               isActive(l.href)
                 ? "bg-brand text-white"
                 : "text-muted hover:bg-surface-alt hover:text-ink"

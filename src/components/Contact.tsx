@@ -40,7 +40,7 @@ export function Contact() {
       href="https://instagram.com/drkyana"
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex flex-col items-start gap-4 rounded-2xl bg-white/[0.06] p-6 backdrop-blur-sm ring-1 ring-white/10 transition hover:-translate-y-1 hover:bg-white/[0.1] hover:ring-white/20"
+      className="group flex flex-col items-start gap-4 rounded-2xl bg-white/[0.06] p-6 backdrop-blur-sm ring-1 ring-white/10 transition ease-spring hover:-translate-y-1 hover:bg-white/[0.1] hover:ring-white/20"
     >
       <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white">
         {InstaIcon}
@@ -59,7 +59,7 @@ export function Contact() {
     <a
       key="clinic"
       href={`mailto:${CLINIC_EMAIL}`}
-      className="group flex flex-col items-start gap-4 rounded-2xl bg-white/[0.06] p-6 backdrop-blur-sm ring-1 ring-white/10 transition hover:-translate-y-1 hover:bg-white/[0.1] hover:ring-white/20"
+      className="group flex flex-col items-start gap-4 rounded-2xl bg-white/[0.06] p-6 backdrop-blur-sm ring-1 ring-white/10 transition ease-spring hover:-translate-y-1 hover:bg-white/[0.1] hover:ring-white/20"
     >
       <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white">
         {ClinicIcon}
