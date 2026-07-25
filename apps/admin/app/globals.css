@@ -11,10 +11,11 @@
    as src/index.css on the patient site — accent is the AA-passing
    (4.5:1+ on white) working magenta, not the decorative display shade
    (that's hero-only, patient site). Triage severity colors
-   (red/orange/yellow/green) are NOT wired to the DLS tone mapping yet —
-   docs/dls.md's ORANGE→warning/YELLOW→info would change their rendered
-   hex (info is DLS blue), a real visible change to the triage badges that
-   needs its own decision, not a silent side effect of this wiring. */
+   (red/orange/yellow/green) are wired to docs/dls.md's tone mapping
+   (RED→danger, ORANGE→warning, YELLOW→info, GREEN→success) —
+   user-approved 2026-07-25. YELLOW renders DLS blue (the info tone) now,
+   not yellow; ORANGE's exact shade shifted (#ea580c → the warning shade,
+   #d97706). */
 @theme {
   --color-brand: var(--dk-brand, #0f4c81);
   --color-accent: var(--dk-accent, #a8006e);
@@ -22,10 +23,10 @@
   --color-muted: var(--dk-muted, #475569);
   --color-surface: var(--dk-surface, #ffffff);
   --color-surface-alt: var(--dk-surface-2, #f8fafc);
-  --color-red: #dc2626;
-  --color-orange: #ea580c;
-  --color-yellow: #ca8a04;
-  --color-green: #16a34a;
+  --color-red: var(--dk-danger, #dc2626);
+  --color-orange: var(--dk-warning, #d97706);
+  --color-yellow: var(--dk-info, #3b82f6);
+  --color-green: var(--dk-success, #16a34a);
 }
 
 :root {
