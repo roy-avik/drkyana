@@ -76,7 +76,7 @@ function apptChipClass(status: string): string {
 function StatusChip({ label, cls }: { label: string; cls: string }) {
   return (
     <span
-      className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${cls}`}
+      className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${cls}`}
     >
       {label}
     </span>

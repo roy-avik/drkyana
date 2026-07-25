@@ -260,7 +260,7 @@ export function Receptionist() {
                   <button
                     type="button"
                     onClick={() => setPhase('otp')}
-                    className="btn-primary px-6 py-2.5"
+                    className="btn-primary px-6"
                   >
                     {t('intake.consent.accept')}
                   </button>
@@ -271,7 +271,7 @@ export function Receptionist() {
                       published (see Contact.tsx). */}
                   <a
                     href={`mailto:${CLINIC_EMAIL}`}
-                    className="rounded-full border border-ink/10 px-6 py-2.5 text-center text-sm text-muted hover:text-ink"
+                    className="rounded-full border border-ink/10 px-6 py-3 text-center text-sm text-muted hover:text-ink"
                   >
                     {t('intake.escape')}
                   </a>
@@ -395,12 +395,12 @@ export function Receptionist() {
                             : t('receptionist.placeholder')
                         }
                         disabled={busy || !!pendingForm}
-                        className="flex-1 rounded-full border border-ink/10 bg-white px-4 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:opacity-60"
+                        className="flex-1 rounded-full border border-ink/10 bg-white px-4 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:opacity-60"
                       />
                       <button
                         type="submit"
                         disabled={!draft.trim() || busy || !!pendingForm}
-                        className="rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         ↑
                       </button>
@@ -436,7 +436,7 @@ function ChatBubble({ role, text }: { role: string; text: string }) {
     <div className={isBot ? 'flex justify-start' : 'flex justify-end'}>
       <div
         className={[
-          'max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed',
+          'max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed',
           isBot ? 'md-content bg-brand/8 text-ink' : 'whitespace-pre-wrap bg-brand text-white',
         ].join(' ')}
       >

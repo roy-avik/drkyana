@@ -21,7 +21,7 @@ export function NotFound() {
             <p className="mx-auto mt-4 max-w-md text-muted">
               {t('notfound.body', 'That page doesn’t exist. It may have moved, or the link may be wrong.')}
             </p>
-            <Link to="/" className="btn-primary mt-8 inline-block px-6 py-2.5">
+            <Link to="/" className="btn-primary mt-8 inline-block px-6">
               {t('notfound.home', 'Back to home')}
             </Link>
           </div>

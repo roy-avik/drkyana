@@ -102,7 +102,7 @@ export function AccountPage() {
                     <button
                       type="button"
                       onClick={() => void load()}
-                      className="btn-ghost mt-4 px-6 py-2.5"
+                      className="btn-ghost mt-4 px-6"
                     >
                       {t('account.retry', 'Try again')}
                     </button>
@@ -135,7 +135,7 @@ export function AccountPage() {
                         'No records yet. Once you’ve had a visit with Dr Kyana, your appointments and prescriptions will appear here.',
                       )}
                     </p>
-                    <Link to="/receptionist" className="btn-primary mt-5 inline-block px-6 py-2.5">
+                    <Link to="/receptionist" className="btn-primary mt-5 inline-block px-6">
                       {t('receptionist.start_button')}
                     </Link>
                   </div>
