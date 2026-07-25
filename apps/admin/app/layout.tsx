@@ -26,6 +26,19 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        {/* Brand fonts (docs/dls.md's "font-sans" token: Poppins primary,
+            Vazirmatn/Noto Sans Bengali as glyph fallbacks — patient data
+            shown here, e.g. a name or transcript, can contain Farsi/Bengali
+            characters even though the admin UI chrome is English-only).
+            Same Google Fonts approach as the patient site (index.html). */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Vazirmatn:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap"
+        />
+      </head>
       <body>
         <a
           href="#main-content"
