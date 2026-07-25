@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { Metadata, Viewport } from "next";
 import Nav from "./components/Nav";
 import RegisterPWA from "./components/RegisterPWA";
+import ApplyDlsTokens from "./components/ApplyDlsTokens";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           Skip to content
         </a>
         <RegisterPWA />
+        <ApplyDlsTokens />
         <Nav />
         <main id="main-content" className="mx-auto max-w-3xl px-4 py-5 pb-24">
           {children}

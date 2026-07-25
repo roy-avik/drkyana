@@ -1,19 +1,29 @@
 @import "tailwindcss";
 
+/* Colors below reference var(--dk-*, fallback) — the fallback is the
+   literal default value, but applyDlsTokens() (packages/types/src/dls.ts,
+   called in main.tsx) overwrites --dk-* from DLS_TOKENS at runtime, so this
+   is actually sourced from the DLS, not hand-synced with it. --brand-dark
+   has no DLS equivalent yet (hover shade only) and stays a literal.
+   red/orange/yellow/green are deliberately NOT wired: docs/dls.md's tone
+   mapping (ORANGE→warning, YELLOW→info) would change their rendered hex —
+   info is DLS blue, so YELLOW would render blue. That's a real visible
+   change to a value patients/Dr Kyana see today and needs its own decision,
+   not a silent side effect of this wiring. */
 @theme {
-  --color-brand: #0f4c81;
+  --color-brand: var(--dk-brand, #0f4c81);
   --color-brand-dark: #0a3a63;
   /* AA-passing (4.5:1+ on white) working magenta — links, focus, buttons. */
-  --color-accent: #a8006e;
+  --color-accent: var(--dk-accent, #a8006e);
   /* Decorative display magenta — hero name only, never functional UI. */
-  --color-accent-display: #ff4fd8;
-  --color-ink: #0f172a;
-  --color-muted: #475569;
-  --color-surface: #ffffff;
-  --color-surface-alt: #f8fafc;
+  --color-accent-display: var(--dk-accent-display, #ff4fd8);
+  --color-ink: var(--dk-ink, #0f172a);
+  --color-muted: var(--dk-muted, #475569);
+  --color-surface: var(--dk-surface, #ffffff);
+  --color-surface-alt: var(--dk-surface-2, #f8fafc);
 
-  /* Semantic status. Values match apps/admin/app/globals.css so the two
-     surfaces speak one language; the full DLS supersedes both later. */
+  /* Triage severity colors — NOT wired to the DLS tone mapping yet, see
+     note above. Values still match apps/admin/app/globals.css. */
   --color-red: #dc2626;
   --color-orange: #ea580c;
   --color-yellow: #ca8a04;

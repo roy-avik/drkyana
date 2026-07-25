@@ -1,16 +1,22 @@
 @import "tailwindcss";
 
-/* Brand tokens — match the patient site (calm, considered, modern). Values
-   sourced from the DLS (packages/types/src/dls.ts) — accent is the
-   AA-passing (4.5:1+ on white) working magenta, not the decorative display
-   shade (that's hero-only, patient site). */
+/* Brand tokens — match the patient site (calm, considered, modern). Sourced
+   from the DLS at runtime: var(--dk-*, fallback) with ApplyDlsTokens
+   (components/ApplyDlsTokens.tsx) overwriting --dk-* from DLS_TOKENS, same
+   as src/index.css on the patient site — accent is the AA-passing
+   (4.5:1+ on white) working magenta, not the decorative display shade
+   (that's hero-only, patient site). Triage severity colors
+   (red/orange/yellow/green) are NOT wired to the DLS tone mapping yet —
+   docs/dls.md's ORANGE→warning/YELLOW→info would change their rendered
+   hex (info is DLS blue), a real visible change to the triage badges that
+   needs its own decision, not a silent side effect of this wiring. */
 @theme {
-  --color-brand: #0f4c81;
-  --color-accent: #a8006e;
-  --color-ink: #0f172a;
-  --color-muted: #475569;
-  --color-surface: #ffffff;
-  --color-surface-alt: #f8fafc;
+  --color-brand: var(--dk-brand, #0f4c81);
+  --color-accent: var(--dk-accent, #a8006e);
+  --color-ink: var(--dk-ink, #0f172a);
+  --color-muted: var(--dk-muted, #475569);
+  --color-surface: var(--dk-surface, #ffffff);
+  --color-surface-alt: var(--dk-surface-2, #f8fafc);
   --color-red: #dc2626;
   --color-orange: #ea580c;
   --color-yellow: #ca8a04;
