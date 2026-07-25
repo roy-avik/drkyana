@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { AgentRunRow } from "@drkyana/types";
 import { fmtDate } from "../lib/format";
 import { renderMarkdown } from "@drkyana/types";
+import { Button, Card, cardClassName } from "@drkyana/ui";
 
 /**
  * Research log — deep-research inference runs (plan item 5). Lists recent runs
@@ -35,7 +36,7 @@ function StatusChip({ status }: { status: string }) {
 function RunCard({ run }: { run: AgentRunRow }) {
   const [open, setOpen] = useState(false);
   return (
-    <li className="card">
+    <li className={`${cardClassName} p-4`}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-semibold">
           {KIND_LABEL[run.kind] ?? run.kind}
@@ -111,18 +112,17 @@ export default function ResearchManager({
             accounting. Runs on a schedule, or on demand here.
           </p>
         </div>
-        <button
-          type="button"
-          className="btn-primary"
+        <Button
+          tone="brand"
           onClick={() => void runNow()}
           disabled={busy}
         >
           {busy ? "Running…" : "Run intake patterns now"}
-        </button>
+        </Button>
       </div>
 
       {error && (
-        <div role="alert" className="card border-red/30 bg-red/5 text-sm text-red">{error}</div>
+        <Card role="alert" className="border-red/30 bg-red/5 text-sm text-red">{error}</Card>
       )}
 
       {runs.length === 0 ? (

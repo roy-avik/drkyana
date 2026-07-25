@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import type { IntakeRow, IntakeStatus, TriageLevel } from "@drkyana/types";
 import { fmtDateShort, TRIAGE_CLASS, STATUS_LABEL, STATUS_ORDER } from "../lib/format";
+import { Button, Card, cardClassName } from "@drkyana/ui";
 
 const TRIAGE_LEVELS: TriageLevel[] = ["RED", "ORANGE", "YELLOW", "GREEN"];
 const DATE_RANGES = [
@@ -67,13 +68,13 @@ export default function IntakeQueue() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Intake queue</h1>
-        <button onClick={() => void load()} className="btn-ghost" disabled={loading}>
+        <Button onClick={() => void load()} disabled={loading}>
           {loading ? "Loading…" : "Refresh"}
-        </button>
+        </Button>
       </div>
 
       {/* Filters */}
-      <div className="card space-y-3">
+      <Card className="space-y-3">
         <div>
           <span className="field-label">Status</span>
           <div className="flex flex-wrap gap-1.5">
@@ -107,14 +108,14 @@ export default function IntakeQueue() {
             ))}
           </div>
         </div>
-      </div>
+      </Card>
 
       {error && (
-        <div role="alert" className="card border-red/30 bg-red/5 text-sm text-red">{error}</div>
+        <Card role="alert" className="border-red/30 bg-red/5 text-sm text-red">{error}</Card>
       )}
 
       {!error && !loading && intakes.length === 0 && (
-        <div className="card text-center text-sm text-muted">No intakes match.</div>
+        <Card className="text-center text-sm text-muted">No intakes match.</Card>
       )}
 
       <ul className="space-y-2">
@@ -122,7 +123,7 @@ export default function IntakeQueue() {
           <li key={i.id}>
             <Link
               href={`/intakes/${i.id}`}
-              className={`card block transition-colors hover:border-accent/40 ${
+              className={`${cardClassName} block p-4 transition-colors hover:border-accent/40 ${
                 i.triage_level === "RED" || i.triage_level === "ORANGE"
                   ? "border-l-4 border-l-red"
                   : ""
