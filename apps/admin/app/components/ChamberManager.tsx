@@ -198,9 +198,9 @@ export default function ChamberManager() {
           <div>
             <div className="mb-1 flex items-center justify-between">
               <span className="field-label mb-0">Schedule</span>
-              <button className="btn-ghost py-1 text-xs" onClick={addSlot}>
+              <Button size="sm" onClick={addSlot}>
                 + Slot
-              </button>
+              </Button>
             </div>
             <div className="space-y-2">
               {form.schedule.map((slot, i) => (
@@ -297,16 +297,17 @@ export default function ChamberManager() {
                 )}
               </div>
               <div className="flex shrink-0 flex-col gap-1">
-                <button className="btn-ghost py-1 text-xs" onClick={() => startEdit(c)}>
+                <Button size="sm" onClick={() => startEdit(c)}>
                   Edit
-                </button>
+                </Button>
                 {c.active && (
-                  <button
-                    className="btn-ghost py-1 text-xs text-red"
+                  <Button
+                    size="sm"
+                    className="text-red"
                     onClick={() => void deactivate(c)}
                   >
                     Deactivate
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>

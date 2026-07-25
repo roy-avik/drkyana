@@ -95,15 +95,15 @@ export default function DraftReview({ initial }: { initial: DraftRow }) {
       <Card>
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-sm font-semibold">Document</h2>
-          <button
-            className="btn-ghost py-1 text-xs"
+          <Button
+            size="sm"
             onClick={() => {
               setEditing((e) => !e);
               if (editing) setMarkdown(draft.markdown);
             }}
           >
             {editing ? "Preview" : "Edit"}
-          </button>
+          </Button>
         </div>
 
         {editing ? (
