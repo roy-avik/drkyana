@@ -11,7 +11,7 @@ import {
   STATUS_LABEL,
   STATUS_ORDER,
 } from "../lib/format";
-import { Button, Card, cardClassName } from "@drkyana/ui";
+import { Button, Card, Chip, cardClassName } from "@drkyana/ui";
 
 const TRIAGE_LEVELS: TriageLevel[] = ["RED", "ORANGE", "YELLOW", "GREEN"];
 const DATE_RANGES = [
@@ -85,13 +85,13 @@ export default function IntakeQueue() {
         <div>
           <span className="field-label">Status</span>
           <div className="flex flex-wrap gap-1.5">
-            <FilterPill active={status === ""} onClick={() => setStatus("")}>
+            <Chip pressed={status === ""} onPressedChange={() => setStatus("")}>
               All
-            </FilterPill>
+            </Chip>
             {STATUS_ORDER.map((s) => (
-              <FilterPill key={s} active={status === s} onClick={() => setStatus(s)}>
+              <Chip key={s} pressed={status === s} onPressedChange={() => setStatus(s)}>
                 {STATUS_LABEL[s]}
-              </FilterPill>
+              </Chip>
             ))}
           </div>
         </div>
@@ -99,9 +99,9 @@ export default function IntakeQueue() {
           <span className="field-label">Triage</span>
           <div className="flex flex-wrap gap-1.5">
             {TRIAGE_LEVELS.map((t) => (
-              <FilterPill key={t} active={triage.has(t)} onClick={() => toggleTriage(t)}>
+              <Chip key={t} pressed={triage.has(t)} onPressedChange={() => toggleTriage(t)}>
                 {TRIAGE_LABEL_SHORT[t]}
-              </FilterPill>
+              </Chip>
             ))}
           </div>
         </div>
@@ -109,9 +109,9 @@ export default function IntakeQueue() {
           <span className="field-label">Date range</span>
           <div className="flex flex-wrap gap-1.5">
             {DATE_RANGES.map((r) => (
-              <FilterPill key={r.label} active={days === r.days} onClick={() => setDays(r.days)}>
+              <Chip key={r.label} pressed={days === r.days} onPressedChange={() => setDays(r.days)}>
                 {r.label}
-              </FilterPill>
+              </Chip>
             ))}
           </div>
         </div>
@@ -161,28 +161,5 @@ export default function IntakeQueue() {
         ))}
       </ul>
     </div>
-  );
-}
-
-function FilterPill({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`chip border transition-colors ${
-        active
-          ? "border-brand bg-brand text-white"
-          : "border-ink/15 bg-white text-muted hover:border-accent/40"
-      }`}
-    >
-      {children}
-    </button>
   );
 }
