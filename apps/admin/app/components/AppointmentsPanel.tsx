@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { AppointmentRow, AppointmentEventRow, AppointmentStatus } from "@drkyana/types";
-import { Button } from "@drkyana/ui";
+import { Button, Input, cardClassName } from "@drkyana/ui";
 
 interface ChamberOpt {
   id: string;
@@ -171,7 +171,7 @@ export default function AppointmentsPanel({
   }
 
   return (
-    <section className="card border-emerald-200 bg-emerald-50/40">
+    <section className={`${cardClassName} p-4 border-emerald-200 bg-emerald-50/40`}>
       <h2 className="mb-1 text-sm font-semibold">Confirmed appointment(s)</h2>
       <p className="mb-3 text-xs text-muted">
         What was <strong>granted</strong> — distinct from the requested logistics
@@ -223,12 +223,12 @@ export default function AppointmentsPanel({
                 <div className="mt-2 flex flex-wrap items-end gap-2 rounded-lg border border-dashed border-ink/20 p-2">
                   <label className="text-xs text-muted">
                     New date & time
-                    <input
+                    <Input
                       type="datetime-local"
                       autoFocus
                       value={rescheduleValue}
                       onChange={(e) => setRescheduleValue(e.target.value)}
-                      className="input mt-1"
+                      className="mt-1"
                     />
                   </label>
                   <Button
@@ -245,11 +245,11 @@ export default function AppointmentsPanel({
                 <div className="mt-2 flex flex-wrap items-end gap-2 rounded-lg border border-dashed border-ink/20 p-2">
                   <label className="min-w-[10rem] flex-1 text-xs text-muted">
                     Reason for {reasonFor.status === "no_show" ? "no-show" : "cancelling"} (optional)
-                    <input
+                    <Input
                       autoFocus
                       value={reasonValue}
                       onChange={(e) => setReasonValue(e.target.value)}
-                      className="input mt-1"
+                      className="mt-1"
                     />
                   </label>
                   <Button tone="brand" disabled={busy} onClick={confirmReason}>
@@ -281,11 +281,11 @@ export default function AppointmentsPanel({
         <div className="grid grid-cols-2 gap-2">
           <label className="text-xs text-muted">
             Date & time
-            <input
+            <Input
               type="datetime-local"
               value={slot}
               onChange={(e) => setSlot(e.target.value)}
-              className="input mt-1"
+              className="mt-1"
             />
           </label>
           <label className="text-xs text-muted">
@@ -305,21 +305,21 @@ export default function AppointmentsPanel({
           </label>
           <label className="text-xs text-muted">
             Duration (min)
-            <input
+            <Input
               type="number"
               min={5}
               max={480}
               value={duration}
               onChange={(e) => setDuration(Number(e.target.value) || 30)}
-              className="input mt-1"
+              className="mt-1"
             />
           </label>
           <label className="text-xs text-muted">
             Note
-            <input
+            <Input
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="input mt-1"
+              className="mt-1"
             />
           </label>
         </div>

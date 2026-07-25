@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import type { DraftRow, DraftStatus } from "@drkyana/types";
 import { fmtDateShort, DRAFT_STATUS_LABEL } from "../lib/format";
+import { Card, cardClassName } from "@drkyana/ui";
 
 const STATUSES: (DraftStatus | "")[] = ["", "draft", "approved", "sent"];
 
@@ -58,13 +59,15 @@ export default function DraftList() {
       </div>
 
       {error && (
-        <div role="alert" className="card border-red/30 bg-red/5 text-sm text-red">{error}</div>
+        <Card role="alert" className="border-red/30 bg-red/5 text-sm text-red">
+          {error}
+        </Card>
       )}
 
       {!loading && drafts.length === 0 && !error && (
-        <div className="card text-center text-sm text-muted">
+        <Card className="text-center text-sm text-muted">
           No drafts. The assistant produces drafts for your review here.
-        </div>
+        </Card>
       )}
 
       <ul className="space-y-2">
@@ -72,7 +75,7 @@ export default function DraftList() {
           <li key={d.id}>
             <Link
               href={`/drafts/${d.id}`}
-              className="card block transition-colors hover:border-accent/40"
+              className={`${cardClassName} block p-4 transition-colors hover:border-accent/40`}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
