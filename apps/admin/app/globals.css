@@ -36,8 +36,18 @@
 body {
   background: var(--color-surface-alt);
   color: var(--color-ink);
-  font-family:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Sourced from the DLS "font-sans" token (packages/types/src/dls.ts) at
+     runtime via ApplyDlsTokens, same pattern as the colors above — the
+     fonts themselves are loaded via the Google Fonts <link> in layout.tsx. */
+  font-family: var(
+    --dk-font-sans,
+    "Poppins",
+    "Vazirmatn",
+    "Noto Sans Bengali",
+    ui-sans-serif,
+    system-ui,
+    sans-serif
+  );
   -webkit-font-smoothing: antialiased;
 }
 
