@@ -72,7 +72,7 @@ export default function DraftReview({ initial }: { initial: DraftRow }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 lg:mx-auto lg:max-w-3xl">
       <Link href="/drafts" className="text-sm text-accent hover:underline">
         ← Back to drafts
       </Link>

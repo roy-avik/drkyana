@@ -120,7 +120,7 @@ export default function KbManager() {
       )}
 
       {form && (
-        <Card className="space-y-3">
+        <Card className="space-y-3 lg:max-w-xl">
           <h2 className="text-sm font-semibold">New reference</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label>
@@ -193,7 +193,7 @@ export default function KbManager() {
         </Card>
       )}
 
-      <ul className="space-y-2">
+      <ul className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
         {docs.map((d) => (
           <li key={d.id} className={`${cardClassName} p-4`}>
             <div className="flex items-start justify-between gap-2">

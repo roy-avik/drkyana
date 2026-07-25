@@ -346,7 +346,7 @@ export default function AgentChat() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 lg:mx-auto lg:max-w-3xl">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
           <h1 className="text-lg font-semibold">Assistant</h1>

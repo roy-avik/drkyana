@@ -19,7 +19,7 @@ export default function Nav() {
 
   return (
     <header className="sticky top-0 z-20 border-b border-ink/10 bg-white/90 backdrop-blur">
-      <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
+      <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3 lg:max-w-5xl">
         <Link href="/" className="flex items-center gap-2">
           <span className="grid h-7 w-7 place-items-center rounded-lg bg-brand text-sm font-bold text-white">
             K
@@ -27,7 +27,7 @@ export default function Nav() {
           <span className="text-sm font-semibold text-ink">Practice Console</span>
         </Link>
       </div>
-      <nav className="mx-auto flex max-w-3xl gap-1 overflow-x-auto px-2 pb-2">
+      <nav className="mx-auto flex max-w-3xl gap-1 overflow-x-auto px-2 pb-2 lg:max-w-5xl">
         {LINKS.map((l) => (
           <Link
             key={l.href}

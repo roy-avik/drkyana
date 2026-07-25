@@ -155,7 +155,7 @@ export default function ChamberManager() {
       )}
 
       {form && (
-        <Card className="space-y-3">
+        <Card className="space-y-3 lg:max-w-xl">
           <h2 className="text-sm font-semibold">
             {form.id ? "Edit chamber" : "New chamber"}
           </h2>
@@ -268,7 +268,7 @@ export default function ChamberManager() {
         <Card className="text-center text-sm text-muted">No chambers yet.</Card>
       )}
 
-      <ul className="space-y-2">
+      <ul className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
         {chambers.map((c) => (
           <li key={c.id} className={`${cardClassName} p-4 ${c.active ? "" : "opacity-60"}`}>
             <div className="flex items-start justify-between gap-2">
