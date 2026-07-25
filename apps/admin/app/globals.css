@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Shared component primitives (Phase 1 — Base UI layer) live outside this
+   app's own directory tree; Tailwind's default content scan won't reliably
+   reach across the workspace symlink in node_modules, so this is explicit. */
+@source "../../../packages/ui/src";
+
 /* Brand tokens — match the patient site (calm, considered, modern). Sourced
    from the DLS at runtime: var(--dk-*, fallback) with ApplyDlsTokens
    (components/ApplyDlsTokens.tsx) overwriting --dk-* from DLS_TOKENS, same
