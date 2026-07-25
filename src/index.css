@@ -5,9 +5,8 @@
    AppointmentsPanel.tsx, were showing up in this bundle's CSS with zero
    uses in patient source — pre-existing, not introduced by this change).
    admin's own Tailwind build does NOT reciprocally scan patient's src/, so
-   only this direction needs excluding. Drop the packages/ui line once the
-   patient site actually imports from @drkyana/ui. */
-@source not "../packages/ui/src";
+   only this direction needs excluding. packages/ui IS scanned (below) now
+   that patient imports Button/Input from @drkyana/ui. */
 @source not "../apps/admin";
 
 /* Colors below reference var(--dk-*, fallback) — the fallback is the

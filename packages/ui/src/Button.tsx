@@ -26,6 +26,15 @@ export type ButtonTone = "neutral" | "brand" | "success" | "danger";
  */
 export type ButtonSize = "md" | "sm";
 
+/**
+ * `flat` (radius-sm, the default) is admin's existing look, unchanged.
+ * `pill` (radius-full + a hover lift) is patient's marketing/chat-widget
+ * treatment (Hero CTAs, the OTP step, the intake form's back/skip controls)
+ * — a deliberately different, more expressive surface for the public site,
+ * not something to flatten onto admin's flat/utilitarian look.
+ */
+export type ButtonShape = "flat" | "pill";
+
 const TONE_CLASSES: Record<ButtonTone, string> = {
   neutral: "border border-ink/15 bg-surface text-ink hover:border-accent hover:bg-surface-alt",
   brand: "border border-transparent bg-brand text-white hover:bg-brand/90",
@@ -38,19 +47,31 @@ const SIZE_CLASSES: Record<ButtonSize, string> = {
   sm: "min-h-0 px-2.5 py-1 text-xs",
 };
 
+const SHAPE_CLASSES: Record<ButtonShape, string> = {
+  flat: "rounded-sm transition-colors",
+  pill: "rounded-full transition-all duration-200 hover:-translate-y-0.5",
+};
+
 export interface ButtonProps
   extends Omit<React.ComponentProps<typeof BaseButton>, "className"> {
   tone?: ButtonTone;
   size?: ButtonSize;
+  shape?: ButtonShape;
   className?: string;
 }
 
 export const Button = React.forwardRef<HTMLElement, ButtonProps>(
-  function Button({ tone = "neutral", size = "md", className = "", ...props }, ref) {
+  function Button(
+    { tone = "neutral", size = "md", shape = "flat", className = "", ...props },
+    ref,
+  ) {
     const classes = [
-      "inline-flex items-center justify-center gap-2 rounded-sm font-medium transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+      "inline-flex items-center justify-center gap-2 font-medium disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+      SHAPE_CLASSES[shape],
       SIZE_CLASSES[size],
       TONE_CLASSES[tone],
+      // `.btn-primary`'s hover glow (src/index.css) — pill + brand only.
+      shape === "pill" && tone === "brand" ? "hover:shadow-lg hover:shadow-brand/25" : "",
       className,
     ]
       .filter(Boolean)

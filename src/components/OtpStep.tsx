@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { LegalLine } from './LegalLine';
+import { Button, Input } from '@drkyana/ui';
 
 /**
  * Email OTP verification step.
@@ -124,7 +125,8 @@ export function OtpStep({
       {step === 'email' ? (
         <>
           <p className="text-xs text-muted">{t('receptionist.otp.email_explainer')}</p>
-          <input
+          <Input
+            shape="pill"
             type="email"
             inputMode="email"
             autoComplete="email"
@@ -132,23 +134,25 @@ export function OtpStep({
             onChange={(e) => setEmail(e.target.value)}
             placeholder={t('receptionist.otp.email_prompt')}
             disabled={busy || disabled}
-            className="rounded-full border border-ink/10 bg-white px-4 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brand/30"
           />
-          <button
+          <Button
             type="button"
+            shape="pill"
+            tone="brand"
+            className="!min-h-0 self-start !px-5 !py-2 font-semibold"
             onClick={() => void sendCode()}
             disabled={cannotSend}
-            className="self-start rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             {t('receptionist.otp.send')}
-          </button>
+          </Button>
         </>
       ) : (
         <>
           <p className="text-xs text-muted">
             {t('receptionist.otp.code_explainer').replace('{email}', email)}
           </p>
-          <input
+          <Input
+            shape="pill"
             type="text"
             inputMode="numeric"
             autoComplete="one-time-code"
@@ -158,25 +162,29 @@ export function OtpStep({
             onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
             placeholder="000000"
             disabled={busy || disabled}
-            className="rounded-full border border-ink/10 bg-white px-4 py-2 text-center font-mono text-base tracking-[0.4em] text-ink focus:outline-none focus:ring-2 focus:ring-brand/30"
+            className="text-center font-mono text-base tracking-[0.4em]"
           />
           <div className="flex flex-wrap gap-2">
-            <button
+            <Button
               type="button"
+              shape="pill"
+              tone="brand"
+              className="!min-h-0 !px-5 !py-2 font-semibold"
               onClick={() => void verifyCode()}
               disabled={cannotVerify}
-              className="rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
               {t('receptionist.otp.verify')}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              shape="pill"
+              tone="neutral"
+              className="!min-h-0 !border-ink/10 !bg-transparent !px-5 !py-2 !text-muted hover:!border-ink/10 hover:!bg-transparent hover:!text-ink"
               onClick={() => void sendCode()}
               disabled={busy || disabled}
-              className="rounded-full border border-ink/10 px-5 py-2 text-sm text-muted hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
             >
               {t('receptionist.otp.resend')}
-            </button>
+            </Button>
             <button
               type="button"
               onClick={() => setStep('email')}
