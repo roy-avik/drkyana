@@ -48,8 +48,8 @@ const SIZE_CLASSES: Record<ButtonSize, string> = {
 };
 
 const SHAPE_CLASSES: Record<ButtonShape, string> = {
-  flat: "rounded-sm transition-colors",
-  pill: "rounded-full transition-all duration-200 hover:-translate-y-0.5",
+  flat: "rounded-sm transition-colors ease-spring",
+  pill: "rounded-full transition-all duration-200 ease-spring hover:-translate-y-0.5",
 };
 
 export interface ButtonProps

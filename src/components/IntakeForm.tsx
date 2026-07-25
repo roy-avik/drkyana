@@ -408,7 +408,7 @@ export function IntakeForm({
         </div>
         <div className="h-1 w-full overflow-hidden rounded-full bg-ink/5">
           <div
-            className="h-full rounded-full bg-accent transition-all"
+            className="h-full rounded-full bg-accent transition-all ease-spring"
             style={{ width: `${((step + 1) / total) * 100}%` }}
           />
         </div>

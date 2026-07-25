@@ -30,7 +30,7 @@ export function Header() {
   return (
     <header
       className={[
-        'sticky top-0 z-40 w-full transition-all duration-200',
+        'sticky top-0 z-40 w-full transition-all duration-200 ease-spring',
         scrolled
           ? 'bg-white/90 shadow-sm shadow-ink/5 backdrop-blur-md'
           : 'bg-white/70 backdrop-blur-sm',
@@ -43,7 +43,7 @@ export function Header() {
 
         <nav
           className={[
-            'absolute inset-x-0 top-full overflow-hidden bg-white/95 shadow-md transition-[max-height] duration-300 ease-out backdrop-blur-md md:static md:ml-auto md:flex md:max-h-none md:bg-transparent md:shadow-none md:backdrop-blur-none',
+            'absolute inset-x-0 top-full overflow-hidden bg-white/95 shadow-md transition-[max-height] duration-300 ease-spring backdrop-blur-md md:static md:ml-auto md:flex md:max-h-none md:bg-transparent md:shadow-none md:backdrop-blur-none',
             navOpen ? 'max-h-96' : 'max-h-0 md:max-h-none',
           ].join(' ')}
           aria-label="Primary"
@@ -54,7 +54,7 @@ export function Header() {
                 <Link
                   to={item.href}
                   onClick={() => setNavOpen(false)}
-                  className="block rounded-md px-2 py-2 text-sm font-medium text-ink transition-colors hover:text-brand md:px-0 md:py-1"
+                  className="block rounded-md px-2 py-2 text-sm font-medium text-ink transition-colors ease-spring hover:text-brand md:px-0 md:py-1"
                 >
                   {t(item.key, item.en)}
                 </Link>
@@ -72,11 +72,11 @@ export function Header() {
           aria-label="Toggle navigation"
           aria-expanded={navOpen}
           onClick={() => setNavOpen((v) => !v)}
-          className="ml-2 inline-flex h-9 w-9 flex-col items-center justify-center gap-1.5 rounded-md text-brand transition-colors hover:bg-brand/10 md:hidden"
+          className="ml-2 inline-flex h-9 w-9 flex-col items-center justify-center gap-1.5 rounded-md text-brand transition-colors ease-spring hover:bg-brand/10 md:hidden"
         >
-          <span className={`block h-0.5 w-5 rounded bg-current transition-transform ${navOpen ? 'translate-y-2 rotate-45' : ''}`}></span>
-          <span className={`block h-0.5 w-5 rounded bg-current transition-opacity ${navOpen ? 'opacity-0' : ''}`}></span>
-          <span className={`block h-0.5 w-5 rounded bg-current transition-transform ${navOpen ? '-translate-y-2 -rotate-45' : ''}`}></span>
+          <span className={`block h-0.5 w-5 rounded bg-current transition-transform ease-spring ${navOpen ? 'translate-y-2 rotate-45' : ''}`}></span>
+          <span className={`block h-0.5 w-5 rounded bg-current transition-opacity ease-spring ${navOpen ? 'opacity-0' : ''}`}></span>
+          <span className={`block h-0.5 w-5 rounded bg-current transition-transform ease-spring ${navOpen ? '-translate-y-2 -rotate-45' : ''}`}></span>
         </button>
       </div>
     </header>

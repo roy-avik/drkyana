@@ -83,7 +83,7 @@ export function LangSwitcher() {
         onClick={() => setOpen((v) => !v)}
         onKeyDown={onTriggerKey}
         className={[
-          'inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold leading-none transition-all duration-200',
+          'inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold leading-none transition-all duration-200 ease-spring',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40',
           open
             ? 'border-brand/15 bg-brand/10 text-brand'
@@ -102,7 +102,7 @@ export function LangSwitcher() {
           {current.native}
         </span>
         <svg
-          className={`h-2.5 w-2.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          className={`h-2.5 w-2.5 transition-transform duration-200 ease-spring ${open ? 'rotate-180' : ''}`}
           viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
         >
           <polyline points="6 9 12 15 18 9" />
@@ -116,7 +116,7 @@ export function LangSwitcher() {
         onKeyDown={onMenuKey}
         className={[
           'absolute z-50 mt-2 min-w-[12rem] origin-top rounded-2xl border border-ink/5 bg-white/95 p-2 shadow-pop backdrop-blur-md backdrop-saturate-150',
-          'transition duration-150 ease-out',
+          'transition duration-150 ease-spring',
           // Anchor right in EVERY language. <html dir> is forced to "ltr" for
           // fa too (flipping it would invert every flex/grid — see CLAUDE.md),
           // so the switcher sits top-right regardless of locale. Flipping the
@@ -140,7 +140,7 @@ export function LangSwitcher() {
                 tabIndex={-1}
                 onClick={() => handleSelect(opt.code)}
                 className={[
-                  'flex w-full items-center gap-3 rounded-xl px-3 py-2 text-start text-sm transition-colors',
+                  'flex w-full items-center gap-3 rounded-xl px-3 py-2 text-start text-sm transition-colors ease-spring',
                   selected
                     ? 'bg-accent/[0.08] text-brand'
                     : 'text-ink hover:bg-brand/[0.07] hover:text-brand focus-visible:bg-brand/[0.07] focus-visible:text-brand',
@@ -153,7 +153,7 @@ export function LangSwitcher() {
                 </span>
                 <span className="text-[0.7rem] font-normal tracking-wide text-muted">{opt.sub}</span>
                 <svg
-                  className={`h-3.5 w-3.5 text-accent transition-all duration-150 ${selected ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}
+                  className={`h-3.5 w-3.5 text-accent transition-all duration-150 ease-spring ${selected ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}
                   viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
                 >
                   <polyline points="20 6 9 17 4 12" />

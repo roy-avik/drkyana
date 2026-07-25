@@ -28,7 +28,7 @@ export interface ChipProps
 export const Chip = React.forwardRef<HTMLButtonElement, ChipProps>(
   function Chip({ className = "", ...props }, ref) {
     const classes = [
-      "inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full border px-3 text-sm font-medium transition-colors disabled:opacity-50",
+      "inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full border px-3 text-sm font-medium transition-colors ease-spring disabled:opacity-50",
       "border-ink/15 bg-surface text-muted hover:border-accent/40",
       "aria-pressed:border-brand aria-pressed:bg-brand aria-pressed:text-white",
       className,

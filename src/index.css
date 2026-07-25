@@ -42,6 +42,12 @@
   --font-bn: "Noto Sans Bengali", "Poppins", sans-serif;
 
   --shadow-pop: 0 20px 40px -16px rgba(15, 76, 129, 0.28), 0 6px 16px -8px rgba(15, 23, 42, 0.12);
+
+  /* Shared motion curve (Phase 1 "Apple fundamentals" pass) — quick start,
+     soft settle, no bounce/overshoot. Generates the `ease-spring` utility.
+     Restraint over added polish: no motion library, just this one curve
+     applied to transitions that already existed. */
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @layer base {
@@ -74,19 +80,19 @@
     @apply text-xs font-semibold uppercase tracking-[0.18em] text-brand;
   }
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-full bg-brand px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-dark hover:shadow-lg hover:shadow-brand/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+    @apply inline-flex items-center justify-center rounded-full bg-brand px-6 py-3 text-sm font-semibold text-white transition-all duration-200 ease-spring hover:-translate-y-0.5 hover:bg-brand-dark hover:shadow-lg hover:shadow-brand/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center rounded-full border border-brand/15 bg-brand/5 px-6 py-3 text-sm font-semibold text-brand transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand/10 hover:border-brand/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+    @apply inline-flex items-center justify-center rounded-full border border-brand/15 bg-brand/5 px-6 py-3 text-sm font-semibold text-brand transition-all duration-200 ease-spring hover:-translate-y-0.5 hover:bg-brand/10 hover:border-brand/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
   }
   .card {
-    @apply rounded-2xl bg-white p-6 ring-1 ring-ink/5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:shadow-brand/10 hover:ring-brand/15;
+    @apply rounded-2xl bg-white p-6 ring-1 ring-ink/5 shadow-sm transition-all duration-200 ease-spring hover:-translate-y-1 hover:shadow-lg hover:shadow-brand/10 hover:ring-brand/15;
   }
 }
 
 /* Fade page in once the locale resolves to avoid an English flash for fa/bn. */
 body.is-loading { opacity: 0; }
-body.is-ready { opacity: 1; transition: opacity 220ms ease-out; }
+body.is-ready { opacity: 1; transition: opacity 220ms var(--ease-spring); }
 
 /* Hero name treatment — static display magenta with a resting glow. No
    animation: the previous infinite neon-flicker looped forever with no
