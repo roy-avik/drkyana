@@ -263,3 +263,33 @@ export type DlsComponentToken = keyof typeof DLS_COMPONENT_TOKENS;
 
 /** CSS custom-property name for a DLS token (e.g. `--dk-surface-2`). */
 export const dlsVar = (token: DlsToken): string => `--dk-${token}`;
+
+/**
+ * Applies DLS tokens as `--dk-*` custom properties on the document root.
+ * Lets a Tailwind `@theme` block (patient `src/index.css`, admin
+ * `globals.css`) reference `var(--dk-token, <fallback-hex>)` instead of a
+ * hand-typed hex literal, so those two consumers are actually sourced from
+ * `DLS_TOKENS` at runtime rather than manually kept in sync with it. Mirrors
+ * the same `setProperty` pattern the MCP template already uses for host
+ * theming (`mcp/template.ts`). No-ops outside a DOM environment (SSR/tests),
+ * and is safe to call more than once (idempotent).
+ */
+export function applyDlsTokens(mode: "light" | "dark" = "light"): void {
+  // Structural type, not `lib: dom`'s `Document` — this package is also
+  // typechecked from server (non-DOM) tsconfigs.
+  const doc = (
+    globalThis as {
+      document?: { documentElement: { style: { setProperty(name: string, value: string): void } } };
+    }
+  ).document;
+  if (!doc) return;
+  const root = doc.documentElement.style;
+  for (const [token, value] of Object.entries(DLS_TOKENS)) {
+    root.setProperty(dlsVar(token as DlsToken), value);
+  }
+  if (mode === "dark") {
+    for (const [token, value] of Object.entries(DLS_TOKENS_DARK)) {
+      root.setProperty(dlsVar(token as DlsToken), value);
+    }
+  }
+}
