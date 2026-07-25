@@ -83,7 +83,7 @@ export function LangSwitcher() {
         onClick={() => setOpen((v) => !v)}
         onKeyDown={onTriggerKey}
         className={[
-          'inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-semibold leading-none transition-all duration-200',
+          'inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold leading-none transition-all duration-200',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40',
           open
             ? 'border-brand/15 bg-brand/10 text-brand'
@@ -115,7 +115,7 @@ export function LangSwitcher() {
         tabIndex={-1}
         onKeyDown={onMenuKey}
         className={[
-          'absolute z-50 mt-2.5 min-w-[12rem] origin-top rounded-2xl border border-ink/5 bg-white/95 p-1.5 shadow-pop backdrop-blur-md backdrop-saturate-150',
+          'absolute z-50 mt-2 min-w-[12rem] origin-top rounded-2xl border border-ink/5 bg-white/95 p-2 shadow-pop backdrop-blur-md backdrop-saturate-150',
           'transition duration-150 ease-out',
           // Anchor right in EVERY language. <html dir> is forced to "ltr" for
           // fa too (flipping it would invert every flex/grid — see CLAUDE.md),
@@ -140,7 +140,7 @@ export function LangSwitcher() {
                 tabIndex={-1}
                 onClick={() => handleSelect(opt.code)}
                 className={[
-                  'flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-start text-sm transition-colors',
+                  'flex w-full items-center gap-3 rounded-xl px-3 py-2 text-start text-sm transition-colors',
                   selected
                     ? 'bg-accent/[0.08] text-brand'
                     : 'text-ink hover:bg-brand/[0.07] hover:text-brand focus-visible:bg-brand/[0.07] focus-visible:text-brand',

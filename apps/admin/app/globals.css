@@ -93,7 +93,7 @@ body {
   @apply mb-2 mt-3 text-base font-bold;
 }
 .prose-draft h2 {
-  @apply mb-1.5 mt-3 text-sm font-semibold;
+  @apply mb-2 mt-3 text-sm font-semibold;
 }
 .prose-draft h3 {
   @apply mb-1 mt-2 text-sm font-semibold;
