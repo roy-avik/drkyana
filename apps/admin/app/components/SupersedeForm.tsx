@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button, Textarea } from "@drkyana/ui";
 
 /**
  * Inline form for superseding an AI-generated clinical assist with Dr Kyana's
@@ -45,23 +46,23 @@ export function SupersedeForm({ assistId }: { assistId: string }) {
         Supersede with my own note
       </summary>
       <div className="mt-2 space-y-2">
-        <textarea
+        <Textarea
           rows={3}
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Your clinical assessment overrides the AI draft. The original stays in the record for audit."
           disabled={busy}
-          className="w-full rounded-md border border-ink/15 bg-white p-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30"
         />
         <div className="flex items-center gap-2">
-          <button
+          <Button
             type="button"
+            tone="brand"
+            size="sm"
             onClick={() => void submit()}
             disabled={!note.trim() || busy}
-            className="rounded-md bg-brand px-3 py-1 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             {busy ? "Saving…" : "Save supersede note"}
-          </button>
+          </Button>
           {error && (
             <span role="alert" className="text-xs text-red-600">{error}</span>
           )}
