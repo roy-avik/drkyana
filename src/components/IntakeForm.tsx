@@ -5,6 +5,7 @@ import {
   type IntakeFormField,
   type IntakeFormGroup,
 } from '@drkyana/types';
+import { Button, Input } from '@drkyana/ui';
 
 /**
  * Patient intake form — rendered in chat when the agent calls collect_intake.
@@ -119,14 +120,12 @@ function fieldPlaceholder(t: T, field: IntakeFormField): string | undefined {
  */
 function TagsField({
   field,
-  cls,
   label,
   placeholder,
   value,
   onChange,
 }: {
   field: IntakeFormField;
-  cls: string;
   label: string;
   placeholder?: string;
   value: Value;
@@ -137,8 +136,9 @@ function TagsField({
   return (
     <label className="block text-xs text-muted">
       {label}
-      <input
-        className={cls}
+      <Input
+        shape="flat"
+        className="mt-1"
         placeholder={placeholder ?? field.placeholder ?? 'comma-separated'}
         value={raw}
         onChange={(e) => {
@@ -163,8 +163,12 @@ function FieldRow({
 }) {
   const label = fieldLabel(t, field, !!field.required);
   const placeholder = fieldPlaceholder(t, field);
+  // Still used directly by <select>/<textarea>, which the shared Input
+  // primitive (native <input> only) can't wrap — rounded-sm here matches
+  // <Input shape="flat"> below so every control in the form reads as one
+  // consistent field style.
   const cls =
-    'mt-1 w-full rounded-lg border border-ink/15 bg-white px-3 py-2 text-sm focus:border-accent focus:outline-none';
+    'mt-1 w-full rounded-sm border border-ink/15 bg-white px-3 py-2 text-sm focus:border-accent focus:outline-none';
 
   if (field.type === 'select' && field.options) {
     return (
@@ -208,7 +212,6 @@ function FieldRow({
     return (
       <TagsField
         field={field}
-        cls={cls}
         label={label}
         placeholder={placeholder}
         value={value}
@@ -236,8 +239,9 @@ function FieldRow({
   return (
     <label className="block text-xs text-muted">
       {label}
-      <input
-        className={cls}
+      <Input
+        shape="flat"
+        className="mt-1"
         type={field.type}
         placeholder={placeholder}
         min={field.min}
@@ -270,7 +274,7 @@ function VerifiedEmailRow({ t, email }: { t: T; email: string }) {
   return (
     <label className="block text-xs text-muted">
       {t('intake.field.email', 'Email')}
-      <div className="mt-1 flex items-center gap-2 rounded-lg border border-ink/10 bg-surface-alt px-3 py-2 text-sm text-ink">
+      <div className="mt-1 flex items-center gap-2 rounded-sm border border-ink/10 bg-surface-alt px-3 py-2 text-sm text-ink">
         <span className="truncate">{email || '—'}</span>
         <span className="ml-auto shrink-0 rounded-full bg-green/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-green">
           {t('intake.field.email_verified', 'Verified')}
@@ -428,23 +432,27 @@ export function IntakeForm({
       )}
 
       <div className="mt-4 flex items-center gap-2">
-        <button
+        <Button
           type="button"
+          shape="pill"
+          tone="neutral"
+          className="!min-h-0 !border-ink/15 !bg-transparent !px-4 !py-2 !text-muted hover:!border-ink/15 hover:!bg-transparent hover:!text-ink disabled:!opacity-40"
           onClick={back}
           disabled={disabled || submitted || step === 0}
-          className="rounded-full border border-ink/15 px-4 py-2 text-sm text-muted hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
         >
           {t('intake.form.back', 'Back')}
-        </button>
+        </Button>
         {!field.required && !isLast && (
-          <button
+          <Button
             type="button"
+            shape="pill"
+            tone="neutral"
+            className="!min-h-0 !border-transparent !bg-transparent !px-4 !py-2 !text-muted hover:!border-transparent hover:!bg-transparent hover:!text-ink"
             onClick={skip}
             disabled={disabled || submitted}
-            className="rounded-full px-4 py-2 text-sm text-muted hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
           >
             {t('intake.form.skip', 'Skip')}
-          </button>
+          </Button>
         )}
         <button
           type="submit"

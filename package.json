@@ -27,6 +27,7 @@
   "dependencies": {
     "@ai-sdk/react": "^3.0.194",
     "@drkyana/types": "*",
+    "@drkyana/ui": "*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

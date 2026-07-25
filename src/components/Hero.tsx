@@ -1,4 +1,5 @@
 import { useTranslation } from '../i18n/useTranslation';
+import { Button } from '@drkyana/ui';
 
 const PHOTO = `${import.meta.env.BASE_URL}assets/photo.jpg`;
 
@@ -31,8 +32,23 @@ export function Hero() {
             )}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <a href="#services" className="btn-primary">{t('cta.services', 'View Services')}</a>
-            <a href="#contact" className="btn-ghost">{t('cta.contact', 'Get In Touch')}</a>
+            <Button
+              shape="pill"
+              tone="brand"
+              nativeButton={false}
+              render={<a href="#services" />}
+            >
+              {t('cta.services', 'View Services')}
+            </Button>
+            <Button
+              shape="pill"
+              tone="neutral"
+              nativeButton={false}
+              className="!border-brand/15 !bg-brand/5 !text-brand hover:!border-brand/30 hover:!bg-brand/10"
+              render={<a href="#contact" />}
+            >
+              {t('cta.contact', 'Get In Touch')}
+            </Button>
           </div>
         </div>
 
