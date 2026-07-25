@@ -8,6 +8,7 @@ import TranscriptPanel from "../../components/TranscriptPanel";
 import { ClinicalAssistsPanel } from "../../components/ClinicalAssistsPanel";
 import NotAuthorized from "../../components/NotAuthorized";
 import { fmtDate, TRIAGE_CLASS, TRIAGE_LABEL } from "../../lib/format";
+import { Card, cardClassName } from "@drkyana/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -71,11 +72,11 @@ export default async function IntakeDetail({
         )}
       </div>
 
-      <div className="card">
+      <Card>
         <StatusControl intakeId={intake.id} initial={intake.status} />
-      </div>
+      </Card>
 
-      <section className="card">
+      <section className={`${cardClassName} p-4`}>
         <h2 className="mb-3 text-sm font-semibold">Identity</h2>
         <dl className="grid grid-cols-2 gap-3">
           <Field label="Phone" value={intake.phone} />
@@ -85,7 +86,7 @@ export default async function IntakeDetail({
         </dl>
       </section>
 
-      <section className="card">
+      <section className={`${cardClassName} p-4`}>
         <h2 className="mb-3 text-sm font-semibold">Complaint</h2>
         <dl className="grid grid-cols-2 gap-3">
           <Field label="Affected area" value={intake.affected_area} />
@@ -101,7 +102,7 @@ export default async function IntakeDetail({
         )}
       </section>
 
-      <section className="card">
+      <section className={`${cardClassName} p-4`}>
         <h2 className="mb-3 text-sm font-semibold">Medical & dental history</h2>
         <dl className="space-y-3">
           <ListField label="Conditions" items={intake.conditions} />
@@ -112,7 +113,7 @@ export default async function IntakeDetail({
         </dl>
       </section>
 
-      <section className="card border-amber-200 bg-amber-50/40">
+      <section className={`${cardClassName} p-4 border-amber-200 bg-amber-50/40`}>
         <h2 className="mb-1 text-sm font-semibold">Requested appointment</h2>
         <p className="mb-3 text-xs text-muted">
           What the patient <strong>sought</strong> at intake — not yet granted.
@@ -145,7 +146,7 @@ export default async function IntakeDetail({
       <ClinicalAssistsPanel intakeId={intake.id} />
 
       {patient && (
-        <section className="card border-accent/30 bg-accent/5">
+        <section className={`${cardClassName} p-4 border-accent/30 bg-accent/5`}>
           <h2 className="mb-2 text-sm font-semibold">
             Patient record (read-only)
           </h2>
