@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import type { DraftRow, DraftStatus } from "@drkyana/types";
 import { fmtDateShort, DRAFT_STATUS_LABEL } from "../lib/format";
-import { Card, cardClassName } from "@drkyana/ui";
+import { Card, Chip, cardClassName } from "@drkyana/ui";
 
 const STATUSES: (DraftStatus | "")[] = ["", "draft", "approved", "sent"];
 
@@ -44,17 +44,9 @@ export default function DraftList() {
 
       <div className="flex flex-wrap gap-1.5">
         {STATUSES.map((s) => (
-          <button
-            key={s || "all"}
-            onClick={() => setStatus(s)}
-            className={`chip border transition-colors ${
-              status === s
-                ? "border-brand bg-brand text-white"
-                : "border-ink/15 bg-white text-muted hover:border-accent/40"
-            }`}
-          >
+          <Chip key={s || "all"} pressed={status === s} onPressedChange={() => setStatus(s)}>
             {s ? DRAFT_STATUS_LABEL[s] : "All"}
-          </button>
+          </Chip>
         ))}
       </div>
 
