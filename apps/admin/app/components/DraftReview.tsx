@@ -85,7 +85,7 @@ export default function DraftReview({ initial }: { initial: DraftRow }) {
       </div>
 
       {error && (
-        <div className="card border-red/30 bg-red/5 text-sm text-red">{error}</div>
+        <div role="alert" className="card border-red/30 bg-red/5 text-sm text-red">{error}</div>
       )}
       {notice && (
         <div className="card border-green/30 bg-green/5 text-sm text-green">{notice}</div>

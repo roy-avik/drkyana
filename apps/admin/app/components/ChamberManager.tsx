@@ -150,7 +150,7 @@ export default function ChamberManager() {
       </div>
 
       {error && (
-        <div className="card border-red/30 bg-red/5 text-sm text-red">{error}</div>
+        <div role="alert" className="card border-red/30 bg-red/5 text-sm text-red">{error}</div>
       )}
 
       {form && (

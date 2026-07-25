@@ -234,7 +234,7 @@ function ChatThread({
         </div>
       )}
       {error && !offline && (
-        <div className="card border-red/30 bg-red/5 text-sm text-red">{error.message}</div>
+        <div role="alert" className="card border-red/30 bg-red/5 text-sm text-red">{error.message}</div>
       )}
       <div className="card min-h-[280px] space-y-3">
         {messages.length === 0 && !offline && (

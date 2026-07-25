@@ -55,7 +55,7 @@ export default function StatusControl({
           </button>
         ))}
       </div>
-      {error && <p className="text-xs text-red">Update failed: {error}</p>}
+      {error && <p role="alert" className="text-xs text-red">Update failed: {error}</p>}
     </div>
   );
 }

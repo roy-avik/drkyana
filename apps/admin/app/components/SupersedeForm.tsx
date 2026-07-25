@@ -63,7 +63,7 @@ export function SupersedeForm({ assistId }: { assistId: string }) {
             {busy ? "Saving…" : "Save supersede note"}
           </button>
           {error && (
-            <span className="text-xs text-red-600">{error}</span>
+            <span role="alert" className="text-xs text-red-600">{error}</span>
           )}
         </div>
       </div>
