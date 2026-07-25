@@ -24,8 +24,12 @@ coding agent):**
 **Non-blocking future code task:** 0.11a (widen the PII strip to withhold phone
 from the model) — see below.
 
-The next coding agent should start **Phase 1**. Full design detail is in the
-plan (Part B); the actionable summary is in this file's Phase 1 section.
+**Phase 1 (design language) is IN PROGRESS**, started 2026-07-25: DLS tokens
+(three-tier + runtime single-sourcing), the magenta accent decision, and a
+handful of admin-UX fixes are shipped across PRs #66–#70. Base UI component
+layer and responsive breakpoints are the two big pieces still open. Full
+design detail is in the plan (Part B); current status is in this file's
+Phase 1 section.
 
 ## Phase 0 — launch blockers
 
@@ -81,40 +85,74 @@ section is reference for the next agent.
   omission. **A future task master picks this up** — it is not a blocker for
   go-live (the current disclosure is already accurate).
 
-## Phase 1 — design language + component layer  ← START HERE
+## Phase 1 — design language + component layer  ← IN PROGRESS
 
-Blocks further UI work. **Not started.** Full rationale: plan Part B. Actionable
-summary for the next agent:
+Blocks further UI work. Started 2026-07-25. Full rationale: plan Part B.
+Landed in small checkpointed PRs (#66–#70), each squash-merged and deployed
+(patient auto-deploys via Pages; admin needs a manual
+`cd apps/admin && npm run deploy` — no Workers Build configured):
 
-- **One DLS, four surfaces.** `packages/types/src/dls.ts` already exists but is
-  incomplete and consumed by only two surfaces. The repo currently has FOUR
-  competing visual systems: patient `src/index.css` (`#ff4fd8` magenta accent),
-  admin `apps/admin/app/globals.css` (`#3b82f6` blue, comment falsely claims it
-  matches patient), the DLS (`#3b82f6`), and `design/calendar-mockup.html`
-  (four invented chamber colours). Extend `dls.ts` to a three-tier token set
-  (primitive → semantic → component) and make all four consume it: patient
-  `@theme`, admin `@theme`, MCP `template.ts`, `ViewRenderer.tsx`.
-- **Magenta decision (user-approved).** Keep magenta as the ONE accent
-  everywhere; split into `accent-display` (`#ff4fd8`, decorative only — fails
-  contrast, never functional) + `accent` (~`#A8006E`, AA-passing, for
-  links/focus/active). **Delete the `@keyframes neon-sign` + `.neon-heading`**
-  infinite flicker on the hero `<h1>` (`src/index.css`) — no
-  `prefers-reduced-motion` anywhere in the repo yet. Semantic status colours
-  must stay non-magenta.
-- **Component library: Base UI** (v1.0, shadcn's default as of 2026, built-in
-  RTL — matters for Farsi). Build primitives once, delete the duplicates: the
-  audit found ~6 Input variants, ~8 Button variants, 3 incompatible Card defs,
-  and an error-banner string copy-pasted in 7 admin files. `src/lib/markdown.ts`
-  and `apps/admin/app/lib/markdown.ts` are byte-identical — a shared package
-  waiting to happen. Watch the CI size budget (150 KB) — tree-shake, and
+- **One DLS, four surfaces.**
+  - ✅ **Tokens extended** (#66) — `packages/types/src/dls.ts` is now a real
+    three-tier set: primitive (`DLS_PRIMITIVES`) → semantic (`DLS_TOKENS`) →
+    component (`DLS_COMPONENT_TOKENS`, the data form of this doc's Component
+    rules).
+  - ✅ **Actually single-sourced at runtime** (#69) — patient `@theme` and
+    admin `@theme` now read `var(--dk-token, fallback)`, and `applyDlsTokens()`
+    (new export in `dls.ts`, same pattern the MCP template already used for
+    host theming) sets the real `--dk-*` values from `DLS_TOKENS` on load
+    (patient `main.tsx`; admin via a small client component,
+    `ApplyDlsTokens.tsx`). Editing `dls.ts` now actually propagates —
+    before #69 the two `@theme` blocks just happened to have matching
+    hand-typed values.
+  - ⏳ **Triage severity colors NOT wired.** `red`/`orange`/`yellow`/`green`
+    are deliberately still literals in both `@theme` blocks. This doc's own
+    tone mapping (`ORANGE→warning`, `YELLOW→info`) would change their
+    rendered hex if wired — `info` is DLS blue, so `YELLOW` would silently
+    render blue. That's a real visible change to the admin triage badges and
+    needs its own decision, not a side effect of token plumbing.
+  - `design/calendar-mockup.html`'s four invented chamber colours are
+    untouched — it's a static reference file, not live code; reconcile it
+    when Phase 2 builds the real calendar.
+- **Magenta decision (user-approved) — ✅ shipped (#66).** `accent-display`
+  (`#ff4fd8`, decorative only) + `accent` (`#a8006e`, AA-passing) live in both
+  `@theme` blocks. The `@keyframes neon-sign` + `.neon-heading` infinite
+  flicker on the hero `<h1>` is deleted — replaced with a static
+  `.hero-heading` using the same resting-state glow, no animation.
+- **Component library: Base UI — ⏳ not started.** Still open: introduce
+  Base UI (v1.0), then dedupe the ~6 Input variants, ~8 Button variants, 3
+  incompatible Card defs. Watch the CI size budget (150 KB) — tree-shake, and
   code-split the patient routes (`React.lazy`) since there's none today.
-- **Admin console UX** (weakest surface): `AppointmentsPanel.tsx` uses
-  `window.prompt`/`window.alert` for rescheduling on a phone PWA (worst
-  interaction in the product); ~20px touch targets; only 2 responsive
-  breakpoints; no `aria-live`/`aria-current`/skip-link; `<html lang>` hardcoded.
-- **Approach:** the plan chose "Apple fundamentals, not Liquid Glass" — optical
-  typography, 4pt grid, spring motion, 44px targets, no translucency over
-  clinical text.
+  - ✅ **`markdown.ts` dedup** (#70) — the byte-identical renderer in
+    `src/lib/markdown.ts` / `apps/admin/app/lib/markdown.ts` is now
+    `packages/types/src/markdown.ts`, one copy, 6 import sites updated.
+  - ✅ **Error-banner `role="alert"`** (#68) — the copy-pasted
+    `card border-red/30 bg-red/5 text-sm text-red` div (7 files) plus 4
+    smaller variants all got `role="alert"` in place. The markup itself is
+    still duplicated — that dedup (a shared component) is still Base UI work.
+- **Admin console UX** (weakest surface):
+  - ✅ **`window.prompt`/`window.alert` replaced** (#67) —
+    `AppointmentsPanel.tsx` (named "worst interaction in the product") now
+    uses inline reschedule/cancel/no-show forms.
+  - ⏳ **Touch targets — partial** (#67, #68). `.btn`/`.input` (shared
+    classes) and the admin nav tab bar are `min-h-11` (44px). One-off
+    buttons/controls not using those shared classes weren't audited.
+  - ⏳ **Responsive breakpoints — not started.** Still ~2 breakpoints total;
+    needs real layout decisions (sidebar vs. top nav at desktop width, etc.),
+    not a mechanical fix.
+  - ✅ **`aria-current` + skip-link** (#68) — active nav tab exposes
+    `aria-current="page"`; `layout.tsx` has a visually-hidden, focus-visible
+    skip-link to `#main-content`.
+  - ⏳ **`aria-live` beyond error banners — not started.** Loading/success/
+    save-confirmation states don't announce.
+  - **`<html lang="en")` — closed, not a bug.** Admin has zero i18n (it's a
+    single-operator console); English is correctly the only language. Only
+    revisit if admin ever gets localized.
+- **Approach — not audited as a system-wide pass.** The plan chose "Apple
+  fundamentals, not Liquid Glass" — optical typography, 4pt grid, spring
+  motion, 44px targets, no translucency over clinical text. The 4px spacing
+  scale exists in tokens (`space-1..6`) but isn't enforced/verified across
+  components.
 
 Design tokens must never be hard-coded in a renderer (spec: `docs/dls.md`).
 
