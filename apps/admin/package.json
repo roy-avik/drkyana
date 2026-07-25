@@ -13,6 +13,7 @@
   "dependencies": {
     "@drkyana/server": "*",
     "@drkyana/types": "*",
+    "@drkyana/ui": "*",
     "@ai-sdk/anthropic": "^3.0.81",
     "@ai-sdk/react": "^3.0.194",
     "ai": "^6.0.192",

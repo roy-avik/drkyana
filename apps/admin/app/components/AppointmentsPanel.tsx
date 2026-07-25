@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { AppointmentRow, AppointmentEventRow, AppointmentStatus } from "@drkyana/types";
+import { Button } from "@drkyana/ui";
 
 interface ChamberOpt {
   id: string;
@@ -194,29 +195,29 @@ export default function AppointmentsPanel({
               {a.note && <p className="mt-1 text-xs text-muted">{a.note}</p>}
               <div className="mt-2 flex flex-wrap gap-2 text-xs">
                 {a.status === "proposed" && (
-                  <button className="btn-ghost" disabled={busy} onClick={() => setStatus(a.id, "confirmed")}>
+                  <Button disabled={busy} onClick={() => setStatus(a.id, "confirmed")}>
                     Confirm
-                  </button>
+                  </Button>
                 )}
-                <button className="btn-ghost" disabled={busy} onClick={() => startReschedule(a.id)}>
+                <Button disabled={busy} onClick={() => startReschedule(a.id)}>
                   Reschedule
-                </button>
+                </Button>
                 {a.status !== "completed" && a.status !== "cancelled" && (
                   <>
-                    <button className="btn-ghost" disabled={busy} onClick={() => setStatus(a.id, "completed")}>
+                    <Button disabled={busy} onClick={() => setStatus(a.id, "completed")}>
                       Complete
-                    </button>
-                    <button className="btn-ghost" disabled={busy} onClick={() => setStatus(a.id, "cancelled")}>
+                    </Button>
+                    <Button disabled={busy} onClick={() => setStatus(a.id, "cancelled")}>
                       Cancel
-                    </button>
-                    <button className="btn-ghost" disabled={busy} onClick={() => setStatus(a.id, "no_show")}>
+                    </Button>
+                    <Button disabled={busy} onClick={() => setStatus(a.id, "no_show")}>
                       No-show
-                    </button>
+                    </Button>
                   </>
                 )}
-                <button className="btn-ghost" onClick={() => toggleHistory(a.id)}>
+                <Button onClick={() => toggleHistory(a.id)}>
                   {events[a.id] ? "Hide history" : "History"}
-                </button>
+                </Button>
               </div>
               {rescheduleId === a.id && (
                 <div className="mt-2 flex flex-wrap items-end gap-2 rounded-lg border border-dashed border-ink/20 p-2">
@@ -230,16 +231,14 @@ export default function AppointmentsPanel({
                       className="input mt-1"
                     />
                   </label>
-                  <button
-                    className="btn-primary"
+                  <Button
+                    tone="brand"
                     disabled={busy || !rescheduleValue}
                     onClick={confirmReschedule}
                   >
                     Confirm
-                  </button>
-                  <button className="btn-ghost" onClick={() => setRescheduleId(null)}>
-                    Cancel
-                  </button>
+                  </Button>
+                  <Button onClick={() => setRescheduleId(null)}>Cancel</Button>
                 </div>
               )}
               {reasonFor?.id === a.id && (
@@ -253,12 +252,10 @@ export default function AppointmentsPanel({
                       className="input mt-1"
                     />
                   </label>
-                  <button className="btn-primary" disabled={busy} onClick={confirmReason}>
+                  <Button tone="brand" disabled={busy} onClick={confirmReason}>
                     Confirm
-                  </button>
-                  <button className="btn-ghost" onClick={() => setReasonFor(null)}>
-                    Cancel
-                  </button>
+                  </Button>
+                  <Button onClick={() => setReasonFor(null)}>Cancel</Button>
                 </div>
               )}
               {events[a.id] && (
@@ -326,9 +323,9 @@ export default function AppointmentsPanel({
             />
           </label>
         </div>
-        <button className="btn-primary mt-2" disabled={busy || !slot} onClick={create}>
+        <Button tone="brand" className="mt-2" disabled={busy || !slot} onClick={create}>
           Propose appointment
-        </button>
+        </Button>
       </div>
     </section>
   );

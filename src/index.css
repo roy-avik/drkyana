@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+/* Tailwind's automatic content detection scans the whole monorepo by
+   default (confirmed: admin-only classes like border-emerald-200, from
+   AppointmentsPanel.tsx, were showing up in this bundle's CSS with zero
+   uses in patient source — pre-existing, not introduced by this change).
+   admin's own Tailwind build does NOT reciprocally scan patient's src/, so
+   only this direction needs excluding. Drop the packages/ui line once the
+   patient site actually imports from @drkyana/ui. */
+@source not "../packages/ui/src";
+@source not "../apps/admin";
+
 /* Colors below reference var(--dk-*, fallback) — the fallback is the
    literal default value, but applyDlsTokens() (packages/types/src/dls.ts,
    called in main.tsx) overwrites --dk-* from DLS_TOKENS at runtime, so this
