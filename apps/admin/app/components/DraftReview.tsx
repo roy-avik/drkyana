@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { DraftRow } from "@drkyana/types";
 import { renderMarkdown } from "@drkyana/types";
 import { DRAFT_STATUS_LABEL, fmtDate } from "../lib/format";
-import { Button, Card } from "@drkyana/ui";
+import { Button, Card, Textarea } from "@drkyana/ui";
 
 export default function DraftReview({ initial }: { initial: DraftRow }) {
   const [draft, setDraft] = useState<DraftRow>(initial);
@@ -107,8 +107,8 @@ export default function DraftReview({ initial }: { initial: DraftRow }) {
         </div>
 
         {editing ? (
-          <textarea
-            className="input min-h-[300px] font-mono text-sm"
+          <Textarea
+            className="min-h-[300px] font-mono text-sm"
             value={markdown}
             onChange={(e) => setMarkdown(e.target.value)}
           />
