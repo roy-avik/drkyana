@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { IntakeStatus } from "@drkyana/types";
 import { STATUS_LABEL, STATUS_ORDER } from "../lib/format";
+import { Chip } from "@drkyana/ui";
 
 export default function StatusControl({
   intakeId,
@@ -41,18 +42,14 @@ export default function StatusControl({
       <span className="field-label">Status workflow</span>
       <div className="flex flex-wrap gap-1.5">
         {STATUS_ORDER.map((s) => (
-          <button
+          <Chip
             key={s}
             disabled={saving}
-            onClick={() => void change(s)}
-            className={`chip border transition-colors disabled:opacity-50 ${
-              status === s
-                ? "border-brand bg-brand text-white"
-                : "border-ink/15 bg-white text-muted hover:border-accent/40"
-            }`}
+            pressed={status === s}
+            onPressedChange={() => void change(s)}
           >
             {STATUS_LABEL[s]}
-          </button>
+          </Chip>
         ))}
       </div>
       {error && <p role="alert" className="text-xs text-red">Update failed: {error}</p>}
