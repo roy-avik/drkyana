@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { DraftRow } from "@drkyana/types";
 import { renderMarkdown } from "@drkyana/types";
 import { DRAFT_STATUS_LABEL, fmtDate } from "../lib/format";
+import { Button, Card } from "@drkyana/ui";
 
 export default function DraftReview({ initial }: { initial: DraftRow }) {
   const [draft, setDraft] = useState<DraftRow>(initial);
@@ -85,13 +86,13 @@ export default function DraftReview({ initial }: { initial: DraftRow }) {
       </div>
 
       {error && (
-        <div role="alert" className="card border-red/30 bg-red/5 text-sm text-red">{error}</div>
+        <Card role="alert" className="border-red/30 bg-red/5 text-sm text-red">{error}</Card>
       )}
       {notice && (
-        <div className="card border-green/30 bg-green/5 text-sm text-green">{notice}</div>
+        <Card className="border-green/30 bg-green/5 text-sm text-green">{notice}</Card>
       )}
 
-      <div className="card">
+      <Card>
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-sm font-semibold">Document</h2>
           <button
@@ -120,15 +121,14 @@ export default function DraftReview({ initial }: { initial: DraftRow }) {
 
         {editing && (
           <div className="mt-3 flex gap-2">
-            <button
-              className="btn-primary"
+            <Button
+              tone="brand"
               onClick={() => void saveEdit()}
               disabled={!dirty || busy !== null}
             >
               {busy === "save" ? "Saving…" : "Save edits"}
-            </button>
-            <button
-              className="btn-ghost"
+            </Button>
+            <Button
               onClick={() => {
                 setMarkdown(draft.markdown);
                 setEditing(false);
@@ -136,13 +136,13 @@ export default function DraftReview({ initial }: { initial: DraftRow }) {
               disabled={busy !== null}
             >
               Discard
-            </button>
+            </Button>
           </div>
         )}
-      </div>
+      </Card>
 
       {draft.citations.length > 0 && (
-        <div className="card">
+        <Card>
           <h2 className="mb-2 text-sm font-semibold">Sources cited</h2>
           <ul className="space-y-1 text-sm">
             {draft.citations.map((c, i) => (
@@ -152,10 +152,10 @@ export default function DraftReview({ initial }: { initial: DraftRow }) {
               </li>
             ))}
           </ul>
-        </div>
+        </Card>
       )}
 
-      <div className="card space-y-2">
+      <Card className="space-y-2">
         <h2 className="text-sm font-semibold">Review actions</h2>
         <p className="text-xs text-muted">
           Drafts are agent-generated. Nothing is sent until you approve.
@@ -163,26 +163,25 @@ export default function DraftReview({ initial }: { initial: DraftRow }) {
           verified address; the draft is only marked sent if delivery succeeds.
         </p>
         <div className="flex gap-2">
-          <button
-            className="btn-ghost"
+          <Button
             onClick={() => void act("approve")}
             disabled={busy !== null || dirty}
           >
             {busy === "approve" ? "Approving…" : "Approve"}
-          </button>
-          <button
-            className="btn-primary"
+          </Button>
+          <Button
+            tone="brand"
             onClick={() => void act("send")}
             disabled={busy !== null || dirty}
           >
             {busy === "send" ? "Sending…" : "Send"}
-          </button>
+          </Button>
         </div>
         {dirty && (
           <p className="text-xs text-orange">Save your edits before approving or sending.</p>
         )}
         <p className="text-xs text-muted">Updated {fmtDate(draft.updated_at)}</p>
-      </div>
+      </Card>
     </div>
   );
 }
