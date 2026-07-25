@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { KbDocRow } from "@drkyana/types";
 import { fmtDate } from "../lib/format";
+import { Button, Card, cardClassName } from "@drkyana/ui";
 
 interface FormState {
   title: string;
@@ -103,9 +104,9 @@ export default function KbManager() {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Knowledge base</h1>
         {!form && (
-          <button className="btn-primary" onClick={() => setForm({ ...EMPTY })}>
+          <Button tone="brand" onClick={() => setForm({ ...EMPTY })}>
             + Add reference
-          </button>
+          </Button>
         )}
       </div>
 
@@ -115,11 +116,11 @@ export default function KbManager() {
       </p>
 
       {error && (
-        <div role="alert" className="card border-red/30 bg-red/5 text-sm text-red">{error}</div>
+        <Card role="alert" className="border-red/30 bg-red/5 text-sm text-red">{error}</Card>
       )}
 
       {form && (
-        <div className="card space-y-3">
+        <Card className="space-y-3">
           <h2 className="text-sm font-semibold">New reference</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label>
@@ -169,33 +170,32 @@ export default function KbManager() {
             />
           </label>
           <div className="flex gap-2">
-            <button
-              className="btn-primary"
+            <Button
+              tone="brand"
               onClick={() => void save()}
               disabled={saving}
             >
               {saving ? "Ingesting…" : "Ingest"}
-            </button>
-            <button
-              className="btn-ghost"
+            </Button>
+            <Button
               onClick={() => setForm(null)}
               disabled={saving}
             >
               Cancel
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       )}
 
       {!loading && docs.length === 0 && !form && (
-        <div className="card text-center text-sm text-muted">
+        <Card className="text-center text-sm text-muted">
           No references yet.
-        </div>
+        </Card>
       )}
 
       <ul className="space-y-2">
         {docs.map((d) => (
-          <li key={d.id} className="card">
+          <li key={d.id} className={`${cardClassName} p-4`}>
             <div className="flex items-start justify-between gap-2">
               <div>
                 <span className="font-medium">{d.title}</span>
