@@ -3,7 +3,14 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import type { IntakeRow, IntakeStatus, TriageLevel } from "@drkyana/types";
-import { fmtDateShort, TRIAGE_CLASS, STATUS_LABEL, STATUS_ORDER } from "../lib/format";
+import {
+  fmtDateShort,
+  TRIAGE_CLASS,
+  TRIAGE_LABEL,
+  TRIAGE_LABEL_SHORT,
+  STATUS_LABEL,
+  STATUS_ORDER,
+} from "../lib/format";
 import { Button, Card, cardClassName } from "@drkyana/ui";
 
 const TRIAGE_LEVELS: TriageLevel[] = ["RED", "ORANGE", "YELLOW", "GREEN"];
@@ -93,7 +100,7 @@ export default function IntakeQueue() {
           <div className="flex flex-wrap gap-1.5">
             {TRIAGE_LEVELS.map((t) => (
               <FilterPill key={t} active={triage.has(t)} onClick={() => toggleTriage(t)}>
-                {t}
+                {TRIAGE_LABEL_SHORT[t]}
               </FilterPill>
             ))}
           </div>
@@ -135,7 +142,7 @@ export default function IntakeQueue() {
                     <span className="truncate font-medium">{i.name || "Unknown"}</span>
                     {i.triage_level && (
                       <span className={`chip ${TRIAGE_CLASS[i.triage_level]}`}>
-                        {i.triage_level}
+                        {TRIAGE_LABEL[i.triage_level]}
                       </span>
                     )}
                   </div>
