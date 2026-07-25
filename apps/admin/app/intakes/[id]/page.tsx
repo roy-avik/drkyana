@@ -7,7 +7,7 @@ import AppointmentsPanel from "../../components/AppointmentsPanel";
 import TranscriptPanel from "../../components/TranscriptPanel";
 import { ClinicalAssistsPanel } from "../../components/ClinicalAssistsPanel";
 import NotAuthorized from "../../components/NotAuthorized";
-import { fmtDate, TRIAGE_CLASS } from "../../lib/format";
+import { fmtDate, TRIAGE_CLASS, TRIAGE_LABEL } from "../../lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -65,7 +65,7 @@ export default async function IntakeDetail({
         <h1 className="text-lg font-semibold">{intake.name || "Unknown patient"}</h1>
         {intake.triage_level && (
           <span className={`chip ${TRIAGE_CLASS[intake.triage_level]}`}>
-            {intake.triage_level}
+            {TRIAGE_LABEL[intake.triage_level]}
             {intake.triage_action ? ` · ${intake.triage_action}` : ""}
           </span>
         )}
