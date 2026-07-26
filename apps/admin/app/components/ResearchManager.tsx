@@ -116,6 +116,7 @@ export default function ResearchManager({
           tone="brand"
           onClick={() => void runNow()}
           disabled={busy}
+          aria-live="polite"
         >
           {busy ? "Running…" : "Run intake patterns now"}
         </Button>

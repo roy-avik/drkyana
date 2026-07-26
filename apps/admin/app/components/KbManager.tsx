@@ -174,6 +174,7 @@ export default function KbManager() {
               tone="brand"
               onClick={() => void save()}
               disabled={saving}
+              aria-live="polite"
             >
               {saving ? "Ingesting…" : "Ingest"}
             </Button>

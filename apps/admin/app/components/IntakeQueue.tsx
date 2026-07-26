@@ -75,7 +75,7 @@ export default function IntakeQueue() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Intake queue</h1>
-        <Button onClick={() => void load()} disabled={loading}>
+        <Button onClick={() => void load()} disabled={loading} aria-live="polite">
           {loading ? "Loading…" : "Refresh"}
         </Button>
       </div>

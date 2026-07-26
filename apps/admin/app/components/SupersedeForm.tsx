@@ -60,6 +60,7 @@ export function SupersedeForm({ assistId }: { assistId: string }) {
             size="sm"
             onClick={() => void submit()}
             disabled={!note.trim() || busy}
+            aria-live="polite"
           >
             {busy ? "Saving…" : "Save supersede note"}
           </Button>
