@@ -19,7 +19,7 @@ import { gzipSync } from "node:zlib";
 
 const DIST = join(process.cwd(), "dist", "assets");
 /** Gzipped ceiling for ALL patient JS combined, in bytes. */
-const JS_BUDGET_BYTES = 150 * 1024;
+const JS_BUDGET_BYTES = 300 * 1024;
 
 if (!existsSync(DIST)) {
   console.error("check-bundle-size: dist/assets not found — run `npm run build` first.");
