@@ -14,7 +14,7 @@ import type {
   VIEW_DSL_VERSION,
 } from "@drkyana/types";
 import { renderMarkdown } from "@drkyana/types";
-import { Button, Input, Textarea } from "@drkyana/ui";
+import { Button, Input, Select, Textarea } from "@drkyana/ui";
 
 /**
  * In-app renderer for View-DSL documents (docs/view-dsl.md) — the agent-loop
@@ -215,13 +215,12 @@ function Form({ node, run }: { node: FormNode; run: RunCall }) {
                     required={f.required}
                   />
                 ) : f.type === "select" ? (
-                  <select className="input" name={f.name} defaultValue={value}>
-                    {(f.options ?? []).map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
+                  <Select
+                    name={f.name}
+                    defaultValue={value}
+                    required={f.required}
+                    options={f.options ?? []}
+                  />
                 ) : (
                   <Input
                     type={f.type === "number" ? "number" : "text"}

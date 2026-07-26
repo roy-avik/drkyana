@@ -10,7 +10,7 @@ import {
 import type { ViewDocument } from "@drkyana/types";
 import { renderMarkdown } from "@drkyana/types";
 import ViewRenderer from "./ViewRenderer";
-import { Button, Card, Input } from "@drkyana/ui";
+import { Button, Card, Input, Select } from "@drkyana/ui";
 
 /**
  * Admin agent chat. Streams from /api/agent/admin via useChat.
@@ -357,20 +357,20 @@ export default function AgentChat() {
         </div>
         <div className="flex items-center gap-2">
           {history.length > 0 && (
-            <select
-              className="rounded border border-ink/20 px-2 py-1 text-xs"
+            <Select
+              className="!min-h-0 w-auto !py-1 text-xs"
               value={sessionId}
-              onChange={(e) => switchTo(e.target.value)}
-            >
-              {!history.some((s) => s.sessionId === sessionId) && (
-                <option value={sessionId}>Current conversation</option>
-              )}
-              {history.map((s) => (
-                <option key={s.sessionId} value={s.sessionId}>
-                  {new Date(s.updated_at * 1000).toLocaleString()} — {s.snippet}
-                </option>
-              ))}
-            </select>
+              onValueChange={switchTo}
+              options={[
+                ...(!history.some((s) => s.sessionId === sessionId)
+                  ? [{ value: sessionId, label: "Current conversation" }]
+                  : []),
+                ...history.map((s) => ({
+                  value: s.sessionId,
+                  label: `${new Date(s.updated_at * 1000).toLocaleString()} — ${s.snippet}`,
+                })),
+              ]}
+            />
           )}
           <Button size="sm" onClick={newChat}>
             New chat
