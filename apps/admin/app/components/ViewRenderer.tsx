@@ -172,7 +172,7 @@ function Form({ node, run }: { node: FormNode; run: RunCall }) {
       else if (f.type === "hidden") v = f.value;
       else v = fd.get(f.name);
       if (v === "" || v === null || v === undefined) continue;
-      if (f.type === "number") v = Number(v);
+      if (f.type === "number" || f.numeric) v = Number(v);
       if (f.json && typeof v === "string") {
         try {
           v = JSON.parse(v);
