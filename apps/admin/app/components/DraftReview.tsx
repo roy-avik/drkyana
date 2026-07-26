@@ -125,6 +125,7 @@ export default function DraftReview({ initial }: { initial: DraftRow }) {
               tone="brand"
               onClick={() => void saveEdit()}
               disabled={!dirty || busy !== null}
+              aria-live="polite"
             >
               {busy === "save" ? "Saving…" : "Save edits"}
             </Button>
@@ -166,6 +167,7 @@ export default function DraftReview({ initial }: { initial: DraftRow }) {
           <Button
             onClick={() => void act("approve")}
             disabled={busy !== null || dirty}
+            aria-live="polite"
           >
             {busy === "approve" ? "Approving…" : "Approve"}
           </Button>
@@ -173,6 +175,7 @@ export default function DraftReview({ initial }: { initial: DraftRow }) {
             tone="brand"
             onClick={() => void act("send")}
             disabled={busy !== null || dirty}
+            aria-live="polite"
           >
             {busy === "send" ? "Sending…" : "Send"}
           </Button>

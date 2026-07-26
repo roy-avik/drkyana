@@ -249,7 +249,7 @@ export default function ChamberManager() {
           </label>
 
           <div className="flex gap-2">
-            <Button tone="brand" onClick={() => void save()} disabled={saving}>
+            <Button tone="brand" onClick={() => void save()} disabled={saving} aria-live="polite">
               {saving ? "Saving…" : "Save"}
             </Button>
             <Button onClick={() => setForm(null)} disabled={saving}>

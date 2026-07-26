@@ -179,7 +179,7 @@ export default function AppointmentsPanel({
       </p>
 
       {loading ? (
-        <p className="text-sm text-muted">Loading…</p>
+        <p role="status" className="text-sm text-muted">Loading…</p>
       ) : appts.length === 0 ? (
         <p className="text-sm text-muted">No appointments yet for this patient.</p>
       ) : (
