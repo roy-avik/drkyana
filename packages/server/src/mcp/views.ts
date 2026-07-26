@@ -148,6 +148,7 @@ export async function buildIntakeQueue(
             name: "days",
             label: "Date range",
             type: "select",
+            numeric: true,
             value: String(args.days ?? 0),
             options: [
               { value: "0", label: "All time" },

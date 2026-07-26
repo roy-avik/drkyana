@@ -161,6 +161,14 @@ export interface FormField {
   required?: boolean;
   /** Parse the submitted string as JSON before adding to args (arrays etc.). */
   json?: boolean;
+  /**
+   * Coerce the submitted string to a number before adding to args. `type:
+   * "number"` fields already do this; set this on a `type: "select"` field
+   * whose option values are numeric (e.g. a day-count filter) — a native
+   * form control's value is always a string regardless of render type, so
+   * without this the tool call's numeric arg fails Zod validation.
+   */
+  numeric?: boolean;
 }
 
 /**
