@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { AppointmentRow, AppointmentEventRow, AppointmentStatus } from "@drkyana/types";
-import { Button, Input, cardClassName } from "@drkyana/ui";
+import { Button, Input, Select, cardClassName } from "@drkyana/ui";
 
 interface ChamberOpt {
   id: string;
@@ -290,18 +290,13 @@ export default function AppointmentsPanel({
           </label>
           <label className="text-xs text-muted">
             Chamber
-            <select
+            <Select
+              className="mt-1"
+              placeholder="— select —"
+              options={chambers.map((c) => ({ value: c.id, label: `${c.name} (${c.area})` }))}
               value={chamberId}
-              onChange={(e) => setChamberId(e.target.value)}
-              className="input mt-1"
-            >
-              <option value="">— select —</option>
-              {chambers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} ({c.area})
-                </option>
-              ))}
-            </select>
+              onValueChange={setChamberId}
+            />
           </label>
           <label className="text-xs text-muted">
             Duration (min)

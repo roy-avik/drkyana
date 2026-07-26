@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import type { ChamberRow, ChamberScheduleSlot } from "@drkyana/types";
-import { Button, Card, cardClassName } from "@drkyana/ui";
+import { Button, Card, Select, cardClassName } from "@drkyana/ui";
 
 interface FormState {
   id?: string;
@@ -205,17 +205,12 @@ export default function ChamberManager() {
             <div className="space-y-2">
               {form.schedule.map((slot, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <select
-                    className="input w-auto"
+                  <Select
+                    className="w-auto"
+                    options={DAYS.map((d) => ({ value: d, label: d }))}
                     value={slot.day}
-                    onChange={(e) => updateSlot(i, { day: e.target.value })}
-                  >
-                    {DAYS.map((d) => (
-                      <option key={d} value={d}>
-                        {d}
-                      </option>
-                    ))}
-                  </select>
+                    onValueChange={(v) => updateSlot(i, { day: v })}
+                  />
                   <input
                     type="time"
                     className="input w-auto"

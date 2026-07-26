@@ -5,7 +5,7 @@ import {
   type IntakeFormField,
   type IntakeFormGroup,
 } from '@drkyana/types';
-import { Button, Input } from '@drkyana/ui';
+import { Button, Input, Select } from '@drkyana/ui';
 
 /**
  * Patient intake form — rendered in chat when the agent calls collect_intake.
@@ -163,8 +163,8 @@ function FieldRow({
 }) {
   const label = fieldLabel(t, field, !!field.required);
   const placeholder = fieldPlaceholder(t, field);
-  // Still used directly by <select>/<textarea>, which the shared Input
-  // primitive (native <input> only) can't wrap — rounded-sm here matches
+  // Still used directly by <textarea>, which the shared Input primitive
+  // (native <input> only) can't wrap — rounded-sm here matches
   // <Input shape="flat"> below so every control in the form reads as one
   // consistent field style.
   const cls =
@@ -174,18 +174,13 @@ function FieldRow({
     return (
       <label className="block text-xs text-muted">
         {label}
-        <select
-          className={cls}
+        <Select
+          className="mt-1"
+          placeholder="—"
+          options={field.options.map((o) => ({ value: o.value, label: t(o.labelKey, o.label) }))}
           value={typeof value === 'string' ? value : ''}
-          onChange={(e) => onChange(e.target.value)}
-        >
-          <option value="">—</option>
-          {field.options.map((o) => (
-            <option key={o.value} value={o.value}>
-              {t(o.labelKey, o.label)}
-            </option>
-          ))}
-        </select>
+          onValueChange={onChange}
+        />
       </label>
     );
   }

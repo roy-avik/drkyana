@@ -8,3 +8,5 @@ export { Chip } from "./Chip";
 export type { ChipProps } from "./Chip";
 export { Textarea } from "./Textarea";
 export type { TextareaProps } from "./Textarea";
+export { Select } from "./Select";
+export type { SelectProps, SelectOption } from "./Select";
