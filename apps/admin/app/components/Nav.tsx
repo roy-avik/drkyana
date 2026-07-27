@@ -26,6 +26,15 @@ export default function Nav() {
           </span>
           <span className="text-sm font-semibold text-ink">Practice Console</span>
         </Link>
+        {/* Cloudflare Access's own single-app logout endpoint — revokes the
+            CF_Authorization cookie for this app and drops back to the Access
+            login screen. No server route of ours involved. */}
+        <a
+          href="/cdn-cgi/access/logout"
+          className="flex min-h-11 items-center whitespace-nowrap rounded-lg px-3 text-sm font-medium text-muted transition-colors ease-spring hover:bg-surface-alt hover:text-ink"
+        >
+          Sign out
+        </a>
       </div>
       <nav className="mx-auto flex max-w-3xl gap-1 overflow-x-auto px-2 pb-2 lg:max-w-5xl">
         {LINKS.map((l) => (
